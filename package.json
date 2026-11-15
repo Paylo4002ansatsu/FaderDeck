@@ -1,0 +1,50 @@
+{
+  "name": "faderdeck",
+  "productName": "FaderDeck",
+  "version": "1.0.1",
+  "description": "FaderDeck: controlador MIDI customizável com ponte local para a sua DAW",
+  "author": "FaderDeck",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "bridge": "node server.cjs",
+    "dist": "electron-builder --mac dmg zip",
+    "dist:universal": "electron-builder --mac dmg zip --universal"
+  },
+  "dependencies": {
+    "@julusian/midi": "^3.5.0",
+    "qrcode": "^1.5.4",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "app.faderdeck",
+    "productName": "FaderDeck",
+    "asar": false,
+    "npmRebuild": false,
+    "directories": { "output": "release", "buildResources": "build" },
+    "files": [
+      "main.js",
+      "server.cjs",
+      "client/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.music",
+      "icon": "build/icon.png",
+      "identity": null,
+      "hardenedRuntime": false,
+      "target": [{ "target": "dmg" }, { "target": "zip" }],
+      "extendInfo": {
+        "NSLocalNetworkUsageDescription": "O FaderDeck usa a rede local para receber os controles do seu celular.",
+        "LSUIElement": false
+      }
+    },
+    "dmg": { "title": "FaderDeck", "contents": [{ "x": 140, "y": 180 }, { "x": 400, "y": 180, "type": "link", "path": "/Applications" }] }
+  }
+}

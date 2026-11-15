@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="FaderDeck">
+  <rect width="128" height="128" rx="30" fill="#111416"/>
+  <path d="M30 20v88M64 20v88M98 20v88" stroke="#3b4648" stroke-width="8" stroke-linecap="round"/>
+  <path d="M18 42h24M52 80h24M86 50h24" stroke="#40ded0" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="30" cy="42" r="7" fill="#c9fffa"/><circle cx="64" cy="80" r="7" fill="#c9fffa"/><circle cx="98" cy="50" r="7" fill="#c9fffa"/>
+  <path d="M22 105h84" stroke="#40ded0" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+</svg>
