@@ -10,7 +10,8 @@
     "start": "electron .",
     "bridge": "node server.cjs",
     "dist": "electron-builder --mac dmg zip",
-    "dist:universal": "electron-builder --mac dmg zip --universal"
+    "dist:universal": "electron-builder --mac dmg zip --universal",
+    "dist:win": "electron-builder --win nsis --x64"
   },
   "dependencies": {
     "@julusian/midi": "^3.5.0",
@@ -45,6 +46,27 @@
         "LSUIElement": false
       }
     },
-    "dmg": { "title": "FaderDeck", "contents": [{ "x": 140, "y": 180 }, { "x": 400, "y": 180, "type": "link", "path": "/Applications" }] }
+    "dmg": {
+      "title": "FaderDeck",
+      "contents": [
+        { "x": 140, "y": 180 },
+        { "x": 400, "y": 180, "type": "link", "path": "/Applications" }
+      ]
+    },
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }
