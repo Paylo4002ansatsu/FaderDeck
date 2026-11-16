@@ -11,7 +11,7 @@
     "bridge": "node server.cjs",
     "dist": "electron-builder --mac dmg zip",
     "dist:universal": "electron-builder --mac dmg zip --universal",
-    "dist:win": "electron-builder --win nsis --x64"
+    "dist:win": "electron-builder --win nsis"
   },
   "dependencies": {
     "@julusian/midi": "^3.5.0",
@@ -40,21 +40,16 @@
       "icon": "build/icon.png",
       "identity": null,
       "hardenedRuntime": false,
-      "target": [{ "target": "dmg" }, { "target": "zip" }],
+      "artifactName": "FaderDeck-Mac.${ext}",
+          "target": ["dmg", "zip"],
       "extendInfo": {
         "NSLocalNetworkUsageDescription": "O FaderDeck usa a rede local para receber os controles do seu celular.",
         "LSUIElement": false
       }
     },
-    "dmg": {
-      "title": "FaderDeck",
-      "contents": [
-        { "x": 140, "y": 180 },
-        { "x": 400, "y": 180, "type": "link", "path": "/Applications" }
-      ]
-    },
     "win": {
       "icon": "build/icon.png",
+      "artifactName": "FaderDeck-Windows-Setup.exe",
       "target": [
         {
           "target": "nsis",
@@ -64,9 +59,14 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "allowToChangeInstallationDirectory": true
+    },
+    "dmg": {
+      "title": "FaderDeck",
+      "contents": [
+        { "x": 140, "y": 180 },
+        { "x": 400, "y": 180, "type": "link", "path": "/Applications" }
+      ]
     }
   }
 }

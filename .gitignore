@@ -1,4 +1,4 @@
-node_modules/
+#depedencias
+node_modules
 release/
-dist/
-.DS_Store
+

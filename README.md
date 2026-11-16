@@ -33,13 +33,20 @@ O `npm run dist` cria `release/FaderDeck-1.0.0-<arquitetura>.dmg` (e um .zip). O
 
 - **QR do celular, de 4 jeitos:**
   1. **Automático:** ao abrir o app, se nenhum celular reconectar em ~5 segundos, o QR aparece sozinho (na primeira vez ele aparece na hora).
-  2. **Botão "Conectar celular"** na barra superior do painel.
+  2. **Botão "Conectar celular"** na barra lateral do painel (acima de "Guia rápido e MIDI Learn"). Em janelas estreitas ele vira um botão flutuante.
   3. **Atalho ⌘K** (ou menu FaderDeck → Conectar celular).
   4. **Ícone na barra de menus** → "Conectar celular (QR)…".
   O QR fecha sozinho quando o celular conecta ("✓ Celular conectado!"), e também com Esc.
 - **Ícone na barra de menus:** status, QR, abrir o painel, copiar link, portas MIDI, renovar código, abrir ao iniciar o Mac e sair.
 - **DAW (ChurchDAW):** em **Áudio e MIDI**, habilite a entrada **FaderDeck** e use **Mapear MIDI**.
 - Fechar a janela **não** encerra o app; use "Sair do FaderDeck" (⌘Q).
+
+## Modo Palco (melhorado na 1.0.2)
+
+- Nome de cada fader (com a cor) no topo e valor embaixo, em letras grandes.
+- Folga em cima e embaixo do trilho: o botão do fader não fica mais colado na borda nem na barra de gestos do iPhone, e é maior para pegar com o dedo.
+- Celular deitado: páginas só com faders ficam em uma única fileira, com trilhos mais longos. Em retrato, até 4 colunas.
+- Botão **Sair** com o texto correto, numa faixa própria no topo, junto das bolinhas de página.
 
 ## Onde ficam os dados
 
