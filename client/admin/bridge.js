@@ -1,6 +1,6 @@
 'use strict';
 
-const status = document.querySelector('#status');
+const statusElement = document.querySelector('#status');
 let token = '';
 let mobileUrl = '';
 
@@ -19,12 +19,16 @@ async function loadPairing() {
   document.querySelector('#pairing-code').textContent = token;
   document.querySelector('#mobile-url').textContent = mobileUrl;
   document.querySelector('#chosen-address').textContent = `${pairing.ip}:${pairing.port}`;
-  document.querySelector('#other-ips').textContent = pairing.addresses.slice(1).map((item) => `${item.address} (${item.interface})`).join(' · ') || 'Nenhum outro IP local detectado';
+  document.querySelector('#other-ips').textContent =
+    pairing.addresses
+      .slice(1)
+      .map((item) => `${item.address} (${item.interface})`)
+      .join(' · ') || 'Nenhum outro IP local detectado';
 }
 
 async function loadPorts() {
   const data = await requestJson('/api/ports');
-  if (data.warning) status.textContent = `MIDI ainda indisponível: ${data.warning}`;
+  if (data.warning) statusElement.textContent = `MIDI ainda indisponível: ${data.warning}`;
   const warning = document.querySelector('#midi-warning');
   if (data.warnings?.length) {
     warning.hidden = false;
@@ -51,46 +55,62 @@ async function loadPorts() {
 }
 
 document.querySelector('#save').addEventListener('click', async () => {
-  status.textContent = 'Aplicando…';
+  statusElement.textContent = 'Aplicando…';
   try {
     const data = await requestJson('/api/ports/select', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, outputIndex: Number(document.querySelector('#output').value), inputIndex: Number(document.querySelector('#input').value) }),
+      body: JSON.stringify({
+        token,
+        outputIndex: Number(document.querySelector('#output').value),
+        inputIndex: Number(document.querySelector('#input').value),
+      }),
     });
-    status.textContent = `Portas MIDI aplicadas. Saída: ${data.outputName || 'nenhuma'}. Entrada: ${data.inputName || 'nenhuma'}.`;
+    statusElement.textContent = `Portas MIDI aplicadas. Saída: ${data.outputName || 'nenhuma'}. Entrada: ${data.inputName || 'nenhuma'}.`;
   } catch (error) {
-    status.textContent = error.message;
+    statusElement.textContent = error.message;
   }
 });
 
 document.querySelector('#test-phone').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText(mobileUrl); } catch {}
-  status.textContent = 'Link copiado, se o navegador permitir. Abra-o no iPhone agora; aguardando conexão do celular…';
+  try {
+    await navigator.clipboard.writeText(mobileUrl);
+  } catch {}
+  statusElement.textContent =
+    'Link copiado, se o navegador permitir. Abra-o no iPhone agora; aguardando conexão do celular…';
   for (let attempt = 0; attempt < 15; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     try {
       const data = await requestJson('/api/status');
       if (data.remoteClients > 0) {
-        status.textContent = `Celular conectado à ponte. Endereço visto: ${data.remoteAddresses.join(', ')}`;
+        statusElement.textContent = `Celular conectado à ponte. Endereço visto: ${data.remoteAddresses.join(', ')}`;
         return;
       }
     } catch {}
   }
-  status.textContent = 'Ainda não recebi conexão do celular. Confira o mesmo Wi-Fi, o endereço do QR e o aviso do Firewall acima.';
+  statusElement.textContent =
+    'Ainda não recebi conexão do celular. Confira o mesmo Wi-Fi, o endereço do QR e o aviso do Firewall acima.';
 });
 
 document.querySelector('#renew-token').addEventListener('click', async () => {
-  if (!confirm('Gerar um novo código? Todos os celulares conectados precisarão escanear o QR novamente.')) return;
-  status.textContent = 'Gerando novo código…';
+  if (
+    !confirm(
+      'Gerar um novo código? Todos os celulares conectados precisarão escanear o QR novamente.',
+    )
+  )
+    return;
+  statusElement.textContent = 'Gerando novo código…';
   try {
-    await requestJson('/api/token/regenerate', { method: 'POST', headers: { 'X-FaderDeck-Admin': 'rotate-token' } });
+    await requestJson('/api/token/regenerate', {
+      method: 'POST',
+      headers: { 'X-FaderDeck-Admin': 'rotate-token' },
+    });
     location.reload();
   } catch (error) {
-    status.textContent = error.message;
+    statusElement.textContent = error.message;
   }
 });
 
 Promise.all([loadPairing(), loadPorts()]).catch((error) => {
-  status.textContent = `Não foi possível carregar a administração: ${error.message}`;
+  statusElement.textContent = `Não foi possível carregar a administração: ${error.message}`;
 });

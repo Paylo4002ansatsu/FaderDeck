@@ -64,8 +64,8 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test
+      - name: Run quality checks
+        run: npm run check
 
       - name: Build Windows installer
         if: runner.os == 'Windows'

@@ -39,36 +39,59 @@
   @media (max-width:420px){.fdqr-card{padding:22px 16px 18px}}`;
   document.head.appendChild(style);
 
-  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = (t) =>
+    String(t).replace(
+      /[&<>"]/g,
+      (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c],
+    );
   let modal = null;
   let pollTimer = null;
 
   function close() {
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
     document.removeEventListener('keydown', onKey, true);
-    if (modal) { modal.remove(); modal = null; }
+    if (modal) {
+      modal.remove();
+      modal = null;
+    }
   }
-  function onKey(event) { if (event.key === 'Escape') { event.stopPropagation(); close(); } }
+  function onKey(event) {
+    if (event.key === 'Escape') {
+      event.stopPropagation();
+      close();
+    }
+  }
 
   async function remoteCount() {
-    try { const r = await fetch('/api/status', { cache: 'no-store' }); return Number((await r.json()).remoteClients) || 0; } catch { return 0; }
+    try {
+      const r = await fetch('/api/status', { cache: 'no-store' });
+      return Number((await r.json()).remoteClients) || 0;
+    } catch {
+      return 0;
+    }
   }
 
   async function open() {
     if (modal) return;
     modal = document.createElement('div');
     modal.className = 'fdqr-backdrop';
-    modal.innerHTML = '<div class="fdqr-card" role="dialog" aria-modal="true" aria-label="Conectar celular">'
-      + '<button class="fdqr-x" type="button" aria-label="Fechar">×</button>'
-      + '<h2>Conectar o celular</h2>'
-      + '<p class="fdqr-sub">Com o celular no mesmo Wi-Fi, aponte a câmera para o QR.</p>'
-      + '<div class="fdqr-qr">Carregando…</div>'
-      + '<code class="fdqr-url"></code>'
-      + '<div class="fdqr-btnrow"><button class="fdqr-act" type="button" data-copy>Copiar link</button><button class="fdqr-act sec" type="button" data-close>Fechar</button></div>'
-      + '<p class="fdqr-note"></p><p class="fdqr-status" role="status"></p></div>';
+    modal.innerHTML =
+      '<div class="fdqr-card" role="dialog" aria-modal="true" aria-label="Conectar celular">' +
+      '<button class="fdqr-x" type="button" aria-label="Fechar">×</button>' +
+      '<h2>Conectar o celular</h2>' +
+      '<p class="fdqr-sub">Com o celular no mesmo Wi-Fi, aponte a câmera para o QR.</p>' +
+      '<div class="fdqr-qr">Carregando…</div>' +
+      '<code class="fdqr-url"></code>' +
+      '<div class="fdqr-btnrow"><button class="fdqr-act" type="button" data-copy>Copiar link</button><button class="fdqr-act sec" type="button" data-close>Fechar</button></div>' +
+      '<p class="fdqr-note"></p><p class="fdqr-status" role="status"></p></div>';
     document.body.appendChild(modal);
     document.addEventListener('keydown', onKey, true);
-    modal.addEventListener('click', (event) => { if (event.target === modal) close(); });
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) close();
+    });
     modal.querySelector('.fdqr-x').addEventListener('click', close);
     modal.querySelector('[data-close]').addEventListener('click', close);
 
@@ -76,8 +99,12 @@
     let pairing = null;
     modal.querySelector('[data-copy]').addEventListener('click', async () => {
       if (!pairing) return;
-      try { await navigator.clipboard.writeText(pairing.url); statusEl.textContent = 'Link copiado.'; }
-      catch { statusEl.textContent = 'Não consegui copiar; selecione o link acima.'; }
+      try {
+        await navigator.clipboard.writeText(pairing.url);
+        statusEl.textContent = 'Link copiado.';
+      } catch {
+        statusEl.textContent = 'Não consegui copiar; selecione o link acima.';
+      }
     });
 
     try {
@@ -85,13 +112,19 @@
       if (!response.ok) throw new Error('HTTP ' + response.status);
       pairing = await response.json();
       if (!modal) return;
-      modal.querySelector('.fdqr-qr').innerHTML = '<img alt="QR para conectar o celular" src="' + esc(pairing.qr) + '">';
+      modal.querySelector('.fdqr-qr').innerHTML =
+        '<img alt="QR para conectar o celular" src="' + esc(pairing.qr) + '">';
       modal.querySelector('.fdqr-url').textContent = pairing.url;
-      const ips = (pairing.addresses || []).map((a) => a.address + ' (' + a.interface + ')').join(' · ') || pairing.ip;
-      modal.querySelector('.fdqr-note').innerHTML = '<strong>IPs deste computador:</strong> ' + esc(ips)
-        + '<br><strong>Não abre no celular?</strong> Confira o mesmo Wi-Fi e permita conexões de entrada para o FaderDeck em Ajustes do Sistema → Rede → Firewall.';
+      const ips =
+        (pairing.addresses || []).map((a) => a.address + ' (' + a.interface + ')').join(' · ') ||
+        pairing.ip;
+      modal.querySelector('.fdqr-note').innerHTML =
+        '<strong>IPs deste computador:</strong> ' +
+        esc(ips) +
+        '<br><strong>Não abre no celular?</strong> Confira o mesmo Wi-Fi e permita conexões de entrada para o FaderDeck em Ajustes do Sistema → Rede → Firewall.';
     } catch (error) {
-      modal.querySelector('.fdqr-qr').textContent = 'Não consegui obter o QR (' + error.message + ').';
+      modal.querySelector('.fdqr-qr').textContent =
+        'Não consegui obter o QR (' + error.message + ').';
       return;
     }
 
@@ -101,7 +134,8 @@
       if ((await remoteCount()) > initial) {
         statusEl.textContent = '✓ Celular conectado!';
         statusEl.className = 'fdqr-status ok';
-        clearInterval(pollTimer); pollTimer = null;
+        clearInterval(pollTimer);
+        pollTimer = null;
         setTimeout(close, 1400);
       }
     }, 1500);
@@ -109,7 +143,11 @@
 
   function railUsable(rail) {
     if (!rail) return false;
-    try { return getComputedStyle(rail).display !== 'none'; } catch { return true; }
+    try {
+      return getComputedStyle(rail).display !== 'none';
+    } catch {
+      return true;
+    }
   }
 
   function ensureButton() {
@@ -121,15 +159,18 @@
       button.id = 'fdqr-btn';
       button.type = 'button';
       button.title = 'Conectar celular (QR) · ⌘K';
-      button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20h1"/></svg><span>Conectar celular</span>';
+      button.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20h1"/></svg><span>Conectar celular</span>';
       button.addEventListener('click', open);
     }
     button.style.display = stage ? 'none' : '';
     if (railUsable(rail)) {
       if (button.className !== 'fdqr-rail') button.className = 'fdqr-rail';
       const footer = rail.querySelector('.rail-footer');
-      if (footer) { if (button.parentElement !== rail || button.nextElementSibling !== footer) rail.insertBefore(button, footer); }
-      else if (button.parentElement !== rail) rail.appendChild(button);
+      if (footer) {
+        if (button.parentElement !== rail || button.nextElementSibling !== footer)
+          rail.insertBefore(button, footer);
+      } else if (button.parentElement !== rail) rail.appendChild(button);
     } else {
       if (button.className !== 'fdqr-float') button.className = 'fdqr-float';
       if (button.parentElement !== document.body) document.body.appendChild(button);
@@ -140,9 +181,17 @@
   const schedule = () => {
     if (scheduled) return;
     scheduled = true;
-    requestAnimationFrame(() => { scheduled = false; ensureButton(); });
+    requestAnimationFrame(() => {
+      scheduled = false;
+      ensureButton();
+    });
   };
-  new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+  new MutationObserver(schedule).observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class'],
+  });
   window.addEventListener('resize', schedule);
   ensureButton();
 

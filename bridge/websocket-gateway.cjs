@@ -11,13 +11,19 @@ function createWebSocketGateway({ server, getToken, layout, scheduleLayoutSave, 
   server.on('upgrade', (request, socket, head) => {
     let requestUrl;
     try {
-      ({ url: requestUrl } = parseRequestTarget(request.url || '/', request.headers.host || 'localhost'));
+      ({ url: requestUrl } = parseRequestTarget(
+        request.url || '/',
+        request.headers.host || 'localhost',
+      ));
     } catch {
       socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
       return;
     }
     const localBrowser = isLoopbackHost(requestUrl.hostname) && isLoopbackRequest(request);
-    if (requestUrl.pathname !== '/ws' || (!localBrowser && !safeEqual(requestUrl.searchParams.get('token') || '', getToken()))) {
+    if (
+      requestUrl.pathname !== '/ws' ||
+      (!localBrowser && !safeEqual(requestUrl.searchParams.get('token') || '', getToken()))
+    ) {
       socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
       socket.destroy();
       return;
@@ -53,20 +59,34 @@ function createWebSocketGateway({ server, getToken, layout, scheduleLayoutSave, 
   });
 
   function getStatus() {
-    const remote = [...wss.clients].filter((client) => client.readyState === WebSocket.OPEN && !isLoopbackHost(client._socket?.remoteAddress || ''));
+    const remote = [...wss.clients].filter(
+      (client) =>
+        client.readyState === WebSocket.OPEN &&
+        !isLoopbackHost(client._socket?.remoteAddress || ''),
+    );
     return {
       clients: wss.clients.size,
       remoteClients: remote.length,
-      remoteAddresses: [...new Set(remote.map((client) => client._socket?.remoteAddress).filter(Boolean))],
+      remoteAddresses: [
+        ...new Set(remote.map((client) => client._socket?.remoteAddress).filter(Boolean)),
+      ],
     };
   }
 
   function closeAll(code, reason) {
-    for (const client of wss.clients) { try { client.close(code, reason); } catch {} }
+    for (const client of wss.clients) {
+      try {
+        client.close(code, reason);
+      } catch {}
+    }
   }
 
   function terminateAll() {
-    for (const client of wss.clients) { try { client.terminate(); } catch {} }
+    for (const client of wss.clients) {
+      try {
+        client.terminate();
+      } catch {}
+    }
   }
 
   return { broadcast, getStatus, closeAll, terminateAll, webSocketServer: wss };

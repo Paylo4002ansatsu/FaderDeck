@@ -7,8 +7,10 @@ const REPOSITORY = 'Paylo4002ansatsu/FaderDeck';
 const WINDOWS_ASSET = 'FaderDeck-Windows-Setup.exe';
 const MACOS_ASSET = 'FaderDeck-Mac.dmg';
 const RELEASE_TAG_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
-const WINDOWS_URL_PATTERN = /https:\/\/github\.com\/Paylo4002ansatsu\/FaderDeck\/releases\/download\/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\/FaderDeck-Windows-Setup\.exe/g;
-const MACOS_URL_PATTERN = /https:\/\/github\.com\/Paylo4002ansatsu\/FaderDeck\/releases\/(?:latest\/download|download\/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\/FaderDeck-Mac\.dmg/g;
+const WINDOWS_URL_PATTERN =
+  /https:\/\/github\.com\/Paylo4002ansatsu\/FaderDeck\/releases\/download\/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\/FaderDeck-Windows-Setup\.exe/g;
+const MACOS_URL_PATTERN =
+  /https:\/\/github\.com\/Paylo4002ansatsu\/FaderDeck\/releases\/(?:latest\/download|download\/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\/FaderDeck-Mac\.dmg/g;
 
 function validateReleaseTag(tag) {
   if (typeof tag !== 'string' || !RELEASE_TAG_PATTERN.test(tag)) {
@@ -20,7 +22,9 @@ function validateReleaseTag(tag) {
 function replaceExpectedCount(content, pattern, replacement, expectedCount, fileName, description) {
   const matches = [...content.matchAll(pattern)];
   if (matches.length !== expectedCount) {
-    throw new Error(`${fileName}: esperados ${expectedCount} ${description}, encontrados ${matches.length}.`);
+    throw new Error(
+      `${fileName}: esperados ${expectedCount} ${description}, encontrados ${matches.length}.`,
+    );
   }
   return content.replace(pattern, replacement);
 }
@@ -91,7 +95,9 @@ function main() {
   console.log(`Downloads Windows/macOS atualizados para a release ${result.version}.`);
   console.log(`Windows: ${result.windowsUrl}`);
   console.log(`macOS: ${result.macosUrl}`);
-  console.log(`Arquivos atualizados: ${result.changed.map((key) => `docs/${key === 'script' ? 'app.js' : key === 'html' ? 'index.html' : 'README.md'}`).join(', ')}`);
+  console.log(
+    `Arquivos atualizados: ${result.changed.map((key) => `docs/${key === 'script' ? 'app.js' : key === 'html' ? 'index.html' : 'README.md'}`).join(', ')}`,
+  );
 }
 
 if (require.main === module) {

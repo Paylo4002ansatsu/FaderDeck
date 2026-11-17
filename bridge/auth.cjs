@@ -11,7 +11,12 @@ function safeEqual(candidate, expected) {
 
 function isLoopbackHost(hostname) {
   const normalized = hostname.replace(/^::ffff:/, '');
-  return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1' || normalized === '[::1]';
+  return (
+    normalized === 'localhost' ||
+    normalized === '127.0.0.1' ||
+    normalized === '::1' ||
+    normalized === '[::1]'
+  );
 }
 
 function isLoopbackRequest(request) {
@@ -28,10 +33,12 @@ function isSameOriginLocalAdminRequest(request, port) {
     const hostUrl = new URL(`${protocol}//${hostHeader}`);
     const originUrl = new URL(originHeader);
     const effectivePort = Number(hostUrl.port || (protocol === 'https:' ? 443 : 80));
-    return hostUrl.origin === originUrl.origin
-      && isLoopbackHost(hostUrl.hostname)
-      && isLoopbackHost(originUrl.hostname)
-      && effectivePort === port;
+    return (
+      hostUrl.origin === originUrl.origin &&
+      isLoopbackHost(hostUrl.hostname) &&
+      isLoopbackHost(originUrl.hostname) &&
+      effectivePort === port
+    );
   } catch {
     return false;
   }
@@ -41,7 +48,15 @@ function hasLocalHostHeader(request, port) {
   try {
     const hostUrl = new URL(`http://${request.headers.host || ''}`);
     return isLoopbackHost(hostUrl.hostname) && Number(hostUrl.port || 80) === port;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
-module.exports = { safeEqual, isLoopbackHost, isLoopbackRequest, isSameOriginLocalAdminRequest, hasLocalHostHeader };
+module.exports = {
+  safeEqual,
+  isLoopbackHost,
+  isLoopbackRequest,
+  isSameOriginLocalAdminRequest,
+  hasLocalHostHeader,
+};

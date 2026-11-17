@@ -11,12 +11,16 @@ const { createTokenStore } = require('./bridge/token-store.cjs');
 const { networkAddresses, networkAddress } = require('./bridge/network-addresses.cjs');
 
 const configuredPort = Number(process.env.FADER_BRIDGE_PORT);
-const BASE_PORT = Number.isInteger(configuredPort) && configuredPort >= 1 && configuredPort <= 65535 ? configuredPort : 8787;
+const BASE_PORT =
+  Number.isInteger(configuredPort) && configuredPort >= 1 && configuredPort <= 65535
+    ? configuredPort
+    : 8787;
 let PORT = BASE_PORT;
 const HOST = '0.0.0.0';
 const DATA_DIR = process.env.FADERDECK_DATA_DIR || __dirname;
 const CLIENT_DIR = path.join(__dirname, 'client');
-if (!fs.existsSync(path.join(CLIENT_DIR, 'index.html'))) console.warn('Painel não encontrado: use o fader-bridge.zip gerado pelo build');
+if (!fs.existsSync(path.join(CLIENT_DIR, 'index.html')))
+  console.warn('Painel não encontrado: use o fader-bridge.zip gerado pelo build');
 let TOKEN_FILE = '';
 let TOKEN = '';
 let tokenStore = null;
@@ -35,7 +39,11 @@ function initialize() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   TOKEN_FILE = path.join(DATA_DIR, '.faderdeck-token');
   tokenStore = createTokenStore(TOKEN_FILE, {
-    onSaveError: (error) => console.warn('Não foi possível salvar .faderdeck-token; o código mudará no próximo reinício:', error.message),
+    onSaveError: (error) =>
+      console.warn(
+        'Não foi possível salvar .faderdeck-token; o código mudará no próximo reinício:',
+        error.message,
+      ),
   });
   TOKEN = tokenStore.loadOrCreate();
   layoutPersistence = createLayoutPersistence({
@@ -51,13 +59,17 @@ function initialize() {
     midiManager = createMidiManager({ midi, platform: process.platform, broadcast });
     if (process.platform === 'darwin') {
       try {
-        if (midiManager.initializeVirtualOutput()) console.log('Porta MIDI virtual FaderDeck criada automaticamente.');
+        if (midiManager.initializeVirtualOutput())
+          console.log('Porta MIDI virtual FaderDeck criada automaticamente.');
       } catch (error) {
         console.warn('Não foi possível criar a porta virtual FaderDeck:', error.message);
       }
     }
   } catch (error) {
-    console.error('\nNão foi possível carregar @julusian/midi. Rode npm install e confira os pré-requisitos nativos do seu sistema.\n', error.message);
+    console.error(
+      '\nNão foi possível carregar @julusian/midi. Rode npm install e confira os pré-requisitos nativos do seu sistema.\n',
+      error.message,
+    );
     throw error;
   }
   initialized = true;
@@ -67,10 +79,13 @@ function broadcast(payload) {
   connectionManager?.broadcast(payload);
 }
 
-function layoutPayload() { return { type: 'layout', layout }; }
+function layoutPayload() {
+  return { type: 'layout', layout };
+}
 
 function persistLayout() {
-  if (!layoutPersistence) return Promise.reject(new Error('O armazenamento do layout ainda não foi inicializado.'));
+  if (!layoutPersistence)
+    return Promise.reject(new Error('O armazenamento do layout ainda não foi inicializado.'));
   return layoutPersistence.persist(layout);
 }
 
@@ -85,35 +100,54 @@ function rotateToken() {
   return nextToken;
 }
 
-const server = http.createServer(createHttpHandler({
-  clientDir: CLIENT_DIR,
-  getPort: () => PORT,
-  getToken: () => TOKEN,
-  getLayout: () => layout,
-  setLayout: (nextLayout) => { layout = nextLayout; },
-  setLayoutInitialized: (value) => { layoutInitialized = value; },
-  getMidiManager: () => midiManager,
-  getConnectionStatus: () => connectionManager.getStatus(),
-  networkAddress,
-  networkAddresses,
-  rotateToken,
-  persistLayout,
-  broadcast,
-}));
+function mobileUrl() {
+  return `http://${networkAddress()}:${PORT}/?bridgeToken=${encodeURIComponent(TOKEN)}`;
+}
+
+const server = http.createServer(
+  createHttpHandler({
+    clientDir: CLIENT_DIR,
+    getPort: () => PORT,
+    getToken: () => TOKEN,
+    getLayout: () => layout,
+    setLayout: (nextLayout) => {
+      layout = nextLayout;
+    },
+    setLayoutInitialized: (value) => {
+      layoutInitialized = value;
+    },
+    getMidiManager: () => midiManager,
+    getConnectionStatus: () => connectionManager.getStatus(),
+    networkAddress,
+    networkAddresses,
+    rotateToken,
+    persistLayout,
+    broadcast,
+  }),
+);
 connectionManager = createWebSocketGateway({
   server,
   getToken: () => TOKEN,
   layout: {
     get: () => layout,
-    set: (nextLayout) => { layout = nextLayout; },
+    set: (nextLayout) => {
+      layout = nextLayout;
+    },
     isInitialized: () => layoutInitialized,
-    setInitialized: (value) => { layoutInitialized = value; },
+    setInitialized: (value) => {
+      layoutInitialized = value;
+    },
     getSeedOwner: () => layoutSeedOwner,
-    setSeedOwner: (socket) => { layoutSeedOwner = socket; },
+    setSeedOwner: (socket) => {
+      layoutSeedOwner = socket;
+    },
     payload: layoutPayload,
   },
   scheduleLayoutSave,
-  midiManager: { send: (bytes) => midiManager.send(bytes), hasOutput: () => midiManager.hasOutput() },
+  midiManager: {
+    send: (bytes) => midiManager.send(bytes),
+    hasOutput: () => midiManager.hasOutput(),
+  },
 });
 
 server.on('error', (error) => {
@@ -123,7 +157,8 @@ server.on('error', (error) => {
 async function start(startPort = BASE_PORT) {
   if (server.listening) return PORT;
   initialize();
-  const firstPort = Number.isInteger(startPort) && startPort >= 0 && startPort <= 65535 ? startPort : BASE_PORT;
+  const firstPort =
+    Number.isInteger(startPort) && startPort >= 0 && startPort <= 65535 ? startPort : BASE_PORT;
   const lastPort = firstPort === 0 ? 0 : Math.min(firstPort + 20, 65535);
   let lastError;
 
@@ -167,7 +202,11 @@ async function shutdown() {
   if (shutdownPromise) return shutdownPromise;
   shutdownPromise = (async () => {
     if (initialized && layoutPersistence) {
-      try { await layoutPersistence.flush(() => layout); } catch (error) { console.error('Falha ao salvar layout ao encerrar:', error.message); }
+      try {
+        await layoutPersistence.flush(() => layout);
+      } catch (error) {
+        console.error('Falha ao salvar layout ao encerrar:', error.message);
+      }
     }
     midiManager?.shutdown();
     connectionManager.terminateAll();
@@ -179,14 +218,21 @@ async function shutdown() {
       }, 1500);
       timer.unref?.();
       try {
-        server.close(() => { clearTimeout(timer); resolve(); });
+        server.close(() => {
+          clearTimeout(timer);
+          resolve();
+        });
       } catch {
         clearTimeout(timer);
         resolve();
       }
     });
   })();
-  try { await shutdownPromise; } finally { shutdownPromise = null; }
+  try {
+    await shutdownPromise;
+  } finally {
+    shutdownPromise = null;
+  }
 }
 
 if (require.main === module) {
@@ -194,10 +240,14 @@ if (require.main === module) {
   const stop = () => {
     if (stopping) return;
     stopping = true;
-    shutdown().then(() => { process.exitCode = 0; }).catch((error) => {
-      console.error(`Falha ao encerrar a ponte: ${error.message}`);
-      process.exitCode = 1;
-    });
+    shutdown()
+      .then(() => {
+        process.exitCode = 0;
+      })
+      .catch((error) => {
+        console.error(`Falha ao encerrar a ponte: ${error.message}`);
+        process.exitCode = 1;
+      });
   };
   process.once('SIGINT', stop);
   process.once('SIGTERM', stop);
@@ -218,6 +268,6 @@ module.exports = {
   dataDir: DATA_DIR,
   networkAddress,
   networkAddresses,
-  mobileUrl: () => `http://${networkAddress()}:${PORT}/?bridgeToken=${encodeURIComponent(TOKEN)}`,
+  mobileUrl,
   hasMidi: () => Boolean(midiManager?.hasOutput()),
 };

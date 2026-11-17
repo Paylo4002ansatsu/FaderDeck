@@ -7,21 +7,42 @@ const path = require('node:path');
 const test = require('node:test');
 const { updateSiteDownloadVersion } = require('../scripts/update-site-download-version.cjs');
 
-const WINDOWS_100 = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.0/FaderDeck-Windows-Setup.exe';
-const MACOS_101 = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.1/FaderDeck-Mac.dmg';
-const WINDOWS_120 = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.2.0/FaderDeck-Windows-Setup.exe';
-const MACOS_120 = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.2.0/FaderDeck-Mac.dmg';
+const WINDOWS_100 =
+  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.0/FaderDeck-Windows-Setup.exe';
+const MACOS_101 =
+  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.1/FaderDeck-Mac.dmg';
+const WINDOWS_120 =
+  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.2.0/FaderDeck-Windows-Setup.exe';
+const MACOS_120 =
+  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.2.0/FaderDeck-Mac.dmg';
 
 function createDocsFixture() {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'faderdeck-site-version-'));
-  fs.writeFileSync(path.join(directory, 'index.html'), `<a href="${MACOS_101}">Mac hero</a> <a href="${WINDOWS_100}">Windows Setup · 1.0.0</a> <a href="${MACOS_101}">Mac download</a>`, 'utf8');
-  fs.writeFileSync(path.join(directory, 'app.js'), `const MACOS_URL = '${MACOS_101}'; button.href = '${WINDOWS_100}';`, 'utf8');
-  fs.writeFileSync(path.join(directory, 'README.md'), `Windows: ${WINDOWS_100}\nmacOS: ${MACOS_101}\n`, 'utf8');
+  fs.writeFileSync(
+    path.join(directory, 'index.html'),
+    `<a href="${MACOS_101}">Mac hero</a> <a href="${WINDOWS_100}">Windows Setup · 1.0.0</a> <a href="${MACOS_101}">Mac download</a>`,
+    'utf8',
+  );
+  fs.writeFileSync(
+    path.join(directory, 'app.js'),
+    `const MACOS_URL = '${MACOS_101}'; button.href = '${WINDOWS_100}';`,
+    'utf8',
+  );
+  fs.writeFileSync(
+    path.join(directory, 'README.md'),
+    `Windows: ${WINDOWS_100}\nmacOS: ${MACOS_101}\n`,
+    'utf8',
+  );
   return directory;
 }
 
 function readFixture(directory) {
-  return Object.fromEntries(['index.html', 'app.js', 'README.md'].map((name) => [name, fs.readFileSync(path.join(directory, name), 'utf8')]));
+  return Object.fromEntries(
+    ['index.html', 'app.js', 'README.md'].map((name) => [
+      name,
+      fs.readFileSync(path.join(directory, name), 'utf8'),
+    ]),
+  );
 }
 
 test('updates both platform links and the Windows label to one numeric tag', (t) => {
@@ -61,7 +82,10 @@ test('validates all platform links before writing any files', (t) => {
   fs.writeFileSync(path.join(docsDirectory, 'app.js'), 'const MACOS_URL = "missing";', 'utf8');
   const invalidBefore = readFixture(docsDirectory);
 
-  assert.throws(() => updateSiteDownloadVersion(docsDirectory, '1.2.0'), /docs\/app\.js: esperados 1 link Windows, encontrados 0/);
+  assert.throws(
+    () => updateSiteDownloadVersion(docsDirectory, '1.2.0'),
+    /docs\/app\.js: esperados 1 link Windows, encontrados 0/,
+  );
   assert.deepEqual(readFixture(docsDirectory), invalidBefore);
   assert.notDeepEqual(invalidBefore, before);
 });

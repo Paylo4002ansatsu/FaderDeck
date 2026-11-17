@@ -1,17 +1,20 @@
 'use strict';
 
-function attachWebSocketHandlers(wss, {
-  getLayout,
-  setLayout,
-  isLayoutInitialized,
-  setLayoutInitialized,
-  getLayoutSeedOwner,
-  setLayoutSeedOwner,
-  layoutPayload,
-  scheduleLayoutSave,
-  broadcast,
-  midiManager,
-}) {
+function attachWebSocketHandlers(
+  wss,
+  {
+    getLayout,
+    setLayout,
+    isLayoutInitialized,
+    setLayoutInitialized,
+    getLayoutSeedOwner,
+    setLayoutSeedOwner,
+    layoutPayload,
+    scheduleLayoutSave,
+    broadcast,
+    midiManager,
+  },
+) {
   wss.on('connection', (socket) => {
     if (!isLayoutInitialized() && !getLayoutSeedOwner()) setLayoutSeedOwner(socket);
     socket.send(JSON.stringify({ type: 'ready' }));
@@ -21,13 +24,26 @@ function attachWebSocketHandlers(wss, {
     });
     socket.on('message', (raw) => {
       let message;
-      try { message = JSON.parse(raw.toString()); } catch { return; }
+      try {
+        message = JSON.parse(raw.toString());
+      } catch {
+        return;
+      }
       if (message.type === 'ping') {
         socket.send(JSON.stringify({ type: 'pong', sentAt: Number(message.sentAt) || 0 }));
         return;
       }
-      if (message.type === 'layout' && message.layout && Array.isArray(message.layout.pages) && message.layout.pages.length > 0 && message.layout.pages.length <= 100) {
-        if (!isLayoutInitialized() && socket !== getLayoutSeedOwner()) { socket.send(JSON.stringify(layoutPayload())); return; }
+      if (
+        message.type === 'layout' &&
+        message.layout &&
+        Array.isArray(message.layout.pages) &&
+        message.layout.pages.length > 0 &&
+        message.layout.pages.length <= 100
+      ) {
+        if (!isLayoutInitialized() && socket !== getLayoutSeedOwner()) {
+          socket.send(JSON.stringify(layoutPayload()));
+          return;
+        }
         const current = getLayout();
         const next = message.layout;
         setLayout({
@@ -37,12 +53,18 @@ function attachWebSocketHandlers(wss, {
         });
         setLayoutInitialized(true);
         scheduleLayoutSave();
-        broadcast({ ...layoutPayload(), sourceId: typeof message.sourceId === 'string' ? message.sourceId.slice(0, 100) : '' });
+        broadcast({
+          ...layoutPayload(),
+          sourceId: typeof message.sourceId === 'string' ? message.sourceId.slice(0, 100) : '',
+        });
         return;
       }
-      if (message.type !== 'midi' || !Array.isArray(message.data) || message.data.length > 256) return;
+      if (message.type !== 'midi' || !Array.isArray(message.data) || message.data.length > 256)
+        return;
       if (!midiManager.hasOutput()) {
-        socket.send(JSON.stringify({ type: 'error', message: 'Selecione uma saída MIDI na tela da ponte.' }));
+        socket.send(
+          JSON.stringify({ type: 'error', message: 'Selecione uma saída MIDI na tela da ponte.' }),
+        );
         return;
       }
       const bytes = message.data.map((value) => Number(value));
@@ -50,7 +72,9 @@ function attachWebSocketHandlers(wss, {
       try {
         midiManager.send(bytes);
       } catch (error) {
-        socket.send(JSON.stringify({ type: 'error', message: `Falha ao enviar MIDI: ${error.message}` }));
+        socket.send(
+          JSON.stringify({ type: 'error', message: `Falha ao enviar MIDI: ${error.message}` }),
+        );
       }
     });
   });

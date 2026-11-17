@@ -13,6 +13,10 @@
     "start": "electron .",
     "bridge": "node server.cjs",
     "test": "node --test",
+    "lint": "eslint .",
+    "format": "prettier --write \"*.{js,cjs,mjs,json}\" \"bridge/**/*.{js,cjs,mjs}\" \"client/**/*.{js,cjs,mjs,html,css}\" \"assets/**/*.js\" \"docs/**/*.{js,cjs,mjs}\" \"scripts/**/*.{js,cjs,mjs}\" \"tests/**/*.{js,cjs,mjs}\" \".github/workflows/*.{yml,yaml}\" eslint.config.mjs .prettierrc.json",
+    "format:check": "prettier --check \"*.{js,cjs,mjs,json}\" \"bridge/**/*.{js,cjs,mjs}\" \"client/**/*.{js,cjs,mjs,html,css}\" \"assets/**/*.js\" \"docs/**/*.{js,cjs,mjs}\" \"scripts/**/*.{js,cjs,mjs}\" \"tests/**/*.{js,cjs,mjs}\" \".github/workflows/*.{yml,yaml}\" eslint.config.mjs .prettierrc.json",
+    "check": "npm run lint && npm run format:check && npm test",
     "package:bridge": "node scripts/package-bridge.cjs",
     "update:site-download-version": "node scripts/update-site-download-version.cjs",
     "dist": "electron-builder --mac dmg zip",
@@ -25,8 +29,12 @@
     "ws": "^8.18.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "electron": "^45.3.2",
-    "electron-builder": "^26.18.0"
+    "electron-builder": "^26.18.0",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1"
   },
   "build": {
     "appId": "app.faderdeck",
@@ -35,7 +43,10 @@
     "asarUnpack": [
       "node_modules/@julusian/midi/**/*"
     ],
-    "directories": { "output": "release", "buildResources": "build" },
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
     "files": [
       "main.js",
       "electron-utils.cjs",
@@ -52,7 +63,10 @@
       "identity": null,
       "hardenedRuntime": false,
       "artifactName": "FaderDeck-Mac.${ext}",
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "x64ArchFiles": "Contents/Resources/app.asar.unpacked/node_modules/@julusian/midi/prebuilds/midi-darwin-*/**",
       "extendInfo": {
         "NSLocalNetworkUsageDescription": "O FaderDeck usa a rede local para receber os controles do seu celular.",
@@ -65,7 +79,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -76,8 +92,16 @@
     "dmg": {
       "title": "FaderDeck",
       "contents": [
-        { "x": 140, "y": 180 },
-        { "x": 400, "y": 180, "type": "link", "path": "/Applications" }
+        {
+          "x": 140,
+          "y": 180
+        },
+        {
+          "x": 400,
+          "y": 180,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     }
   }
