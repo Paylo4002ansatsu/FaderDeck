@@ -8,6 +8,14 @@ const test = require('node:test');
 const root = path.join(__dirname, '..');
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/build-windows.yml'), 'utf8');
+const bridgePackager = fs.readFileSync(path.join(root, 'scripts/package-bridge.py'), 'utf8');
+
+test('Electron and standalone bridge packages include extracted server modules', () => {
+  assert.ok(packageJson.build.files.includes('bridge/**/*'));
+  for (const moduleName of ['midi-manager.cjs', 'auth.cjs', 'websocket-handler.cjs', 'layout-persistence.cjs', 'websocket-gateway.cjs', 'http-router.cjs', 'token-store.cjs', 'network-addresses.cjs']) {
+    assert.ok(bridgePackager.includes(`"${moduleName}"`), `${moduleName} is packaged for standalone bridge`);
+  }
+});
 
 test('universal macOS merge recognizes shared x64 and ARM64 MIDI prebuilds', () => {
   assert.equal(
