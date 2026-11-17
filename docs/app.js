@@ -76,6 +76,44 @@ function setupMobileMenu() {
   });
 }
 
+function setupStagePreview() {
+  const preview = document.getElementById('stage-demo');
+  const button = document.getElementById('stage-demo-names-toggle');
+  if (!preview || !button) return;
+
+  const storageKey = 'faderdeck.landing.stagePreview.showNames';
+  let showNames = true;
+  try {
+    const saved = window.localStorage.getItem(storageKey);
+    showNames = saved === null || saved === 'true';
+  } catch {
+    // A demonstração continua utilizável mesmo se o navegador bloquear armazenamento local.
+  }
+
+  const applyPreference = () => {
+    preview.classList.toggle('names-hidden', !showNames);
+    button.textContent = `Nomes: ${showNames ? 'ligado' : 'desligado'}`;
+    button.setAttribute('aria-pressed', String(showNames));
+    button.setAttribute(
+      'aria-label',
+      showNames ? 'Esconder nomes dos canais' : 'Mostrar nomes dos canais',
+    );
+  };
+
+  button.addEventListener('click', () => {
+    showNames = !showNames;
+    try {
+      window.localStorage.setItem(storageKey, String(showNames));
+    } catch {
+      // A opção permanece ativa até o visitante fechar a página.
+    }
+    applyPreference();
+  });
+
+  applyPreference();
+}
+
 document.getElementById('year').textContent = new Date().getFullYear();
 setupSmartDownload();
 setupMobileMenu();
+setupStagePreview();

@@ -14,6 +14,7 @@ const nodeFiles = [
 const browserFiles = [
   'assets/**/*.js',
   'client/admin/**/*.js',
+  'client/stage-mode-enhancements.js',
   'client/sw.js',
   'docs/**/*.js',
   'qr-overlay.js',
