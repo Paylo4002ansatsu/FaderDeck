@@ -41,6 +41,7 @@
       "electron-utils.cjs",
       "server.cjs",
       "server-utils.cjs",
+      "bridge/**/*",
       "client/**/*",
       "assets/**/*",
       "package.json"

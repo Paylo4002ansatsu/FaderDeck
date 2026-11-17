@@ -8,10 +8,18 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 CLIENT_DIR = ROOT / "client"
-OUTPUT = CLIENT_DIR / "downloads" / "fader-bridge.zip"
+OUTPUT = Path(os.environ.get("FADER_BRIDGE_OUTPUT", CLIENT_DIR / "downloads" / "fader-bridge.zip")).resolve()
 REQUIRED_FILES = (
     ROOT / "server.cjs",
     ROOT / "server-utils.cjs",
+    ROOT / "bridge" / "midi-manager.cjs",
+    ROOT / "bridge" / "auth.cjs",
+    ROOT / "bridge" / "websocket-handler.cjs",
+    ROOT / "bridge" / "layout-persistence.cjs",
+    ROOT / "bridge" / "websocket-gateway.cjs",
+    ROOT / "bridge" / "http-router.cjs",
+    ROOT / "bridge" / "token-store.cjs",
+    ROOT / "bridge" / "network-addresses.cjs",
     ROOT / "fader-bridge" / "package.json",
     ROOT / "fader-bridge" / "package-lock.json",
     ROOT / "README-ponte.md",
@@ -39,6 +47,11 @@ def build_archive() -> None:
         with zipfile.ZipFile(temporary_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
             add_file(archive, ROOT / "server.cjs", "server.cjs")
             add_file(archive, ROOT / "server-utils.cjs", "server-utils.cjs")
+            for module_name in (
+                "midi-manager.cjs", "auth.cjs", "websocket-handler.cjs", "layout-persistence.cjs",
+                "websocket-gateway.cjs", "http-router.cjs", "token-store.cjs", "network-addresses.cjs",
+            ):
+                add_file(archive, ROOT / "bridge" / module_name, Path("bridge") / module_name)
             add_file(archive, ROOT / "fader-bridge" / "package.json", "package.json")
             add_file(archive, ROOT / "fader-bridge" / "package-lock.json", "package-lock.json")
             add_file(archive, ROOT / "README-ponte.md", "README.md")
@@ -58,7 +71,13 @@ def build_archive() -> None:
             if corrupt_entry:
                 raise zipfile.BadZipFile(f"Entrada corrompida no pacote: {corrupt_entry}")
             names = set(archive.namelist())
-            required_entries = {"client/index.html", "server.cjs", "server-utils.cjs", "package.json", "package-lock.json", "README.md"}
+            required_entries = {
+                "client/index.html", "client/admin/index.html", "client/admin/bridge.css", "client/admin/bridge.js",
+                "server.cjs", "server-utils.cjs", "bridge/midi-manager.cjs", "bridge/auth.cjs",
+                "bridge/websocket-handler.cjs", "bridge/layout-persistence.cjs", "bridge/websocket-gateway.cjs",
+                "bridge/http-router.cjs", "bridge/token-store.cjs", "bridge/network-addresses.cjs",
+                "package.json", "package-lock.json", "README.md",
+            }
             missing_entries = sorted(required_entries - names)
             if missing_entries:
                 raise zipfile.BadZipFile("Entradas ausentes no pacote: " + ", ".join(missing_entries))

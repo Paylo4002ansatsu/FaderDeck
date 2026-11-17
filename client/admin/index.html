@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111416">
+  <title>FaderDeck · Ponte local</title>
+  <link rel="stylesheet" href="/admin/bridge.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div class="mark" aria-hidden="true">≋</div>
+      <div><strong>FADER<span>DECK</span></strong><small>PONTE MIDI LOCAL</small></div>
+    </header>
+    <div class="layout">
+      <section class="card">
+        <div class="pill"><i class="dot"></i> PONTE ATIVA</div>
+        <h1>Conecte a DAW</h1>
+        <p>Escolha a porta MIDI virtual que a DAW recebe. No Windows, use loopMIDI; no macOS, a ponte cria a porta virtual FaderDeck automaticamente.</p>
+        <label class="label" for="output">Saída MIDI para a DAW</label>
+        <select id="output"></select>
+        <label class="label" for="input">Entrada MIDI para MIDI Learn (opcional)</label>
+        <select id="input"></select>
+        <button id="save" class="full" type="button">Aplicar portas MIDI</button>
+        <div id="midi-warning" class="note warn" hidden></div>
+        <div class="note"><strong>Firewall do Mac:</strong> se o iPhone não abrir o QR, permita conexões de entrada para Node.js em <em>Ajustes do Sistema → Rede → Firewall → Opções</em>. Ambos precisam estar no mesmo Wi-Fi; redes de convidados podem bloquear comunicação entre aparelhos.</div>
+        <div class="note">Endereço escolhido: <span id="chosen-address" class="ip">Carregando…</span><br><span class="label">Outros IPs disponíveis nesta máquina</span><div id="other-ips" class="other-ips">Carregando…</div></div>
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+        <div class="footer">O código fica salvo em <code>.faderdeck-token</code> e permanece igual após reiniciar. Gerar outro código invalida o anterior e exige novo pareamento nos celulares.</div>
+      </section>
+      <section class="card side">
+        <h2>Conectar celular</h2>
+        <p>Escaneie este QR com a câmera do iPhone conectado à mesma rede Wi-Fi.</p>
+        <div class="qr"><img id="pairing-qr" alt="QR para abrir FaderDeck nesta rede"></div>
+        <div id="pairing-code" class="code">Carregando…</div>
+        <div id="mobile-url" class="url"></div>
+        <div class="row">
+          <button id="test-phone" type="button">Testar celular</button>
+          <button id="renew-token" class="secondary" type="button">Gerar novo código</button>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script src="/admin/bridge.js" defer></script>
+</body>
+</html>
