@@ -14,6 +14,7 @@
     "bridge": "node server.cjs",
     "test": "node --test",
     "package:bridge": "node scripts/package-bridge.cjs",
+    "update:site-download-version": "node scripts/update-site-download-version.cjs",
     "dist": "electron-builder --mac dmg zip",
     "dist:universal": "electron-builder --mac dmg zip --universal",
     "dist:win": "electron-builder --win nsis"

@@ -1,7 +1,8 @@
 /*
  * FADERDECK — LINKS DOS INSTALADORES
  * Os instaladores de macOS e Windows estão publicados no GitHub Releases.
- * A URL Windows permanece literal no href do HTML e no CTA principal; não gere a tag da versão.
+ * O endereço Windows é literal; scripts/update-site-download-version.cjs mantém a tag alinhada
+ * no CTA, no link HTML e no README depois que uma GitHub Release passa no workflow.
  */
 const MACOS_URL = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/latest/download/FaderDeck-Mac.dmg';
 

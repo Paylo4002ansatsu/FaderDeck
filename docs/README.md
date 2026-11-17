@@ -23,9 +23,11 @@ Os caminhos dos recursos são relativos (`styles.css`, `app.js` e `logo.svg`) pa
 ## Atualizar e publicar
 
 1. Edite os arquivos necessários dentro de `docs/`.
-2. Mantenha o endereço Windows idêntico nos dois locais: `index.html` (botão `download-windows`) e `app.js` (CTA inteligente para Windows). O endereço atual é `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.0/FaderDeck-Windows-Setup.exe`.
+2. A release Windows mais recente disponível é `1.0.0`; os dois botões e este README já apontam para `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.0/FaderDeck-Windows-Setup.exe`. Não acrescente `v` à tag.
 3. O botão macOS aponta para `https://github.com/Paylo4002ansatsu/FaderDeck/releases/latest/download/FaderDeck-Mac.dmg`.
-4. Faça commit e envie as alterações para `main`. O GitHub Pages publica automaticamente a pasta `/docs` da branch `main`; não é necessário copiar a página para a raiz do aplicativo.
+4. Para atualizar a versão Windows manualmente, execute `npm run update:site-download-version -- 1.2.0`, substituindo `1.2.0` pela tag numérica da release já publicada. O script atualiza `index.html`, `app.js` e este README; depois faça commit e envie para `main`.
+5. Para releases futuras, o workflow de build executa o mesmo script depois que o build de Windows e macOS conclui e a GitHub Release foi criada. O job envia os arquivos atualizados para `main`; não crie tag com prefixo `v`.
+6. O GitHub Pages publica automaticamente a pasta `/docs` da branch `main`; não é necessário copiar a página para a raiz do aplicativo.
 
 Para uma prévia local, inicie um servidor estático na raiz do repositório, por exemplo:
 
