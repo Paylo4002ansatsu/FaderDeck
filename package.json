@@ -6,9 +6,14 @@
   "author": "FaderDeck",
   "main": "main.js",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "electron .",
     "bridge": "node server.cjs",
+    "test": "node --test",
+    "package:bridge": "node scripts/package-bridge.cjs",
     "dist": "electron-builder --mac dmg zip",
     "dist:universal": "electron-builder --mac dmg zip --universal",
     "dist:win": "electron-builder --win nsis"
@@ -25,12 +30,16 @@
   "build": {
     "appId": "app.faderdeck",
     "productName": "FaderDeck",
-    "asar": false,
-    "npmRebuild": false,
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/@julusian/midi/**/*"
+    ],
     "directories": { "output": "release", "buildResources": "build" },
     "files": [
       "main.js",
+      "electron-utils.cjs",
       "server.cjs",
+      "server-utils.cjs",
       "client/**/*",
       "assets/**/*",
       "package.json"
@@ -41,7 +50,7 @@
       "identity": null,
       "hardenedRuntime": false,
       "artifactName": "FaderDeck-Mac.${ext}",
-          "target": ["dmg", "zip"],
+      "target": ["dmg", "zip"],
       "extendInfo": {
         "NSLocalNetworkUsageDescription": "O FaderDeck usa a rede local para receber os controles do seu celular.",
         "LSUIElement": false

@@ -60,14 +60,16 @@ Esses dados ficam fora do pacote do aplicativo e são preservados ao atualizar o
 
 Esta seção é apenas para quem vai executar ou empacotar o código-fonte. Os usuários que baixaram os instaladores não precisam seguir estes passos.
 
-Requisitos para desenvolvimento: **Node.js 22 ou mais novo**. Para compilar a versão macOS, use um Mac; o módulo MIDI nativo depende da plataforma. As Ferramentas de Linha de Comando do Xcode podem ser necessárias se o `npm install` solicitar.
+Requisitos para desenvolvimento: **Node.js 22 ou mais novo**. Para compilar a versão macOS, use um Mac; o módulo MIDI nativo depende da plataforma. As Ferramentas de Linha de Comando do Xcode podem ser necessárias se a instalação solicitar. Para regenerar o ZIP da ponte, também é necessário Python 3.
 
 ```bash
 npm install
+npm test              # executar testes automatizados
 npm start              # abrir o app para teste
 npm run dist           # gerar instaladores macOS (DMG e ZIP)
 npm run dist:universal # gerar app macOS universal (Intel + Apple Silicon)
 npm run dist:win       # gerar instalador Windows NSIS
+npm run package:bridge # regerar client/downloads/fader-bridge.zip
 ```
 
-Os artefatos são salvos em `release/`. A ponte também pode ser iniciada separadamente com `npm run bridge`.
+Os artefatos Electron são salvos em `release/`. A ponte também pode ser iniciada separadamente com `npm run bridge`; o ZIP standalone fica em `client/downloads/fader-bridge.zip` e inclui a pasta `client/`.

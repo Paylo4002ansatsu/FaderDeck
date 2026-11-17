@@ -4,8 +4,8 @@
 // dentro do próprio painel (botão "Conectar celular", atalho ⌘K, menu da barra e menu do app).
 const { app, BrowserWindow, Tray, Menu, nativeImage, dialog, shell, clipboard } = require('electron');
 const fs = require('node:fs');
-const net = require('node:net');
 const path = require('node:path');
+const { isTrustedPanelUrl, safeExternalUrl } = require('./electron-utils.cjs');
 
 const BASE_PORT = 8787;
 const AUTO_QR_DELAY_MS = 5000; // se nenhum celular conectar nesse tempo, mostra o QR sozinho
@@ -18,12 +18,14 @@ let remoteClients = 0;
 let quitting = false;
 let lastMenuKey = '';
 let autoQrDone = false;
+let statusTimer = null;
+let autoQrTimer = null;
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
 } else {
-  app.on('second-instance', () => { if (bridge) openPanel(); });
+  app.on('second-instance', () => { if (bridge) openPanel().catch(reportPanelError); });
   app.whenReady().then(boot).catch((error) => {
     dialog.showErrorBox('FaderDeck', `Não foi possível iniciar: ${error.message}`);
     app.exit(1);
@@ -32,26 +34,15 @@ if (!gotLock) {
 
 // Mantém o app vivo na barra de menus quando as janelas fecham.
 app.on('window-all-closed', () => {});
-app.on('activate', () => { if (bridge) openPanel(); });
+app.on('activate', () => { if (bridge) openPanel().catch(reportPanelError); });
 app.on('before-quit', (event) => {
   if (quitting || !bridge) return;
   event.preventDefault();
   quitting = true;
+  if (statusTimer) clearInterval(statusTimer);
+  if (autoQrTimer) clearTimeout(autoQrTimer);
   Promise.resolve(bridge.shutdown()).catch(() => {}).finally(() => app.exit(0));
 });
-
-function findFreePort(start) {
-  return new Promise((resolve, reject) => {
-    const attempt = (candidate, tries) => {
-      if (tries > 20) return reject(new Error('Nenhuma porta livre encontrada a partir de 8787.'));
-      const probe = net.createServer();
-      probe.once('error', () => attempt(candidate + 1, tries + 1));
-      probe.once('listening', () => probe.close(() => resolve(candidate)));
-      probe.listen(candidate, '0.0.0.0');
-    };
-    attempt(start, 0);
-  });
-}
 
 async function boot() {
   const dataDir = app.getPath('userData'); // ~/Library/Application Support/FaderDeck
@@ -59,27 +50,27 @@ async function boot() {
   const firstRun = !fs.existsSync(path.join(dataDir, '.faderdeck-token'));
   if (firstRun) await offerImport(dataDir, true);
 
-  port = await findFreePort(BASE_PORT);
   process.env.FADERDECK_DATA_DIR = dataDir;
-  process.env.FADER_BRIDGE_PORT = String(port);
   try {
     bridge = require('./server.cjs');
+    port = await bridge.start(BASE_PORT);
   } catch (error) {
     dialog.showErrorBox('FaderDeck', `Não foi possível iniciar a ponte MIDI.\n\n${error.message}`);
+    if (bridge) await bridge.shutdown().catch(() => {});
     app.exit(1);
     return;
   }
 
   buildAppMenu();
   createTray();
-  setInterval(refreshStatus, 3000);
+  statusTimer = setInterval(refreshStatus, 3000);
   await refreshStatus();
 
   const openedAtLogin = app.getLoginItemSettings().wasOpenedAtLogin;
   if (openedAtLogin) return; // iniciou com o Mac: fica só na barra de menus
   await openPanel();
   if (firstRun) { autoQrDone = true; await showQr(); }
-  else setTimeout(autoShowQrIfNeeded, AUTO_QR_DELAY_MS);
+  else autoQrTimer = setTimeout(() => { autoShowQrIfNeeded().catch(reportPanelError); }, AUTO_QR_DELAY_MS);
 }
 
 // Mostra o QR sozinho, uma vez por abertura, se nenhum celular reconectou.
@@ -87,7 +78,7 @@ async function autoShowQrIfNeeded() {
   if (autoQrDone) return;
   autoQrDone = true;
   await refreshStatus();
-  if (remoteClients === 0 && panelWindow && !panelWindow.isDestroyed() && panelWindow.isVisible()) showQr();
+  if (remoteClients === 0 && panelWindow && !panelWindow.isDestroyed() && panelWindow.isVisible()) await showQr();
 }
 
 // ---------- janela do painel ----------
@@ -95,22 +86,51 @@ function overlaySource() {
   try { return fs.readFileSync(path.join(__dirname, 'assets', 'qr-overlay.js'), 'utf8'); } catch { return ''; }
 }
 
+function openExternalUrl(value) {
+  const target = safeExternalUrl(value);
+  if (!target) return;
+  try { shell.openExternal(target).catch(() => {}); } catch {}
+}
+
+function reportPanelError(error) {
+  console.error('Não foi possível abrir o painel:', error);
+  if (!quitting) dialog.showErrorBox('FaderDeck', `Não foi possível abrir o painel.\n\n${error.message || error}`);
+}
+
 function openPanel() {
   if (panelWindow && !panelWindow.isDestroyed()) { panelWindow.show(); panelWindow.focus(); return panelLoaded; }
-  panelWindow = new BrowserWindow({
+  const window = new BrowserWindow({
     width: 1180, height: 780, minWidth: 720, minHeight: 480,
-    title: 'FaderDeck', backgroundColor: '#13201f',
+    title: 'FaderDeck', backgroundColor: '#13201f', show: false,
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
-  const contents = panelWindow.webContents;
-  panelLoaded = new Promise((resolve) => {
-    contents.on('did-finish-load', async () => {
-      try { await contents.executeJavaScript(overlaySource()); } catch {}
-      resolve();
-    });
+  panelWindow = window;
+  const contents = window.webContents;
+  contents.on('will-navigate', (event, destination) => {
+    if (!isTrustedPanelUrl(destination, port)) event.preventDefault();
   });
-  panelWindow.loadURL(`http://127.0.0.1:${port}/`);
-  panelWindow.on('closed', () => { panelWindow = null; });
+  contents.setWindowOpenHandler(({ url }) => {
+    openExternalUrl(url);
+    return { action: 'deny' };
+  });
+  window.on('closed', () => {
+    if (panelWindow === window) {
+      panelWindow = null;
+      panelLoaded = Promise.resolve();
+    }
+  });
+  panelLoaded = window.loadURL(`http://127.0.0.1:${port}/`).then(async () => {
+    if (window.isDestroyed() || !isTrustedPanelUrl(contents.getURL(), port)) throw new Error('A janela deixou a origem local esperada.');
+    const overlay = overlaySource();
+    if (overlay) {
+      try { await contents.executeJavaScript(overlay); } catch {}
+    }
+    if (!window.isDestroyed()) { window.show(); window.focus(); }
+  }).catch((error) => {
+    if (!window.isDestroyed()) window.destroy();
+    if (panelWindow === window) panelWindow = null;
+    throw error;
+  });
   return panelLoaded;
 }
 
@@ -130,8 +150,8 @@ function buildAppMenu() {
       submenu: [
         { role: 'about', label: 'Sobre o FaderDeck' },
         { type: 'separator' },
-        { label: 'Conectar celular (QR)…', accelerator: 'CmdOrCtrl+K', click: showQr },
-        { label: 'Portas MIDI e administração…', click: () => shell.openExternal(`http://127.0.0.1:${port}/bridge`) },
+        { label: 'Conectar celular (QR)…', accelerator: 'CmdOrCtrl+K', click: () => showQr().catch(reportPanelError) },
+        { label: 'Portas MIDI e administração…', click: () => openExternalUrl(`http://127.0.0.1:${port}/bridge`) },
         { type: 'separator' },
         { role: 'hide', label: 'Ocultar FaderDeck' },
         { role: 'hideOthers', label: 'Ocultar outros' },
@@ -172,10 +192,10 @@ function buildTrayMenu() {
     { label: statusLine, enabled: false },
     { label: midiLine, enabled: false },
     { type: 'separator' },
-    { label: 'Conectar celular (QR)…', click: showQr },
-    { label: 'Abrir painel', click: openPanel },
+    { label: 'Conectar celular (QR)…', click: () => showQr().catch(reportPanelError) },
+    { label: 'Abrir painel', click: () => openPanel().catch(reportPanelError) },
     { label: 'Copiar link do celular', click: () => clipboard.writeText(bridge.mobileUrl()) },
-    { label: 'Portas MIDI e administração…', click: () => shell.openExternal(`http://127.0.0.1:${port}/bridge`) },
+    { label: 'Portas MIDI e administração…', click: () => openExternalUrl(`http://127.0.0.1:${port}/bridge`) },
     { type: 'separator' },
     { label: 'Renovar código de pareamento…', click: renewToken },
     { label: 'Importar dados da ponte antiga…', click: () => offerImport(app.getPath('userData'), false) },
@@ -205,8 +225,12 @@ async function renewToken() {
     detail: 'Todos os celulares conectados precisarão escanear o QR novamente.',
   });
   if (answer.response !== 0) return;
-  bridge.rotateToken();
-  showQr();
+  try {
+    bridge.rotateToken();
+    await showQr();
+  } catch (error) {
+    reportPanelError(error);
+  }
 }
 
 // ---------- importar dados da ponte antiga ----------

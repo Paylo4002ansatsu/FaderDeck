@@ -6,32 +6,34 @@ const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
 const { URL } = require('node:url');
-const { promisify } = require('node:util');
 const WebSocket = require('ws');
 const QRCode = require('qrcode');
+const { parseRequestTarget, createAtomicFileWriter } = require('./server-utils.cjs');
 
-const PORT = Number(process.env.FADER_BRIDGE_PORT || 8787);
+const configuredPort = Number(process.env.FADER_BRIDGE_PORT);
+const BASE_PORT = Number.isInteger(configuredPort) && configuredPort >= 1 && configuredPort <= 65535 ? configuredPort : 8787;
+const MAX_REQUEST_BODY_BYTES = 16 * 1024;
+let PORT = BASE_PORT;
 const HOST = '0.0.0.0';
 const TOKEN_ROTATION_HEADER = 'x-faderdeck-admin';
 const TOKEN_ROTATION_HEADER_VALUE = 'rotate-token';
 const DATA_DIR = process.env.FADERDECK_DATA_DIR || __dirname;
-try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
 const CLIENT_DIR = path.join(__dirname, 'client');
 if (!fs.existsSync(path.join(CLIENT_DIR, 'index.html'))) console.warn('Painel não encontrado: use o fader-bridge.zip gerado pelo build');
-const TOKEN_FILE = path.join(DATA_DIR, '.faderdeck-token');
-function loadOrCreateToken() {
+let TOKEN_FILE = '';
+function loadOrCreateToken(tokenFile) {
   try {
-    const saved = fs.readFileSync(TOKEN_FILE, 'utf8').trim();
-    if (/^[a-f0-9]{32}$/i.test(saved)) { try { fs.chmodSync(TOKEN_FILE, 0o600); } catch {} return saved; }
+    const saved = fs.readFileSync(tokenFile, 'utf8').trim();
+    if (/^[a-f0-9]{32}$/i.test(saved)) { try { fs.chmodSync(tokenFile, 0o600); } catch {} return saved; }
   } catch {}
   const token = crypto.randomBytes(16).toString('hex');
-  try { fs.writeFileSync(TOKEN_FILE, `${token}\n`, { encoding: 'utf8', mode: 0o600 }); fs.chmodSync(TOKEN_FILE, 0o600); }
+  try { fs.writeFileSync(tokenFile, `${token}\n`, { encoding: 'utf8', mode: 0o600 }); fs.chmodSync(tokenFile, 0o600); }
   catch (error) { console.warn('Não foi possível salvar .faderdeck-token; o código mudará no próximo reinício:', error.message); }
   return token;
 }
-let TOKEN = loadOrCreateToken();
-const LAYOUT_FILE = path.join(DATA_DIR, 'faderdeck-layout.json');
-const writeLayoutFile = promisify(fs.writeFile);
+let TOKEN = '';
+let LAYOUT_FILE = '';
+let layoutWriter = null;
 const NO_MIDI_PORT = -1;
 let selectedOutputIndex = NO_MIDI_PORT;
 let selectedInputIndex = NO_MIDI_PORT;
@@ -42,31 +44,43 @@ const VIRTUAL_OUTPUT_INDEX = -2;
 let midi;
 let layout = { version: 0, pages: [], activePageId: '' };
 let layoutPersistTimer = null;
-try {
-  const saved = JSON.parse(fs.readFileSync(LAYOUT_FILE, 'utf8'));
-  if (saved && Number.isInteger(saved.version) && Array.isArray(saved.pages)) layout = saved;
-} catch {}
 let layoutInitialized = layout.pages.length > 0;
 let layoutSeedOwner = null;
+let initialized = false;
+let shutdownPromise = null;
 
-try {
-  midi = require('@julusian/midi');
-  if (process.platform === 'darwin') {
-    try {
-      virtualOutput = new midi.Output();
-      virtualOutput.openVirtualPort('FaderDeck');
-      midiOutput = virtualOutput;
-      selectedOutputIndex = VIRTUAL_OUTPUT_INDEX;
-      console.log('Porta MIDI virtual FaderDeck criada automaticamente.');
-    } catch (error) {
-      virtualOutput = null;
-      console.warn('Não foi possível criar a porta virtual FaderDeck:', error.message);
+function initialize() {
+  if (initialized) return;
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  TOKEN_FILE = path.join(DATA_DIR, '.faderdeck-token');
+  TOKEN = loadOrCreateToken(TOKEN_FILE);
+  LAYOUT_FILE = path.join(DATA_DIR, 'faderdeck-layout.json');
+  layoutWriter = createAtomicFileWriter(LAYOUT_FILE);
+  try {
+    const saved = JSON.parse(fs.readFileSync(LAYOUT_FILE, 'utf8'));
+    if (saved && Number.isInteger(saved.version) && Array.isArray(saved.pages)) layout = saved;
+  } catch {}
+  layoutInitialized = layout.pages.length > 0;
+
+  try {
+    midi = require('@julusian/midi');
+    if (process.platform === 'darwin') {
+      try {
+        virtualOutput = new midi.Output();
+        virtualOutput.openVirtualPort('FaderDeck');
+        midiOutput = virtualOutput;
+        selectedOutputIndex = VIRTUAL_OUTPUT_INDEX;
+        console.log('Porta MIDI virtual FaderDeck criada automaticamente.');
+      } catch (error) {
+        virtualOutput = null;
+        console.warn('Não foi possível criar a porta virtual FaderDeck:', error.message);
+      }
     }
+  } catch (error) {
+    console.error('\nNão foi possível carregar @julusian/midi. Rode npm install e confira os pré-requisitos nativos do seu sistema.\n', error.message);
+    throw error;
   }
-} catch (error) {
-  console.error('\nNão foi possível carregar @julusian/midi. Rode npm install e confira os pré-requisitos nativos do seu sistema.\n', error.message);
-  if (require.main === module) process.exit(1);
-  throw error;
+  initialized = true;
 }
 
 function networkAddresses() {
@@ -192,11 +206,16 @@ function isSameOriginLocalAdminRequest(request) {
 
 function layoutPayload() { return { type: 'layout', layout }; }
 
+function persistLayout() {
+  if (!layoutWriter) return Promise.reject(new Error('O armazenamento do layout ainda não foi inicializado.'));
+  return layoutWriter(JSON.stringify(layout, null, 2));
+}
+
 function scheduleLayoutSave() {
   if (layoutPersistTimer) clearTimeout(layoutPersistTimer);
   layoutPersistTimer = setTimeout(() => {
     layoutPersistTimer = null;
-    writeLayoutFile(LAYOUT_FILE, JSON.stringify(layout, null, 2), 'utf8').catch((error) => console.error('Falha ao salvar layout:', error.message));
+    persistLayout().catch((error) => console.error('Falha ao salvar layout:', error.message));
   }, 500);
 }
 
@@ -214,15 +233,46 @@ function sendJson(response, status, payload) {
 
 function readBody(request) {
   return new Promise((resolve, reject) => {
-    let body = '';
+    const chunks = [];
+    let totalBytes = 0;
+    let settled = false;
     request.on('data', (chunk) => {
-      body += chunk;
-      if (body.length > 16384) { reject(new Error('Pedido muito grande.')); request.destroy(); }
+      if (settled) return;
+      totalBytes += chunk.length;
+      if (totalBytes > MAX_REQUEST_BODY_BYTES) {
+        settled = true;
+        const error = new Error('Corpo da requisição excede o limite de 16 KB.');
+        error.statusCode = 413;
+        reject(error);
+        return;
+      }
+      chunks.push(chunk);
     });
     request.on('end', () => {
-      try { resolve(body ? JSON.parse(body) : {}); } catch { reject(new Error('JSON inválido.')); }
+      if (settled) return;
+      if (totalBytes === 0) { settled = true; resolve({}); return; }
+      try {
+        settled = true;
+        resolve(JSON.parse(Buffer.concat(chunks, totalBytes).toString('utf8')));
+      } catch {
+        settled = true;
+        const error = new Error('JSON inválido.');
+        error.statusCode = 400;
+        reject(error);
+      }
     });
-    request.on('error', reject);
+    request.on('aborted', () => {
+      if (settled) return;
+      settled = true;
+      const error = new Error('A requisição foi interrompida.');
+      error.statusCode = 400;
+      reject(error);
+    });
+    request.on('error', (error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    });
   });
 }
 
@@ -254,8 +304,13 @@ function rotateToken() {
 }
 
 const server = http.createServer(async (request, response) => {
-  const requestUrl = new URL(request.url || '/', `http://${request.headers.host || 'localhost'}`);
-  const pathname = decodeURIComponent(requestUrl.pathname);
+  let requestUrl;
+  let pathname;
+  try {
+    ({ url: requestUrl, pathname } = parseRequestTarget(request.url || '/', request.headers.host || 'localhost'));
+  } catch {
+    return sendJson(response, 400, { error: 'Requisição inválida.' });
+  }
   try {
     if ((pathname === '/bridge' || pathname === '/bridge/' || pathname.startsWith('/api/ports') || pathname === '/api/status' || pathname === '/api/pairing' || pathname === '/api/token/regenerate') && !isLoopbackRequest(request)) return sendJson(response, 403, { error: 'Abra a administração no próprio computador em http://127.0.0.1:8787/bridge.' });
     if (pathname === '/api/auth') {
@@ -302,7 +357,7 @@ const server = http.createServer(async (request, response) => {
       if (!body.layout || !Array.isArray(body.layout.pages) || body.layout.pages.length === 0 || body.layout.pages.length > 100) return sendJson(response, 400, { error: 'Layout inválido.' });
       layout = { version: Math.max(layout.version + 1, Number(body.layout.version) || 0), pages: body.layout.pages, activePageId: String(body.layout.activePageId || body.layout.pages[0]?.id || '') };
       layoutInitialized = true;
-      await writeLayoutFile(LAYOUT_FILE, JSON.stringify(layout, null, 2), 'utf8');
+      await persistLayout();
       broadcast(layoutPayload());
       return sendJson(response, 200, layout);
     }
@@ -330,7 +385,9 @@ const server = http.createServer(async (request, response) => {
     response.writeHead(200, { 'Content-Type': contentType(filePath), 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
     fs.createReadStream(filePath).pipe(response);
   } catch (error) {
-    if (!response.headersSent) sendJson(response, 500, { error: error.message || 'Erro interno.' });
+    const statusCode = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+    if (statusCode >= 500) console.error('Falha ao tratar requisição:', error);
+    if (!response.headersSent) sendJson(response, statusCode, { error: statusCode >= 500 ? 'Erro interno.' : error?.message || 'Requisição inválida.' });
     else response.destroy();
   }
 });
@@ -343,17 +400,27 @@ function safeEqual(candidate, expected) {
 
 const wss = new WebSocket.Server({ noServer: true, maxPayload: 1024 * 1024 });
 server.on('upgrade', (request, socket, head) => {
-  const requestUrl = new URL(request.url || '/', `http://${request.headers.host || 'localhost'}`);
+  let requestUrl;
+  try {
+    ({ url: requestUrl } = parseRequestTarget(request.url || '/', request.headers.host || 'localhost'));
+  } catch {
+    socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
+    return;
+  }
   const localBrowser = isLoopbackHost(requestUrl.hostname) && isLoopbackRequest(request);
   if (requestUrl.pathname !== '/ws' || (!localBrowser && !safeEqual(requestUrl.searchParams.get('token') || '', TOKEN))) {
     socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
     socket.destroy();
     return;
   }
-  wss.handleUpgrade(request, socket, head, (client) => {
-    client.authorized = true;
-    wss.emit('connection', client, request);
-  });
+  try {
+    wss.handleUpgrade(request, socket, head, (client) => {
+      client.authorized = true;
+      wss.emit('connection', client, request);
+    });
+  } catch {
+    socket.destroy();
+  }
 });
 
 wss.on('connection', (socket) => {
@@ -406,42 +473,104 @@ function splitMessages(bytes) {
 }
 
 server.on('error', (error) => {
-  console.error(error.code === 'EADDRINUSE' ? `A porta ${PORT} já está em uso.` : `Erro no servidor: ${error.message}`);
-  if (require.main === module) process.exit(1);
+  if (error.code !== 'EADDRINUSE') console.error(`Erro no servidor: ${error.message}`);
 });
 
-server.listen(PORT, HOST, () => {
-  const ip = networkAddress();
-  console.log('\nFaderDeck · fader-bridge');
-  console.log(`Painel no celular: http://${ip}:${PORT}/?bridgeToken=${TOKEN}`);
-  console.log(`Admin / QR:        http://127.0.0.1:${PORT}/bridge`);
-  console.log(`Código de pareamento: ${TOKEN}`);
-  console.log('Escaneie o QR na página de administração. Use computador e celular na mesma rede local.');
-  if (require.main === module) console.log('Pressione Ctrl+C para encerrar.\n');
-});
+async function start(startPort = BASE_PORT) {
+  if (server.listening) return PORT;
+  initialize();
+  const firstPort = Number.isInteger(startPort) && startPort >= 0 && startPort <= 65535 ? startPort : BASE_PORT;
+  const lastPort = firstPort === 0 ? 0 : Math.min(firstPort + 20, 65535);
+  let lastError;
 
-function persistLayoutNow() {
-  if (layoutPersistTimer) clearTimeout(layoutPersistTimer);
-  try { fs.writeFileSync(LAYOUT_FILE, JSON.stringify(layout, null, 2), 'utf8'); } catch (error) { console.error('Falha ao salvar layout ao encerrar:', error.message); }
+  for (let candidate = firstPort; candidate <= lastPort; candidate += 1) {
+    PORT = candidate;
+    try {
+      await new Promise((resolve, reject) => {
+        const onError = (error) => {
+          server.off('listening', onListening);
+          reject(error);
+        };
+        const onListening = () => {
+          server.off('error', onError);
+          PORT = server.address().port;
+          resolve();
+        };
+        server.once('error', onError);
+        server.once('listening', onListening);
+        server.listen(candidate, HOST);
+      });
+      console.log(`FaderDeck · ponte ativa na porta ${PORT}.`);
+      if (require.main === module) {
+        const ip = networkAddress();
+        console.log(`Painel no celular: ${mobileUrl()}`);
+        console.log(`Admin / QR:        http://127.0.0.1:${PORT}/bridge`);
+        console.log(`Código de pareamento: ${TOKEN}`);
+        console.log(`Endereço de rede: ${ip}. Escaneie o QR na página de administração.`);
+        console.log('Pressione Ctrl+C para encerrar.\n');
+      }
+      return PORT;
+    } catch (error) {
+      if (error.code !== 'EADDRINUSE') throw error;
+      lastError = error;
+    }
+  }
+
+  throw new Error(`Nenhuma porta livre encontrada a partir de ${firstPort}.`, { cause: lastError });
 }
 
-function shutdown() {
-  return new Promise((resolve) => {
-    persistLayoutNow();
+async function shutdown() {
+  if (shutdownPromise) return shutdownPromise;
+  shutdownPromise = (async () => {
+    if (layoutPersistTimer) {
+      clearTimeout(layoutPersistTimer);
+      layoutPersistTimer = null;
+    }
+    if (initialized && layoutWriter) {
+      try { await persistLayout(); } catch (error) { console.error('Falha ao salvar layout ao encerrar:', error.message); }
+    }
     closeMidiPorts();
     for (const client of wss.clients) { try { client.terminate(); } catch {} }
-    const timer = setTimeout(resolve, 1500);
-    try { server.close(() => { clearTimeout(timer); resolve(); }); } catch { clearTimeout(timer); resolve(); }
-  });
+    if (!server.listening) return;
+    await new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        server.closeAllConnections?.();
+        resolve();
+      }, 1500);
+      timer.unref?.();
+      try {
+        server.close(() => { clearTimeout(timer); resolve(); });
+      } catch {
+        clearTimeout(timer);
+        resolve();
+      }
+    });
+  })();
+  try { await shutdownPromise; } finally { shutdownPromise = null; }
 }
 
 if (require.main === module) {
-  process.on('SIGINT', () => { shutdown().then(() => process.exit(0)); });
-  process.on('SIGTERM', () => { shutdown().then(() => process.exit(0)); });
+  let stopping = false;
+  const stop = () => {
+    if (stopping) return;
+    stopping = true;
+    shutdown().then(() => { process.exitCode = 0; }).catch((error) => {
+      console.error(`Falha ao encerrar a ponte: ${error.message}`);
+      process.exitCode = 1;
+    });
+  };
+  process.once('SIGINT', stop);
+  process.once('SIGTERM', stop);
+  start().catch((error) => {
+    console.error(`Não foi possível iniciar a ponte: ${error.message}`);
+    process.exitCode = 1;
+  });
 }
 
 module.exports = {
   server,
+  start,
+  stop: shutdown,
   shutdown,
   rotateToken,
   getToken: () => TOKEN,

@@ -1,0 +1,45 @@
+name: Build Windows Installer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Python for bridge archive
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Windows NSIS installer
+        run: npm run dist:win
+
+      - name: Package standalone bridge
+        run: npm run package:bridge
+
+      - name: Upload Windows and bridge artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: FaderDeck-Windows-x64
+          path: |
+            release/*.exe
+            client/downloads/fader-bridge.zip
+          if-no-files-found: error

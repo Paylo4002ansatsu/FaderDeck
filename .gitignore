@@ -1,4 +1,17 @@
-#depedencias
-node_modules
+# Dependencies and generated build output
+node_modules/
 release/
+dist/
 
+# Local bridge data and secrets
+.faderdeck-token
+faderdeck-layout.json
+
+# Python and operating-system artifacts
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# Temporary files and logs
+*.tmp
+*.log
