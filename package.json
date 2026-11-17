@@ -1,7 +1,7 @@
 {
   "name": "faderdeck",
   "productName": "FaderDeck",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "FaderDeck: controlador MIDI customizável com ponte local para a sua DAW",
   "author": "FaderDeck",
   "main": "main.js",
