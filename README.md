@@ -9,7 +9,7 @@ O FaderDeck permite montar um painel MIDI com **faders e pads** e controlar sua 
 Use o instalador correspondente ao seu computador:
 
 - **Windows:** [Baixar FaderDeck para Windows](https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.0/FaderDeck-Windows-Setup.exe) — instalador Windows Setup, versão 1.0.0.
-- **macOS:** [Baixar FaderDeck para macOS]([https://github.com/Paylo4002ansatsu/FaderDeck/releases/latest/download/FaderDeck-Mac.dmg](https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.0/FaderDeck-Mac.dmg)) — pacote universal para Macs Intel e Apple Silicon.
+- **macOS:** [Baixar FaderDeck para macOS](https://github.com/Paylo4002ansatsu/FaderDeck/releases/latest/download/FaderDeck-Mac.dmg](https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.0/FaderDeck-Mac.dmg) — pacote universal para Macs Intel e Apple Silicon.
 
 Os mesmos botões estão disponíveis na [página oficial do FaderDeck](https://paylo4002ansatsu.github.io/FaderDeck/).
 
