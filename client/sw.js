@@ -1,4 +1,4 @@
-const CACHE_NAME = 'faderdeck-shell-v3';
+const CACHE_NAME = 'faderdeck-shell-v4';
 const CORE_ASSETS = [
   '/',
   '/assets/ibm-plex-mono-latin-400-normal-CvHOgSBP.woff',
