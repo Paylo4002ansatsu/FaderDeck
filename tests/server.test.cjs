@@ -8,23 +8,36 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const WebSocket = require('ws');
-const { parseRequestTarget, createSerialQueue, createAtomicFileWriter } = require('../server-utils.cjs');
+const {
+  parseRequestTarget,
+  createSerialQueue,
+  createAtomicFileWriter,
+} = require('../server-utils.cjs');
 
 function request(port, requestPath, body, method = 'GET', additionalHeaders = {}) {
   return new Promise((resolve, reject) => {
     const headers = {
-      ...(body === undefined ? {} : {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body),
-      }),
+      ...(body === undefined
+        ? {}
+        : {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body),
+          }),
       ...additionalHeaders,
     };
-    const outgoing = http.request({ hostname: '127.0.0.1', port, path: requestPath, method, headers }, (incoming) => {
-      let body = '';
-      incoming.setEncoding('utf8');
-      incoming.on('data', (chunk) => { body += chunk; });
-      incoming.on('end', () => resolve({ status: incoming.statusCode, body, headers: incoming.headers }));
-    });
+    const outgoing = http.request(
+      { hostname: '127.0.0.1', port, path: requestPath, method, headers },
+      (incoming) => {
+        let body = '';
+        incoming.setEncoding('utf8');
+        incoming.on('data', (chunk) => {
+          body += chunk;
+        });
+        incoming.on('end', () =>
+          resolve({ status: incoming.statusCode, body, headers: incoming.headers }),
+        );
+      },
+    );
     outgoing.once('error', reject);
     outgoing.end(body);
   });
@@ -34,10 +47,17 @@ function waitForMessage(socket, predicate, timeoutMs = 1000) {
   const existing = socket.receivedMessages?.find(predicate);
   if (existing) return Promise.resolve(existing);
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Timeout aguardando mensagem WebSocket')), timeoutMs);
+    const timer = setTimeout(
+      () => reject(new Error('Timeout aguardando mensagem WebSocket')),
+      timeoutMs,
+    );
     const onMessage = (raw) => {
       let message;
-      try { message = JSON.parse(raw.toString()); } catch { return; }
+      try {
+        message = JSON.parse(raw.toString());
+      } catch {
+        return;
+      }
       if (!predicate(message)) return;
       clearTimeout(timer);
       socket.off('message', onMessage);
@@ -55,7 +75,9 @@ test('request-target parsing rejects invalid percent escapes', () => {
 test('serial queue preserves order and recovers after a failed task', async () => {
   const started = [];
   let releaseFirst;
-  const firstGate = new Promise((resolve) => { releaseFirst = resolve; });
+  const firstGate = new Promise((resolve) => {
+    releaseFirst = resolve;
+  });
   const queue = createSerialQueue(async (value) => {
     started.push(`start:${value}`);
     if (value === 'first') await firstGate;
@@ -98,15 +120,23 @@ test('server does not listen on import, retries an occupied port, and survives m
   const originalLoad = Module._load;
   const midiStub = {
     Output: class {
-      getPortCount() { return 0; }
-      getPortName() { return ''; }
+      getPortCount() {
+        return 0;
+      }
+      getPortName() {
+        return '';
+      }
       closePort() {}
       sendMessage() {}
       openVirtualPort() {}
     },
     Input: class {
-      getPortCount() { return 0; }
-      getPortName() { return ''; }
+      getPortCount() {
+        return 0;
+      }
+      getPortName() {
+        return '';
+      }
       closePort() {}
       openPort() {}
       ignoreTypes() {}
@@ -142,13 +172,22 @@ test('server does not listen on import, retries an occupied port, and survives m
   }
 
   const port = bridge.getPort();
+  assert.match(
+    bridge.mobileUrl(),
+    new RegExp(`^http://[^/]+:${port}/\\?bridgeToken=[a-f0-9]{32}$`),
+  );
   const malformed = await request(port, '/%ZZ');
   assert.equal(malformed.status, 400);
   assert.match(malformed.body, /Requisição inválida/);
 
   const healthy = await request(port, '/api/status');
   assert.equal(healthy.status, 200);
-  const invalidLayout = await request(port, '/api/layout', JSON.stringify({ layout: { version: 1, pages: [] } }), 'PUT');
+  const invalidLayout = await request(
+    port,
+    '/api/layout',
+    JSON.stringify({ layout: { version: 1, pages: [] } }),
+    'PUT',
+  );
   assert.equal(invalidLayout.status, 400);
   const traversal = await request(port, '/%2e%2e/server.cjs');
   assert.equal(traversal.status, 404);
@@ -172,7 +211,10 @@ test('server does not listen on import, retries an occupied port, and survives m
     'X-FaderDeck-Admin': 'rotate-token',
   });
   assert.equal(authorizedRotation.status, 200);
-  assert.equal(fs.readFileSync(path.join(dataDirectory, '.faderdeck-token'), 'utf8').trim(), bridge.getToken());
+  assert.equal(
+    fs.readFileSync(path.join(dataDirectory, '.faderdeck-token'), 'utf8').trim(),
+    bridge.getToken(),
+  );
 
   const admin = await request(port, '/bridge');
   assert.equal(admin.status, 200);
@@ -195,17 +237,24 @@ test('server does not listen on import, retries an occupied port, and survives m
   assert.match(pairingData.qr, /^data:image\/png;base64,/);
   assert.equal(pairingData.port, bridge.getPort());
 
-  const connect = () => new Promise((resolve, reject) => {
-    const socket = new WebSocket(`ws://127.0.0.1:${port}/ws`);
-    socket.receivedMessages = [];
-    socket.on('message', (raw) => {
-      try { socket.receivedMessages.push(JSON.parse(raw.toString())); } catch {}
+  const connect = () =>
+    new Promise((resolve, reject) => {
+      const socket = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+      socket.receivedMessages = [];
+      socket.on('message', (raw) => {
+        try {
+          socket.receivedMessages.push(JSON.parse(raw.toString()));
+        } catch {}
+      });
+      socket.once('open', () => resolve(socket));
+      socket.once('error', reject);
     });
-    socket.once('open', () => resolve(socket));
-    socket.once('error', reject);
-  });
   const firstClient = await connect();
-  t.after(() => { try { firstClient.terminate(); } catch {} });
+  t.after(() => {
+    try {
+      firstClient.terminate();
+    } catch {}
+  });
   const initialReady = await waitForMessage(firstClient, (message) => message.type === 'ready');
   assert.deepEqual(initialReady, { type: 'ready' });
   const initialLayout = await waitForMessage(firstClient, (message) => message.type === 'layout');
@@ -217,7 +266,10 @@ test('server does not listen on import, retries an occupied port, and survives m
   for (let sample = 0; sample < 20; sample += 1) {
     const sentAt = 1000 + sample;
     const startedAt = process.hrtime.bigint();
-    const samplePromise = waitForMessage(firstClient, (message) => message.type === 'pong' && message.sentAt === sentAt);
+    const samplePromise = waitForMessage(
+      firstClient,
+      (message) => message.type === 'pong' && message.sentAt === sentAt,
+    );
     firstClient.send(JSON.stringify({ type: 'ping', sentAt }));
     await samplePromise;
     loopbackLatencyMs.push(Number(process.hrtime.bigint() - startedAt) / 1e6);
@@ -226,16 +278,32 @@ test('server does not listen on import, retries an occupied port, and survives m
   assert.ok(loopbackLatencyMs[19] < 1000, `loopback ping max ${loopbackLatencyMs[19]} ms`);
   assert.equal(firstClient.readyState, WebSocket.OPEN);
 
-  const syncPromise = waitForMessage(firstClient, (message) => message.type === 'layout' && message.sourceId === 'server-ws-test');
-  firstClient.send(JSON.stringify({ type: 'layout', sourceId: 'server-ws-test', layout: { pages: [{ id: 'ws-page' }] } }));
+  const syncPromise = waitForMessage(
+    firstClient,
+    (message) => message.type === 'layout' && message.sourceId === 'server-ws-test',
+  );
+  firstClient.send(
+    JSON.stringify({
+      type: 'layout',
+      sourceId: 'server-ws-test',
+      layout: { pages: [{ id: 'ws-page' }] },
+    }),
+  );
   const synchronized = await syncPromise;
   assert.equal(synchronized.layout.activePageId, 'ws-page');
   const firstClientClosed = new Promise((resolve) => firstClient.once('close', resolve));
   firstClient.close();
   await firstClientClosed;
   const reconnected = await connect();
-  t.after(() => { try { reconnected.terminate(); } catch {} });
-  const reconnectLayout = await waitForMessage(reconnected, (message) => message.type === 'layout' && message.layout.activePageId === 'ws-page');
+  t.after(() => {
+    try {
+      reconnected.terminate();
+    } catch {}
+  });
+  const reconnectLayout = await waitForMessage(
+    reconnected,
+    (message) => message.type === 'layout' && message.layout.activePageId === 'ws-page',
+  );
   assert.equal(reconnectLayout.layout.activePageId, 'ws-page');
   const oldToken = bridge.getToken();
   const rotatedClose = new Promise((resolve) => reconnected.once('close', (code) => resolve(code)));
@@ -246,5 +314,8 @@ test('server does not listen on import, retries an occupied port, and survives m
   assert.equal(rotateWhileConnected.status, 200);
   assert.notEqual(bridge.getToken(), oldToken);
   assert.equal(await rotatedClose, 4001);
-  assert.equal(fs.readFileSync(path.join(dataDirectory, '.faderdeck-token'), 'utf8').trim(), bridge.getToken());
+  assert.equal(
+    fs.readFileSync(path.join(dataDirectory, '.faderdeck-token'), 'utf8').trim(),
+    bridge.getToken(),
+  );
 });

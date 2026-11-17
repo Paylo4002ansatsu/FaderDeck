@@ -12,8 +12,20 @@ const bridgePackager = fs.readFileSync(path.join(root, 'scripts/package-bridge.p
 
 test('Electron and standalone bridge packages include extracted server modules', () => {
   assert.ok(packageJson.build.files.includes('bridge/**/*'));
-  for (const moduleName of ['midi-manager.cjs', 'auth.cjs', 'websocket-handler.cjs', 'layout-persistence.cjs', 'websocket-gateway.cjs', 'http-router.cjs', 'token-store.cjs', 'network-addresses.cjs']) {
-    assert.ok(bridgePackager.includes(`"${moduleName}"`), `${moduleName} is packaged for standalone bridge`);
+  for (const moduleName of [
+    'midi-manager.cjs',
+    'auth.cjs',
+    'websocket-handler.cjs',
+    'layout-persistence.cjs',
+    'websocket-gateway.cjs',
+    'http-router.cjs',
+    'token-store.cjs',
+    'network-addresses.cjs',
+  ]) {
+    assert.ok(
+      bridgePackager.includes(`"${moduleName}"`),
+      `${moduleName} is packaged for standalone bridge`,
+    );
   }
 });
 

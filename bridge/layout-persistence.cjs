@@ -4,8 +4,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createAtomicFileWriter } = require('../server-utils.cjs');
 
-function createLayoutPersistence({ filePath, debounceMs = 500, onError = () => {}, createWriter = createAtomicFileWriter }) {
-  if (typeof filePath !== 'string' || filePath.length === 0) throw new TypeError('filePath must be a non-empty string');
+function createLayoutPersistence({
+  filePath,
+  debounceMs = 500,
+  onError = () => {},
+  createWriter = createAtomicFileWriter,
+}) {
+  if (typeof filePath !== 'string' || filePath.length === 0)
+    throw new TypeError('filePath must be a non-empty string');
   let writer = null;
   let timer = null;
 
@@ -23,7 +29,8 @@ function createLayoutPersistence({ filePath, debounceMs = 500, onError = () => {
   }
 
   function persist(layout) {
-    if (!writer) return Promise.reject(new Error('O armazenamento do layout ainda não foi inicializado.'));
+    if (!writer)
+      return Promise.reject(new Error('O armazenamento do layout ainda não foi inicializado.'));
     return writer(JSON.stringify(layout, null, 2));
   }
 
@@ -50,7 +57,17 @@ function createLayoutPersistence({ filePath, debounceMs = 500, onError = () => {
     return true;
   }
 
-  return { load, initializeWriter, persist, schedule, flush, cancel, get pending() { return Boolean(timer); } };
+  return {
+    load,
+    initializeWriter,
+    persist,
+    schedule,
+    flush,
+    cancel,
+    get pending() {
+      return Boolean(timer);
+    },
+  };
 }
 
 module.exports = { createLayoutPersistence };

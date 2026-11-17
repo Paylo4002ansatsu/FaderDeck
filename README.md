@@ -66,8 +66,14 @@ Esta seção é apenas para quem vai executar ou empacotar o código-fonte. Os u
 
 Requisitos para desenvolvimento: **Node.js 22 ou mais novo**. Para compilar a versão macOS, use um Mac; o módulo MIDI nativo depende da plataforma. As Ferramentas de Linha de Comando do Xcode podem ser necessárias se a instalação solicitar. Para regenerar o ZIP da ponte, também é necessário Python 3.
 
+O projeto usa **ESLint** para análise estática e **Prettier** para padronização de estilo. Antes de abrir um Pull Request, execute `npm run check`; o workflow do GitHub também roda lint, verificação de formatação e testes automaticamente. `npm run format` aplica a formatação configurada.
+
 ```bash
 npm install
+npm run lint          # verificar regras ESLint
+npm run format:check  # verificar padrão Prettier sem modificar arquivos
+npm run format        # aplicar a formatação padrão
+npm run check         # lint + formatação + testes
 npm test              # executar testes automatizados
 npm start              # abrir o app para teste
 npm run dist           # gerar instaladores macOS (DMG e ZIP)

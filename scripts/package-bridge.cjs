@@ -4,9 +4,16 @@ const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 
 const scriptPath = path.join(__dirname, 'package-bridge.py');
-const candidates = process.platform === 'win32'
-  ? [['python', []], ['py', ['-3']]]
-  : [['python3', []], ['python', []]];
+const candidates =
+  process.platform === 'win32'
+    ? [
+        ['python', []],
+        ['py', ['-3']],
+      ]
+    : [
+        ['python3', []],
+        ['python', []],
+      ];
 
 for (const [executable, prefixArgs] of candidates) {
   const result = spawnSync(executable, [...prefixArgs, scriptPath], { stdio: 'inherit' });

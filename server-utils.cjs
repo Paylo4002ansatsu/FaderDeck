@@ -38,7 +38,9 @@ function createAtomicFileWriter(filePath) {
       });
       await fs.promises.rename(temporaryPath, filePath);
     } catch (error) {
-      try { await fs.promises.unlink(temporaryPath); } catch {}
+      try {
+        await fs.promises.unlink(temporaryPath);
+      } catch {}
       throw error;
     }
   });

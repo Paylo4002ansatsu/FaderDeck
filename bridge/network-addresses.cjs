@@ -5,9 +5,20 @@ const os = require('node:os');
 function networkAddresses(interfaces = os.networkInterfaces()) {
   const candidates = [];
   for (const [name, entries] of Object.entries(interfaces)) {
-    if (/(docker|veth|virtualbox|vmware|tailscale|wireguard|utun|tun\d*|tap\d*|zerotier|hamachi|loopback|^lo$|^br-)/i.test(name)) continue;
+    if (
+      /(docker|veth|virtualbox|vmware|tailscale|wireguard|utun|tun\d*|tap\d*|zerotier|hamachi|loopback|^lo$|^br-)/i.test(
+        name,
+      )
+    )
+      continue;
     for (const entry of entries || []) {
-      if (!entry || entry.family !== 'IPv4' || entry.internal || entry.address.startsWith('169.254.')) continue;
+      if (
+        !entry ||
+        entry.family !== 'IPv4' ||
+        entry.internal ||
+        entry.address.startsWith('169.254.')
+      )
+        continue;
       const octets = entry.address.split('.').map(Number);
       const private192 = octets[0] === 192 && octets[1] === 168;
       const private10 = octets[0] === 10;

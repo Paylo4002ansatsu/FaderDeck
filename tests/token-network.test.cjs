@@ -8,7 +8,16 @@ const test = require('node:test');
 const { createTokenStore } = require('../bridge/token-store.cjs');
 const { networkAddresses, networkAddress } = require('../bridge/network-addresses.cjs');
 
-function ipv4(address, internal = false) { return { address, family: 'IPv4', internal, netmask: '255.255.255.0', mac: '00:00:00:00:00:00', cidr: `${address}/24` }; }
+function ipv4(address, internal = false) {
+  return {
+    address,
+    family: 'IPv4',
+    internal,
+    netmask: '255.255.255.0',
+    mac: '00:00:00:00:00:00',
+    cidr: `${address}/24`,
+  };
+}
 
 test('reuses a valid persisted pairing token and enforces private file permissions on POSIX', (t) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'faderdeck-token-store-'));
@@ -58,11 +67,17 @@ test('selects private Wi-Fi addresses ahead of corporate networks and filters vi
     wlanIpv6: [{ address: 'fe80::1', family: 'IPv6', internal: false }],
   };
   const entries = networkAddresses(interfaces);
-  assert.deepEqual(entries.map(({ address }) => address), ['192.168.20.7', '10.25.3.10', '172.20.4.2', '8.8.8.8']);
+  assert.deepEqual(
+    entries.map(({ address }) => address),
+    ['192.168.20.7', '10.25.3.10', '172.20.4.2', '8.8.8.8'],
+  );
   assert.equal(networkAddress(interfaces), '192.168.20.7');
 });
 
 test('falls back to loopback when no usable interface exists', () => {
-  assert.deepEqual(networkAddresses({ lo: [ipv4('127.0.0.1', true)], apipa: [ipv4('169.254.1.2')] }), []);
+  assert.deepEqual(
+    networkAddresses({ lo: [ipv4('127.0.0.1', true)], apipa: [ipv4('169.254.1.2')] }),
+    [],
+  );
   assert.equal(networkAddress({}), '127.0.0.1');
 });

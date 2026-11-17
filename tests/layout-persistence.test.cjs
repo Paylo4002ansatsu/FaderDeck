@@ -9,11 +9,16 @@ const { createLayoutPersistence } = require('../bridge/layout-persistence.cjs');
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
- test('loads the existing layout JSON shape without migration or data loss', (t) => {
+test('loads the existing layout JSON shape without migration or data loss', (t) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'faderdeck-layout-store-'));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   const filePath = path.join(directory, 'faderdeck-layout.json');
-  const legacyLayout = { version: 7, pages: [{ id: 'stage', controls: [{ id: 'f1', x: 0.2 }] }], activePageId: 'stage', customField: 'preserve' };
+  const legacyLayout = {
+    version: 7,
+    pages: [{ id: 'stage', controls: [{ id: 'f1', x: 0.2 }] }],
+    activePageId: 'stage',
+    customField: 'preserve',
+  };
   fs.writeFileSync(filePath, JSON.stringify(legacyLayout));
   const persistence = createLayoutPersistence({ filePath });
   assert.deepEqual(persistence.load({ version: 0, pages: [], activePageId: '' }), legacyLayout);
@@ -58,7 +63,9 @@ test('debounced writes report errors and later writes continue to work', async (
   const persistence = createLayoutPersistence({
     filePath,
     debounceMs: 5,
-    createWriter: () => async () => { throw new Error('disk full'); },
+    createWriter: () => async () => {
+      throw new Error('disk full');
+    },
     onError: (prefix, error) => reported.push([prefix, error.message]),
   });
   persistence.initializeWriter();

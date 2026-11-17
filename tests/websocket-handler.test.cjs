@@ -6,9 +6,16 @@ const test = require('node:test');
 const { attachWebSocketHandlers } = require('../bridge/websocket-handler.cjs');
 
 class FakeSocket extends EventEmitter {
-  constructor() { super(); this.sent = []; }
-  send(value) { this.sent.push(JSON.parse(value)); }
-  message(value) { this.emit('message', Buffer.from(typeof value === 'string' ? value : JSON.stringify(value))); }
+  constructor() {
+    super();
+    this.sent = [];
+  }
+  send(value) {
+    this.sent.push(JSON.parse(value));
+  }
+  message(value) {
+    this.emit('message', Buffer.from(typeof value === 'string' ? value : JSON.stringify(value)));
+  }
 }
 
 function createFixture({ initialized = false, hasOutput = true } = {}) {
@@ -22,26 +29,48 @@ function createFixture({ initialized = false, hasOutput = true } = {}) {
   let saveCount = 0;
   attachWebSocketHandlers(wss, {
     getLayout: () => layout,
-    setLayout: (next) => { layout = next; },
+    setLayout: (next) => {
+      layout = next;
+    },
     isLayoutInitialized: () => ready,
-    setLayoutInitialized: (value) => { ready = value; },
+    setLayoutInitialized: (value) => {
+      ready = value;
+    },
     getLayoutSeedOwner: () => seedOwner,
-    setLayoutSeedOwner: (socket) => { seedOwner = socket; },
+    setLayoutSeedOwner: (socket) => {
+      seedOwner = socket;
+    },
     layoutPayload: () => ({ type: 'layout', layout }),
-    scheduleLayoutSave: () => { saveCount += 1; },
+    scheduleLayoutSave: () => {
+      saveCount += 1;
+    },
     broadcast: (message) => broadcasts.push(message),
     midiManager: {
       hasOutput: () => outputAvailable,
-      send: (bytes) => { if (!outputAvailable) throw new Error('sem porta'); midiMessages.push([...bytes]); },
+      send: (bytes) => {
+        if (!outputAvailable) throw new Error('sem porta');
+        midiMessages.push([...bytes]);
+      },
     },
   });
   return {
     wss,
-    connect() { const socket = new FakeSocket(); wss.emit('connection', socket, {}); return socket; },
-    get layout() { return layout; },
-    set outputAvailable(value) { outputAvailable = value; },
-    midiMessages, broadcasts,
-    get saveCount() { return saveCount; },
+    connect() {
+      const socket = new FakeSocket();
+      wss.emit('connection', socket, {});
+      return socket;
+    },
+    get layout() {
+      return layout;
+    },
+    set outputAvailable(value) {
+      outputAvailable = value;
+    },
+    midiMessages,
+    broadcasts,
+    get saveCount() {
+      return saveCount;
+    },
   };
 }
 
@@ -102,13 +131,23 @@ test('rejects MIDI without output, malformed/out-of-range payloads, and preserve
 
 test('reports output-device send failures to the client without crashing other events', () => {
   const wss = new EventEmitter();
-  const messages = [];
   const socket = new FakeSocket();
   attachWebSocketHandlers(wss, {
-    getLayout: () => ({ version: 1, pages: [{ id: 'p' }], activePageId: 'p' }), setLayout() {},
-    isLayoutInitialized: () => true, setLayoutInitialized() {}, getLayoutSeedOwner: () => null, setLayoutSeedOwner() {},
-    layoutPayload: () => ({ type: 'layout', layout: {} }), scheduleLayoutSave() {}, broadcast() {},
-    midiManager: { hasOutput: () => true, send: () => { throw new Error('dispositivo desconectado'); } },
+    getLayout: () => ({ version: 1, pages: [{ id: 'p' }], activePageId: 'p' }),
+    setLayout() {},
+    isLayoutInitialized: () => true,
+    setLayoutInitialized() {},
+    getLayoutSeedOwner: () => null,
+    setLayoutSeedOwner() {},
+    layoutPayload: () => ({ type: 'layout', layout: {} }),
+    scheduleLayoutSave() {},
+    broadcast() {},
+    midiManager: {
+      hasOutput: () => true,
+      send: () => {
+        throw new Error('dispositivo desconectado');
+      },
+    },
   });
   wss.emit('connection', socket, {});
   socket.message({ type: 'midi', data: [0x90, 1, 1] });
