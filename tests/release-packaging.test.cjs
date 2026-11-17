@@ -24,6 +24,7 @@ test('Windows and macOS artifacts use distinct names suitable for one release', 
 
 test('tagged release publishes both platforms before updating site links', () => {
   assert.match(workflow, /release_tag:/);
+  assert.match(workflow, /artifact_run_id:/);
   assert.match(workflow, /RELEASE_TAG: \$\{\{ inputs\.release_tag \|\| github\.ref_name \}\}/);
   assert.match(workflow, /does not match package\.json version/);
   assert.match(workflow, /runner: windows-latest/);
@@ -31,6 +32,9 @@ test('tagged release publishes both platforms before updating site links', () =>
   const releaseJob = workflow.split('publish-release:')[1]?.split('update-site-download:')[0];
   assert.ok(releaseJob, 'publish-release job exists');
   assert.match(releaseJob, /needs: build/);
+  assert.match(releaseJob, /always\(\)/);
+  assert.match(releaseJob, /actions: read/);
+  assert.match(releaseJob, /run-id: \$\{\{ inputs\.artifact_run_id \|\| github\.run_id \}\}/);
   assert.match(releaseJob, /find release-assets -mindepth 2/);
   assert.match(releaseJob, /release-assets\/\*\.exe/);
   assert.match(releaseJob, /release-assets\/\*\.dmg/);
