@@ -4,7 +4,7 @@
  * As URLs de cada plataforma são literais; scripts/update-site-download-version.cjs
  * alinha Windows e macOS à mesma tag depois que uma GitHub Release conjunta passa no workflow.
  */
-const MACOS_URL = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.1/FaderDeck-Mac.dmg';
+const MACOS_URL = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.2/FaderDeck-Mac.dmg';
 
 const icons = {
   windows: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 4.8 10 3.7v7.7H2V4.8Zm9.1-1.3L22 1.8v9.6H11.1V3.5ZM2 12.7h8v7.7L2 19.3v-6.6Zm9.1 0H22v9.6l-10.9-1.5v-8.1Z"/></svg>',
@@ -31,7 +31,7 @@ function setupSmartDownload() {
   if (platform === 'windows') {
     label.textContent = 'Baixar para Windows';
     icon.innerHTML = icons.windows;
-    button.href = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.0/FaderDeck-Windows-Setup.exe';
+    button.href = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.2/FaderDeck-Windows-Setup.exe';
     button.setAttribute('aria-label', 'Baixar FaderDeck para Windows');
   } else if (platform === 'macos') {
     label.textContent = 'Baixar para macOS';
