@@ -1,4 +1,4 @@
-const CACHE_NAME = 'faderdeck-shell-v2';
+const CACHE_NAME = 'faderdeck-shell-v3';
 const CORE_ASSETS = [
   '/',
   '/assets/ibm-plex-mono-latin-400-normal-CvHOgSBP.woff',
@@ -22,6 +22,8 @@ const CORE_ASSETS = [
   '/keepalive.mp4',
   '/manifest.webmanifest',
   '/manus-routes.json',
+  '/stage-mode-enhancements.css',
+  '/stage-mode-enhancements.js',
 ];
 
 self.addEventListener('install', (event) => {

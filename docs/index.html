@@ -8,7 +8,9 @@
   <meta property="og:title" content="FaderDeck — seu palco, sob controle">
   <meta property="og:description" content="Um painel MIDI para sua DAW. Pareie o iPhone por QR code e controle o FaderDeck na mesma rede Wi-Fi.">
   <meta property="og:type" content="website">
-  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <link rel="icon" href="faderdeck-icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="faderdeck-icon.png">
+  <meta property="og:image" content="https://paylo4002ansatsu.github.io/FaderDeck/faderdeck-icon.png">
   <link rel="stylesheet" href="styles.css">
   <title>FaderDeck — seu palco, sob controle</title>
 </head>
@@ -17,7 +19,7 @@
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="#inicio" aria-label="FaderDeck, início">
-        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 36 36" fill="none"><rect x="4" y="5" width="8" height="26" rx="4"/><rect x="14" y="5" width="8" height="26" rx="4"/><rect x="24" y="5" width="8" height="26" rx="4"/><path d="M3 12h10M13 23h10M23 15h10" stroke="#0b0e11" stroke-width="2.5" stroke-linecap="round"/></svg></span>
+        <span class="brand-mark" aria-hidden="true"><img src="faderdeck-icon.png" alt=""></span>
         <span>Fader<span class="brand-light">Deck</span></span>
       </a>
       <button class="menu-toggle" id="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Abrir menu"><span></span><span></span></button>
@@ -47,20 +49,21 @@
         <div class="hero-meta"><span><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2.5 3.5 5v4.4c0 4.1 2.8 6.7 6.5 8.1 3.7-1.4 6.5-4 6.5-8.1V5L10 2.5Z" stroke="currentColor" stroke-width="1.4"/><path d="m7 10 2 2 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Seus layouts ficam no seu Mac</span><span class="meta-divider"></span><span>Intel + Apple Silicon</span></div>
       </div>
 
-      <div class="hero-visual" aria-label="Prévia ilustrativa do painel FaderDeck" role="img">
+      <div class="hero-visual" role="group" aria-label="Prévia interativa do modo palco do FaderDeck">
         <div class="visual-glow"></div>
         <div class="app-window">
-          <div class="window-topbar"><div class="window-dots"><i></i><i></i><i></i></div><div class="window-title"><span class="mini-mark">FD</span> FADERDECK <span class="window-live"><i></i> LOCAL</span></div><div class="window-more">•••</div></div>
+          <div class="window-topbar"><div class="window-dots"><i></i><i></i><i></i></div><div class="window-title"><span class="mini-mark"><img src="faderdeck-icon.png" alt=""></span> FADERDECK <span class="window-live"><i></i> MODO PALCO</span></div><div class="window-more">•••</div></div>
           <div class="window-content">
-            <div class="mixer-top"><div><span class="micro-label">SESSÃO ATIVA</span><strong>Mix principal</strong></div><span class="midi-pill"><i></i> MIDI BRIDGE</span></div>
-            <div class="mixer-board">
-              <div class="channel"><div class="channel-name">VOCAL <span>01</span></div><div class="meter"><i style="height:27%"></i><i style="height:40%"></i><i style="height:55%"></i><i style="height:48%"></i><i style="height:64%"></i><i style="height:74%"></i><i style="height:59%"></i><i style="height:48%"></i></div><div class="fader"><i class="fader-line"></i><i class="fader-knob" style="--knob:30%"></i></div><span class="channel-db">−3.0 dB</span></div>
-              <div class="channel"><div class="channel-name">DRUMS <span>02</span></div><div class="meter"><i style="height:35%"></i><i style="height:50%"></i><i style="height:67%"></i><i style="height:74%"></i><i style="height:61%"></i><i style="height:52%"></i><i style="height:38%"></i><i style="height:24%"></i></div><div class="fader"><i class="fader-line"></i><i class="fader-knob" style="--knob:42%"></i></div><span class="channel-db">−1.5 dB</span></div>
-              <div class="channel"><div class="channel-name">BASS <span>03</span></div><div class="meter"><i style="height:22%"></i><i style="height:34%"></i><i style="height:43%"></i><i style="height:55%"></i><i style="height:67%"></i><i style="height:72%"></i><i style="height:59%"></i><i style="height:46%"></i></div><div class="fader"><i class="fader-line"></i><i class="fader-knob" style="--knob:24%"></i></div><span class="channel-db">0.0 dB</span></div>
-              <div class="channel"><div class="channel-name">KEYS <span>04</span></div><div class="meter"><i style="height:18%"></i><i style="height:28%"></i><i style="height:42%"></i><i style="height:56%"></i><i style="height:69%"></i><i style="height:62%"></i><i style="height:49%"></i><i style="height:35%"></i></div><div class="fader"><i class="fader-line"></i><i class="fader-knob" style="--knob:48%"></i></div><span class="channel-db">−4.0 dB</span></div>
-              <div class="channel channel-quiet"><div class="channel-name">FX A <span>05</span></div><div class="meter"><i style="height:18%"></i><i style="height:28%"></i><i style="height:40%"></i><i style="height:52%"></i><i style="height:43%"></i><i style="height:34%"></i><i style="height:24%"></i><i style="height:15%"></i></div><div class="fader"><i class="fader-line"></i><i class="fader-knob" style="--knob:63%"></i></div><span class="channel-db">−8.0 dB</span></div>
+            <div class="stage-demo" id="stage-demo">
+              <div class="stage-demo-toolbar"><span class="stage-demo-title">CANAIS MIDI</span><button class="stage-demo-names-toggle" id="stage-demo-names-toggle" type="button" aria-pressed="true">Nomes: ligado</button><span class="stage-demo-exit" aria-hidden="true">× Sair</span></div>
+              <div class="stage-demo-board" aria-label="Cinco faders de demonstração">
+                <article class="stage-demo-lane" style="--channel-color:#40ded0;--level:70%;--position:30%"><header class="stage-demo-channel-head"><strong>VOCAL</strong><span>01</span></header><div class="stage-demo-control"><div class="stage-demo-track"><i class="stage-demo-fill"></i><i class="stage-demo-thumb"></i></div></div><span class="stage-demo-value">−3.0 dB</span></article>
+                <article class="stage-demo-lane" style="--channel-color:#f8b84e;--level:58%;--position:42%"><header class="stage-demo-channel-head"><strong>DRUMS</strong><span>02</span></header><div class="stage-demo-control"><div class="stage-demo-track"><i class="stage-demo-fill"></i><i class="stage-demo-thumb"></i></div></div><span class="stage-demo-value">−1.5 dB</span></article>
+                <article class="stage-demo-lane" style="--channel-color:#6f9cff;--level:76%;--position:24%"><header class="stage-demo-channel-head"><strong>BASS</strong><span>03</span></header><div class="stage-demo-control"><div class="stage-demo-track"><i class="stage-demo-fill"></i><i class="stage-demo-thumb"></i></div></div><span class="stage-demo-value">0.0 dB</span></article>
+                <article class="stage-demo-lane" style="--channel-color:#c18bff;--level:52%;--position:48%"><header class="stage-demo-channel-head"><strong>KEYS</strong><span>04</span></header><div class="stage-demo-control"><div class="stage-demo-track"><i class="stage-demo-fill"></i><i class="stage-demo-thumb"></i></div></div><span class="stage-demo-value">−4.0 dB</span></article>
+                <article class="stage-demo-lane" style="--channel-color:#ff7187;--level:37%;--position:63%"><header class="stage-demo-channel-head"><strong>FX A</strong><span>05</span></header><div class="stage-demo-control"><div class="stage-demo-track"><i class="stage-demo-fill"></i><i class="stage-demo-thumb"></i></div></div><span class="stage-demo-value">−8.0 dB</span></article>
+              </div>
             </div>
-            <div class="window-bottom"><span><span class="bottom-wave">≈</span> FaderDeck Bridge <b>conectada</b></span><span>PORTA 8787 <i></i></span></div>
           </div>
         </div>
         <div class="pairing-float"><div class="qr-art" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><path fill="currentColor" d="M3 3h22v22H3V3Zm5 5v12h12V8H8Zm3 3h6v6h-6v-6ZM39 3h22v22H39V3Zm5 5v12h12V8H44Zm3 3h6v6h-6v-6ZM3 39h22v22H3V39Zm5 5v12h12V44H8Zm3 3h6v6h-6v-6ZM32 3h4v5h-4zM29 13h7v4h-7zM29 22h8v4h-8zM32 30h5v5h-5zM40 30h7v4h-7zM51 30h10v4H51zM29 39h5v6h-5zM37 38h4v9h-4zM45 39h7v4h-7zM57 39h4v10h-4zM29 50h9v4h-9zM41 51h7v5h-7zM51 54h10v5H51zM32 59h5v3h-5z"/></svg></div><div><span class="float-label">PAREAMENTO RÁPIDO</span><strong>Escaneie e conecte</strong><small>iPhone + mesma rede Wi‑Fi</small></div><span class="float-spark" aria-hidden="true">↗</span></div>
@@ -105,7 +108,7 @@
     <section class="final-cta section-wrap"><div class="final-cta-inner"><span class="eyebrow">FADERDECK · CONTROLADOR MIDI</span><h2>Seu setup.<br><span class="headline-accent">Mais perto.</span></h2><a class="button button-primary" href="#downloads"><span>Ver opções de download</span><svg class="button-arrow" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div><div class="final-orbit orbit-one"></div><div class="final-orbit orbit-two"></div><div class="final-lines" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></section>
   </main>
 
-  <footer class="site-footer"><div class="footer-main"><a class="brand" href="#inicio"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 36 36" fill="none"><rect x="4" y="5" width="8" height="26" rx="4"/><rect x="14" y="5" width="8" height="26" rx="4"/><rect x="24" y="5" width="8" height="26" rx="4"/><path d="M3 12h10M13 23h10M23 15h10" stroke="#0b0e11" stroke-width="2.5" stroke-linecap="round"/></svg></span><span>Fader<span class="brand-light">Deck</span></span></a><p>Painel MIDI para sua DAW.<br>Desenvolvido para macOS.</p><a href="#inicio" class="back-top">Voltar ao topo ↑</a></div><div class="footer-bottom"><span>© <span id="year"></span> FaderDeck</span><span>Feito para manter o controle por perto.</span></div></footer>
+  <footer class="site-footer"><div class="footer-main"><a class="brand" href="#inicio"><span class="brand-mark" aria-hidden="true"><img src="faderdeck-icon.png" alt=""></span><span>Fader<span class="brand-light">Deck</span></span></a><p>Painel MIDI para sua DAW.<br>Desenvolvido para macOS.</p><a href="#inicio" class="back-top">Voltar ao topo ↑</a></div><div class="footer-bottom"><span>© <span id="year"></span> FaderDeck</span><span>Feito para manter o controle por perto.</span></div></footer>
   <script src="app.js" defer></script>
 </body>
 </html>
