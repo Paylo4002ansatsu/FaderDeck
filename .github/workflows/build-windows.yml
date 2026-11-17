@@ -53,11 +53,11 @@ jobs:
 
       - name: Build Windows installer
         if: runner.os == 'Windows'
-        run: npm run dist:win
+        run: npm run dist:win -- --publish never
 
       - name: Build universal macOS DMG and ZIP
         if: runner.os == 'macOS'
-        run: npm run dist:universal
+        run: npm run dist:universal -- --publish never
 
       - name: Package standalone bridge
         if: runner.os == 'Windows'
