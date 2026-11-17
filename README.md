@@ -13,6 +13,10 @@ Use o instalador correspondente ao seu computador:
 
 Os mesmos botões estão disponíveis na [página oficial do FaderDeck](https://paylo4002ansatsu.github.io/FaderDeck/).
 
+As releases históricas `1.0.0` (Windows) e `1.0.1` (macOS) foram publicadas separadamente. A partir da próxima versão, o GitHub Actions criará uma única Release com os instaladores dos dois sistemas e atualizará os links do site somente após ambos os builds passarem.
+
+Para preparar essa próxima versão, atualize `package.json` e `package-lock.json` para a mesma versão da tag, por exemplo `npm version 1.0.2 --no-git-tag-version`. Envie o commit à `main` e depois crie/envie a tag `1.0.2`. O workflow rejeita tags que não coincidam com a versão do aplicativo.
+
 ## Instalação
 
 ### Windows

@@ -22,12 +22,13 @@ Os caminhos dos recursos são relativos (`styles.css`, `app.js` e `logo.svg`) pa
 
 ## Atualizar e publicar
 
-1. Edite os arquivos necessários dentro de `docs/`.
-2. A release Windows mais recente disponível é `1.0.0`; os dois botões e este README já apontam para `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.0/FaderDeck-Windows-Setup.exe`. Não acrescente `v` à tag.
-3. O botão macOS aponta para `https://github.com/Paylo4002ansatsu/FaderDeck/releases/latest/download/FaderDeck-Mac.dmg`.
-4. Para atualizar a versão Windows manualmente, execute `npm run update:site-download-version -- 1.2.0`, substituindo `1.2.0` pela tag numérica da release já publicada. O script atualiza `index.html`, `app.js` e este README; depois faça commit e envie para `main`.
-5. Para releases futuras, o workflow de build executa o mesmo script depois que o build de Windows e macOS conclui e a GitHub Release foi criada. O job envia os arquivos atualizados para `main`; não crie tag com prefixo `v`.
-6. O GitHub Pages publica automaticamente a pasta `/docs` da branch `main`; não é necessário copiar a página para a raiz do aplicativo.
+1. As releases históricas podem conter apenas um sistema: Windows `1.0.0` e macOS `1.0.1`. As próximas versões criadas pelo workflow devem conter os dois instaladores na mesma Release.
+2. Hoje, o link Windows é `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.0/FaderDeck-Windows-Setup.exe` e o link macOS é `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.1/FaderDeck-Mac.dmg`. As tags são numéricas, sem prefixo `v`.
+3. Para atualizar os dois links manualmente, depois de confirmar que a Release inclui ambos os arquivos, execute `npm run update:site-download-version -- 1.2.0`, substituindo `1.2.0` pela tag publicada. O script sincroniza `index.html`, `app.js` e este README.
+4. Antes de criar a tag, alinhe `package.json` e `package-lock.json` à mesma versão, por exemplo `npm version 1.0.2 --no-git-tag-version`; faça commit e envie a `main`. O workflow verifica que a tag corresponde à versão do app.
+5. Crie e envie a tag numérica correspondente, por exemplo `git tag 1.0.2 && git push origin 1.0.2`. O workflow gera Windows e macOS; somente após os dois builds passarem, publica os assets juntos e atualiza os dois links do site.
+6. Não crie uma Release separada por sistema para as versões novas: ambos os links usam a mesma tag explícita, evitando apontar para uma Release sem o instalador da outra plataforma.
+7. O GitHub Pages publica automaticamente a pasta `/docs` da branch `main`; não é necessário copiar a página para a raiz do aplicativo.
 
 Para uma prévia local, inicie um servidor estático na raiz do repositório, por exemplo:
 

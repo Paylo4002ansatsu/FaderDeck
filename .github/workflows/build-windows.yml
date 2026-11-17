@@ -45,6 +45,12 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Verify release tag matches app version
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node -e "const v=require('./package.json').version; if (v !== process.env.RELEASE_TAG) { console.error('Release tag ' + process.env.RELEASE_TAG + ' does not match package.json version ' + v); process.exit(1); }"
+
       - name: Install locked dependencies
         run: npm ci
 

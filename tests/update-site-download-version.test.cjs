@@ -7,52 +7,61 @@ const path = require('node:path');
 const test = require('node:test');
 const { updateSiteDownloadVersion } = require('../scripts/update-site-download-version.cjs');
 
-const URL_100 = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.0/FaderDeck-Windows-Setup.exe';
-const URL_120 = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.2.0/FaderDeck-Windows-Setup.exe';
+const WINDOWS_100 = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.0/FaderDeck-Windows-Setup.exe';
+const MACOS_101 = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.1/FaderDeck-Mac.dmg';
+const WINDOWS_120 = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.2.0/FaderDeck-Windows-Setup.exe';
+const MACOS_120 = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.2.0/FaderDeck-Mac.dmg';
 
 function createDocsFixture() {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'faderdeck-site-version-'));
-  fs.writeFileSync(path.join(directory, 'index.html'), `<a href="${URL_100}">Windows Setup · 1.0.0</a>`, 'utf8');
-  fs.writeFileSync(path.join(directory, 'app.js'), `button.href = '${URL_100}';`, 'utf8');
-  fs.writeFileSync(path.join(directory, 'README.md'), `Download: ${URL_100}\n`, 'utf8');
+  fs.writeFileSync(path.join(directory, 'index.html'), `<a href="${MACOS_101}">Mac hero</a> <a href="${WINDOWS_100}">Windows Setup · 1.0.0</a> <a href="${MACOS_101}">Mac download</a>`, 'utf8');
+  fs.writeFileSync(path.join(directory, 'app.js'), `const MACOS_URL = '${MACOS_101}'; button.href = '${WINDOWS_100}';`, 'utf8');
+  fs.writeFileSync(path.join(directory, 'README.md'), `Windows: ${WINDOWS_100}\nmacOS: ${MACOS_101}\n`, 'utf8');
   return directory;
 }
 
-test('updates the HTML, smart-download script and README to the numeric tag without v', (t) => {
+function readFixture(directory) {
+  return Object.fromEntries(['index.html', 'app.js', 'README.md'].map((name) => [name, fs.readFileSync(path.join(directory, name), 'utf8')]));
+}
+
+test('updates both platform links and the Windows label to one numeric tag', (t) => {
   const docsDirectory = createDocsFixture();
   t.after(() => fs.rmSync(docsDirectory, { recursive: true, force: true }));
 
   const result = updateSiteDownloadVersion(docsDirectory, '1.2.0');
-  assert.equal(result.windowsUrl, URL_120);
+  const files = readFixture(docsDirectory);
+  assert.equal(result.windowsUrl, WINDOWS_120);
+  assert.equal(result.macosUrl, MACOS_120);
   assert.deepEqual(result.changed, ['html', 'script', 'readme']);
-  assert.match(fs.readFileSync(path.join(docsDirectory, 'index.html'), 'utf8'), new RegExp(URL_120.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(fs.readFileSync(path.join(docsDirectory, 'index.html'), 'utf8'), /Windows Setup · 1\.2\.0/);
-  assert.match(fs.readFileSync(path.join(docsDirectory, 'app.js'), 'utf8'), new RegExp(URL_120.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(fs.readFileSync(path.join(docsDirectory, 'README.md'), 'utf8'), new RegExp(URL_120.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  for (const name of ['index.html', 'app.js', 'README.md']) {
-    assert.doesNotMatch(fs.readFileSync(path.join(docsDirectory, name), 'utf8'), /releases\/download\/v1\.2\.0\//);
+  assert.equal((files['index.html'].match(new RegExp(WINDOWS_120, 'g')) || []).length, 1);
+  assert.equal((files['index.html'].match(new RegExp(MACOS_120, 'g')) || []).length, 2);
+  assert.match(files['index.html'], /Windows Setup · 1\.2\.0/);
+  assert.equal((files['app.js'].match(new RegExp(WINDOWS_120, 'g')) || []).length, 1);
+  assert.equal((files['app.js'].match(new RegExp(MACOS_120, 'g')) || []).length, 1);
+  assert.ok(files['README.md'].includes(WINDOWS_120));
+  assert.ok(files['README.md'].includes(MACOS_120));
+  for (const text of Object.values(files)) {
+    assert.doesNotMatch(text, /releases\/download\/v1\.2\.0\//);
   }
 });
 
 test('rejects a tag with v prefix before changing files', (t) => {
   const docsDirectory = createDocsFixture();
   t.after(() => fs.rmSync(docsDirectory, { recursive: true, force: true }));
-  const before = Object.fromEntries(['index.html', 'app.js', 'README.md'].map((name) => [name, fs.readFileSync(path.join(docsDirectory, name), 'utf8')]));
+  const before = readFixture(docsDirectory);
 
   assert.throws(() => updateSiteDownloadVersion(docsDirectory, 'v1.2.0'), /sem prefixo v/);
-  for (const [name, contents] of Object.entries(before)) {
-    assert.equal(fs.readFileSync(path.join(docsDirectory, name), 'utf8'), contents);
-  }
+  assert.deepEqual(readFixture(docsDirectory), before);
 });
 
-test('validates all expected links before writing any files', (t) => {
+test('validates all platform links before writing any files', (t) => {
   const docsDirectory = createDocsFixture();
   t.after(() => fs.rmSync(docsDirectory, { recursive: true, force: true }));
-  const htmlPath = path.join(docsDirectory, 'index.html');
-  const appPath = path.join(docsDirectory, 'app.js');
-  const originalHtml = fs.readFileSync(htmlPath, 'utf8');
-  fs.writeFileSync(appPath, 'button.href = "missing";', 'utf8');
+  const before = readFixture(docsDirectory);
+  fs.writeFileSync(path.join(docsDirectory, 'app.js'), 'const MACOS_URL = "missing";', 'utf8');
+  const invalidBefore = readFixture(docsDirectory);
 
-  assert.throws(() => updateSiteDownloadVersion(docsDirectory, '1.2.0'), /docs\/app\.js: esperado um único link Windows/);
-  assert.equal(fs.readFileSync(htmlPath, 'utf8'), originalHtml);
+  assert.throws(() => updateSiteDownloadVersion(docsDirectory, '1.2.0'), /docs\/app\.js: esperados 1 link Windows, encontrados 0/);
+  assert.deepEqual(readFixture(docsDirectory), invalidBefore);
+  assert.notDeepEqual(invalidBefore, before);
 });
