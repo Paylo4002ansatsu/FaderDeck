@@ -4,9 +4,9 @@
  * à mesma tag depois que a release conjunta é publicada.
  */
 const WINDOWS_URL =
-  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.3/FaderDeck-Windows-Setup.exe';
+  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Windows-Setup.exe';
 const MACOS_URL =
-  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.3/FaderDeck-Mac.dmg';
+  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Mac.dmg';
 
 const icons = {
   windows:
