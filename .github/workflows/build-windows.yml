@@ -106,6 +106,10 @@ jobs:
           path: release-assets
           merge-multiple: true
 
+      - name: Flatten files from build artifacts
+        run: |
+          find release-assets -mindepth 2 -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.zip' \) -exec mv -n {} release-assets/ \;
+
       - name: Publish installers to the tagged release
         uses: softprops/action-gh-release@v2
         with:
