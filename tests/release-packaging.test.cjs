@@ -9,10 +9,10 @@ const root = path.join(__dirname, '..');
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/build-windows.yml'), 'utf8');
 
-test('universal macOS merge recognizes the shared ARM64 MIDI prebuild', () => {
+test('universal macOS merge recognizes shared x64 and ARM64 MIDI prebuilds', () => {
   assert.equal(
     packageJson.build.mac.x64ArchFiles,
-    'Contents/Resources/app.asar.unpacked/node_modules/@julusian/midi/prebuilds/midi-darwin-arm64/**',
+    'Contents/Resources/app.asar.unpacked/node_modules/@julusian/midi/prebuilds/midi-darwin-*/**',
   );
 });
 

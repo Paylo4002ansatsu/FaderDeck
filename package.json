@@ -52,7 +52,7 @@
       "hardenedRuntime": false,
       "artifactName": "FaderDeck-Mac.${ext}",
       "target": ["dmg", "zip"],
-      "x64ArchFiles": "Contents/Resources/app.asar.unpacked/node_modules/@julusian/midi/prebuilds/midi-darwin-arm64/**",
+      "x64ArchFiles": "Contents/Resources/app.asar.unpacked/node_modules/@julusian/midi/prebuilds/midi-darwin-*/**",
       "extendInfo": {
         "NSLocalNetworkUsageDescription": "O FaderDeck usa a rede local para receber os controles do seu celular.",
         "LSUIElement": false
