@@ -8,6 +8,11 @@ on:
     tags:
       - '[0-9]*'
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Tag numérica existente a reconstruir e publicar (opcional)
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -46,9 +51,9 @@ jobs:
           python-version: '3.x'
 
       - name: Verify release tag matches app version
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || inputs.release_tag != ''
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: node -e "const v=require('./package.json').version; if (v !== process.env.RELEASE_TAG) { console.error('Release tag ' + process.env.RELEASE_TAG + ' does not match package.json version ' + v); process.exit(1); }"
 
       - name: Install locked dependencies
@@ -93,7 +98,7 @@ jobs:
 
   publish-release:
     name: Publish GitHub Release
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || inputs.release_tag != ''
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -113,7 +118,7 @@ jobs:
       - name: Publish installers to the tagged release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
           generate_release_notes: true
           files: |
             release-assets/*.exe
@@ -122,7 +127,7 @@ jobs:
 
   update-site-download:
     name: Update website download version
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || inputs.release_tag != ''
     needs: publish-release
     runs-on: ubuntu-latest
     permissions:
@@ -140,18 +145,20 @@ jobs:
           node-version: 22
 
       - name: Update Windows download links from release tag
-        run: npm run update:site-download-version -- "${GITHUB_REF_NAME}"
+        run: npm run update:site-download-version -- "${{ inputs.release_tag || github.ref_name }}"
 
       - name: Commit website links to main
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/index.html docs/app.js docs/README.md
           if git diff --cached --quiet; then
-            echo "Website links already match ${GITHUB_REF_NAME}."
+            echo "Website links already match ${RELEASE_TAG}."
             exit 0
           fi
-          git commit -m "Update Windows download link to ${GITHUB_REF_NAME}"
+          git commit -m "Update Windows download link to ${RELEASE_TAG}"
           git push origin HEAD:main
 
       - name: Rebuild GitHub Pages from latest main

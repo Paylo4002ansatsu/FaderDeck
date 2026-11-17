@@ -23,7 +23,8 @@ test('Windows and macOS artifacts use distinct names suitable for one release', 
 });
 
 test('tagged release publishes both platforms before updating site links', () => {
-  assert.match(workflow, /RELEASE_TAG: \$\{\{ github\.ref_name \}\}/);
+  assert.match(workflow, /release_tag:/);
+  assert.match(workflow, /RELEASE_TAG: \$\{\{ inputs\.release_tag \|\| github\.ref_name \}\}/);
   assert.match(workflow, /does not match package\.json version/);
   assert.match(workflow, /runner: windows-latest/);
   assert.match(workflow, /runner: macos-latest/);
