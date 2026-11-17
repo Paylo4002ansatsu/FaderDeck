@@ -30,6 +30,7 @@ test('tagged release publishes both platforms before updating site links', () =>
   const releaseJob = workflow.split('publish-release:')[1]?.split('update-site-download:')[0];
   assert.ok(releaseJob, 'publish-release job exists');
   assert.match(releaseJob, /needs: build/);
+  assert.match(releaseJob, /find release-assets -mindepth 2/);
   assert.match(releaseJob, /release-assets\/\*\.exe/);
   assert.match(releaseJob, /release-assets\/\*\.dmg/);
   assert.match(releaseJob, /release-assets\/\*\.zip/);
