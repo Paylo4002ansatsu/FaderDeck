@@ -35,17 +35,18 @@
   <main id="conteudo">
     <section class="hero section-wrap" id="inicio">
       <div class="hero-copy">
-        <div class="eyebrow"><span class="status-dot"></span> CONTROLADOR MIDI PARA macOS</div>
+        <div class="eyebrow"><span class="status-dot"></span> CONTROLADOR MIDI DESKTOP</div>
         <h1>Seu palco.<br><span class="headline-accent">Sob controle.</span></h1>
         <p class="hero-lede">Um painel MIDI para sua DAW, com a ponte integrada e o celular a um QR de distância.</p>
         <div class="hero-actions">
-          <a class="button button-primary" id="smart-download" href="https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.3/FaderDeck-Mac.dmg">
+          <a class="button button-primary" id="smart-download" href="#downloads">
             <span class="button-icon" id="smart-download-icon" aria-hidden="true"></span>
-            <span id="smart-download-label">Baixar para macOS</span>
+            <span id="smart-download-label">Ver opções de download</span>
             <svg class="button-arrow" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </a>
           <a class="text-link" href="#downloads">Outras plataformas e versões <span aria-hidden="true">↓</span></a>
         </div>
+        <p class="download-compatibility-message" id="download-compatibility-message" role="status" aria-live="polite">Windows: instalador 64-bit. macOS: instalador universal para Intel e Apple Silicon.</p>
         <div class="hero-meta"><span><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2.5 3.5 5v4.4c0 4.1 2.8 6.7 6.5 8.1 3.7-1.4 6.5-4 6.5-8.1V5L10 2.5Z" stroke="currentColor" stroke-width="1.4"/><path d="m7 10 2 2 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Seus layouts ficam no seu Mac</span><span class="meta-divider"></span><span>Intel + Apple Silicon</span></div>
       </div>
 
@@ -90,16 +91,16 @@
     </section>
 
     <section class="download-section section-wrap" id="downloads">
-          <div class="download-panel"><div class="download-copy"><span class="eyebrow">ESCOLHA SUA PLATAFORMA</span><h2>Seu próximo passo<br>começa aqui.</h2><p>Baixe o instalador para Windows ou macOS e instale o FaderDeck no seu computador.</p><div class="download-note"><span class="note-dot"></span> Windows e macOS disponíveis.</div></div><div class="download-options">
+          <div class="download-panel"><div class="download-copy"><span class="eyebrow">ESCOLHA SUA PLATAFORMA</span><h2>Seu próximo passo<br>começa aqui.</h2><p>O botão principal seleciona o instalador compatível quando possível. Windows 32-bit ainda não é compatível; o macOS usa um pacote universal para Intel e Apple Silicon.</p><div class="download-note"><span class="note-dot"></span> Windows 64-bit · macOS Universal</div></div><div class="download-options">
         <!-- O atualizador scripts/update-site-download-version.cjs sincroniza Windows e macOS para a mesma tag de Release. -->
-        <a class="platform-button" id="download-windows" href="https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.3/FaderDeck-Windows-Setup.exe"><span class="platform-icon windows-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 4.8 10 3.7v7.7H2V4.8Zm9.1-1.3L22 1.8v9.6H11.1V3.5ZM2 12.7h8v7.7L2 19.3v-6.6Zm9.1 0H22v9.6l-10.9-1.5v-8.1Z"/></svg></span><span><small>INSTALADOR</small><strong>Windows</strong><em>Windows Setup · 1.0.3</em></span><span class="platform-arrow">↗</span></a>
+        <a class="platform-button" id="download-windows" href="https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.3/FaderDeck-Windows-Setup.exe"><span class="platform-icon windows-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 4.8 10 3.7v7.7H2V4.8Zm9.1-1.3L22 1.8v9.6H11.1V3.5ZM2 12.7h8v7.7L2 19.3v-6.6Zm9.1 0H22v9.6l-10.9-1.5v-8.1Z"/></svg></span><span><small>INSTALADOR</small><strong>Windows 64-bit</strong><em id="download-windows-detail">Windows Setup · 1.0.3 · x64</em></span><span class="platform-arrow">↗</span></a>
         <a class="platform-button" id="download-mac" href="https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.3/FaderDeck-Mac.dmg"><span class="platform-icon apple-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.37 12.22c.02 2.29 2.01 3.05 2.03 3.06-.02.05-.32 1.1-1.05 2.17-.63.92-1.28 1.83-2.31 1.85-1.01.02-1.34-.6-2.5-.6-1.15 0-1.51.58-2.47.62-1 .04-1.77-.99-2.41-1.9-1.31-1.9-2.31-5.37-.96-7.72.67-1.17 1.87-1.91 3.17-1.93.99-.02 1.92.67 2.52.67.59 0 1.71-.83 2.89-.71.49.02 1.87.2 2.76 1.5-.07.04-1.65.97-1.67 2.99ZM14.47 5.8c.53-.64.89-1.53.79-2.42-.77.03-1.7.51-2.25 1.15-.5.57-.94 1.48-.82 2.35.86.07 1.74-.44 2.28-1.08Z"/></svg></span><span><small>INSTALADOR</small><strong>macOS</strong><em>Universal · Intel + Apple Silicon</em></span><span class="platform-arrow">↗</span></a>
       </div></div>
     </section>
 
     <section class="requirements section-wrap" id="requisitos">
-      <div class="section-heading requirements-heading"><div><span class="eyebrow">ANTES DE INSTALAR</span><h2>O que você<br><span class="muted-heading">precisa saber.</span></h2></div><p>Baixe o instalador para macOS e instale o FaderDeck no seu Mac. O pacote é universal para Macs Intel e Apple Silicon.</p></div>
-      <div class="requirements-grid"><article class="requirement-card"><span class="req-label">SISTEMA</span><strong>macOS</strong><p>Aplicativo desktop para computadores Mac.</p></article><article class="requirement-card"><span class="req-label">INSTALADOR</span><strong>.dmg</strong><p>Baixe o arquivo e siga as instruções de instalação no Mac.</p></article><article class="requirement-card"><span class="req-label">ARQUITETURA</span><strong>Universal</strong><p>Compatível com Macs Intel e Apple Silicon.</p></article></div>
+      <div class="section-heading requirements-heading"><div><span class="eyebrow">ANTES DE INSTALAR</span><h2>O que você<br><span class="muted-heading">precisa saber.</span></h2></div><p>No Windows, o instalador atual exige 64 bits. No macOS, o pacote universal funciona em Macs Intel e Apple Silicon.</p></div>
+      <div class="requirements-grid"><article class="requirement-card"><span class="req-label">SISTEMA</span><strong>Windows 64-bit + macOS</strong><p>Windows 32-bit ainda não é compatível; o instalador para Mac é universal.</p></article><article class="requirement-card"><span class="req-label">INSTALADOR</span><strong>.exe + .dmg</strong><p>Baixe o instalador correspondente ao Windows ou macOS.</p></article><article class="requirement-card"><span class="req-label">ARQUITETURA</span><strong>Universal</strong><p>Compatível com Macs Intel e Apple Silicon.</p></article></div>
 
       <div class="notice-card"><span class="notice-icon">i</span><p><strong>Primeira abertura no Mac.</strong> O app ainda não é assinado/notarizado. Se o macOS não puder verificar o desenvolvedor, Control-clique no app, escolha <b>Abrir</b> e confirme; se necessário, permita em <b>Ajustes do Sistema → Privacidade e Segurança</b>. No primeiro uso, permita o acesso à rede local e as conexões de entrada no Firewall.</p></div>
       <div class="storage-note"><span class="storage-symbol">⌂</span><p><strong>Seus dados ficam no Mac.</strong> Layout, token e dados do painel são armazenados em <code>~/Library/Application Support/FaderDeck</code>, fora do app, preservados em atualizações. Dados antigos compatíveis são migrados automaticamente.</p></div>
@@ -108,7 +109,8 @@
     <section class="final-cta section-wrap"><div class="final-cta-inner"><span class="eyebrow">FADERDECK · CONTROLADOR MIDI</span><h2>Seu setup.<br><span class="headline-accent">Mais perto.</span></h2><a class="button button-primary" href="#downloads"><span>Ver opções de download</span><svg class="button-arrow" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div><div class="final-orbit orbit-one"></div><div class="final-orbit orbit-two"></div><div class="final-lines" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></section>
   </main>
 
-  <footer class="site-footer"><div class="footer-main"><a class="brand" href="#inicio"><span class="brand-mark" aria-hidden="true"><img src="faderdeck-icon.png" alt=""></span><span>Fader<span class="brand-light">Deck</span></span></a><p>Painel MIDI para sua DAW.<br>Desenvolvido para macOS.</p><a href="#inicio" class="back-top">Voltar ao topo ↑</a></div><div class="footer-bottom"><span>© <span id="year"></span> FaderDeck</span><span>Feito para manter o controle por perto.</span></div></footer>
+  <footer class="site-footer"><div class="footer-main"><a class="brand" href="#inicio"><span class="brand-mark" aria-hidden="true"><img src="faderdeck-icon.png" alt=""></span><span>Fader<span class="brand-light">Deck</span></span></a><p>Painel MIDI para sua DAW.<br>Desenvolvido para Windows e macOS.</p><a href="#inicio" class="back-top">Voltar ao topo ↑</a></div><div class="footer-bottom"><span>© <span id="year"></span> FaderDeck</span><span>Feito para manter o controle por perto.</span></div></footer>
+  <script src="platform-detection.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>

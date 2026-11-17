@@ -54,3 +54,19 @@
 .stage-demo.names-hidden .stage-demo-channel-head{display:none}
 .stage-demo.names-hidden .stage-demo-lane{padding-top:5px}
 @media(max-width:720px){.window-content{padding:9px 8px 10px}.stage-demo-board{height:194px;gap:5px;padding:5px}.stage-demo-lane{min-width:66px;flex-basis:66px;padding-inline:5px}.stage-demo-channel-head{min-height:20px;font-size:6px}.stage-demo-value{font-size:6px}}
+
+.download-compatibility-message {
+  max-width: 440px;
+  margin: 13px 0 0;
+  color: var(--muted, #9ca3af);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.platform-button.is-unavailable,
+#smart-download.is-unavailable {
+  cursor: not-allowed;
+  filter: grayscale(1);
+  opacity: 0.5;
+  pointer-events: none;
+}

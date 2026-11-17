@@ -1,9 +1,10 @@
 /*
- * FADERDECK — LINKS DOS INSTALADORES
- * Os instaladores de macOS e Windows estão publicados no GitHub Releases.
- * As URLs de cada plataforma são literais; scripts/update-site-download-version.cjs
- * alinha Windows e macOS à mesma tag depois que uma GitHub Release conjunta passa no workflow.
+ * FADERDECK — SELEÇÃO DO INSTALADOR
+ * As URLs são literais; scripts/update-site-download-version.cjs alinha os dois sistemas
+ * à mesma tag depois que a release conjunta é publicada.
  */
+const WINDOWS_URL =
+  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.3/FaderDeck-Windows-Setup.exe';
 const MACOS_URL =
   'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.3/FaderDeck-Mac.dmg';
 
@@ -16,41 +17,70 @@ const icons = {
     '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
 
-function detectPlatform() {
-  // User-Agent Client Hints, quando disponível, é preferido; User-Agent serve como fallback para Safari.
-  const hintedPlatform = navigator.userAgentData?.platform || '';
-  const platform = `${hintedPlatform} ${navigator.userAgent || ''}`.toLowerCase();
-  if (/windows|win32|win64/.test(platform)) return 'windows';
-  if (/macos|macintosh|mac os x|macintel|macppc|mac68k/.test(platform)) return 'macos';
-  return 'other';
+const platformDetection = window.FaderDeckPlatformDetection;
+
+function setAnchorTarget(anchor, href, available = true) {
+  if (!anchor) return;
+
+  anchor.classList.toggle('is-unavailable', !available);
+  if (!available) {
+    anchor.removeAttribute('href');
+    anchor.setAttribute('aria-disabled', 'true');
+    anchor.setAttribute('tabindex', '-1');
+    return;
+  }
+
+  anchor.href = href;
+  anchor.removeAttribute('aria-disabled');
+  anchor.removeAttribute('tabindex');
 }
 
-function setupSmartDownload() {
+async function setupSmartDownload() {
   const button = document.getElementById('smart-download');
   const label = document.getElementById('smart-download-label');
   const icon = document.getElementById('smart-download-icon');
-  if (!button || !label || !icon) return;
+  if (!button || !label || !icon || !platformDetection) return;
 
-  const platform = detectPlatform();
+  const navigatorRef = window.navigator;
+  const platform = platformDetection.detectPlatform(navigatorRef);
+  let windowsBitness = 'unknown';
+  let macChip = 'unknown';
+
   if (platform === 'windows') {
-    label.textContent = 'Baixar para Windows';
-    icon.innerHTML = icons.windows;
-    button.href =
-      'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.3/FaderDeck-Windows-Setup.exe';
-    button.setAttribute('aria-label', 'Baixar FaderDeck para Windows');
+    windowsBitness = await platformDetection.detectWindowsBitness(navigatorRef);
   } else if (platform === 'macos') {
-    label.textContent = 'Baixar para macOS';
-    icon.innerHTML = icons.apple;
-    button.href = MACOS_URL;
-    button.setAttribute('aria-label', 'Baixar FaderDeck para macOS');
-  } else {
-    label.textContent = 'Baixar Aplicativo';
-    icon.innerHTML = icons.download;
-    button.href = '#downloads';
-    button.setAttribute('aria-label', 'Ver opções de download');
+    macChip = await platformDetection.detectMacChip(navigatorRef);
   }
 
-  // O botão alternativo Windows não é consultado nem alterado por este script.
+  const target = platformDetection.resolveDownloadTarget(platform, windowsBitness, macChip);
+  label.textContent = target.label;
+  button.setAttribute('aria-label', target.label);
+
+  if (target.download === 'windows') {
+    icon.innerHTML = icons.windows;
+    setAnchorTarget(button, WINDOWS_URL);
+  } else if (target.download === 'macos') {
+    icon.innerHTML = icons.apple;
+    setAnchorTarget(button, MACOS_URL);
+  } else if (target.download === 'downloads') {
+    icon.innerHTML = icons.download;
+    setAnchorTarget(button, '#downloads');
+  } else {
+    icon.innerHTML = icons.windows;
+    setAnchorTarget(button, '', false);
+  }
+
+  const message = document.getElementById('download-compatibility-message');
+  if (message) message.textContent = target.message;
+
+  const windowsButton = document.getElementById('download-windows');
+  const windowsDetail = document.getElementById('download-windows-detail');
+  const windowsUnavailable = platform === 'windows' && windowsBitness === '32';
+  setAnchorTarget(windowsButton, WINDOWS_URL, !windowsUnavailable);
+  if (windowsUnavailable && windowsDetail) {
+    windowsDetail.textContent = 'Indisponível em Windows 32-bit';
+  }
+
   const macButton = document.getElementById('download-mac');
   if (macButton) macButton.href = MACOS_URL;
 }
@@ -113,7 +143,16 @@ function setupStagePreview() {
   applyPreference();
 }
 
-document.getElementById('year').textContent = new Date().getFullYear();
-setupSmartDownload();
-setupMobileMenu();
-setupStagePreview();
+if (typeof document !== 'undefined') {
+  const year = document.getElementById('year');
+  if (year) year.textContent = new Date().getFullYear();
+  setupSmartDownload().catch(() => {
+    const message = document.getElementById('download-compatibility-message');
+    if (message) {
+      message.textContent =
+        'Não foi possível detectar seu sistema automaticamente. Escolha uma opção de download abaixo.';
+    }
+  });
+  setupMobileMenu();
+  setupStagePreview();
+}

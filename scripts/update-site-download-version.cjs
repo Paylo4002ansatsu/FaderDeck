@@ -44,7 +44,7 @@ function updateSiteDownloadVersion(docsDirectory, tag) {
     Object.entries(files).map(([key, filePath]) => [key, fs.readFileSync(filePath, 'utf8')]),
   );
 
-  const expectedMacLinks = { html: 2, script: 1, readme: 1 };
+  const expectedMacLinks = { html: 1, script: 1, readme: 1 };
   const updated = {};
   for (const key of Object.keys(files)) {
     updated[key] = replaceExpectedCount(
