@@ -20,7 +20,7 @@ function createDocsFixture() {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'faderdeck-site-version-'));
   fs.writeFileSync(
     path.join(directory, 'index.html'),
-    `<a href="#downloads">Smart download</a> <a href="${WINDOWS_100}">Windows Setup · 1.0.0</a> <a href="${MACOS_101}">Mac download</a>`,
+    `<a href="#downloads">Smart download</a> <a href="${WINDOWS_100}">Windows · 64-bit · 1.0.0</a> <a href="${MACOS_101}">Mac download</a>`,
     'utf8',
   );
   fs.writeFileSync(
@@ -56,7 +56,7 @@ test('updates both platform links and the Windows label to one numeric tag', (t)
   assert.deepEqual(result.changed, ['html', 'script', 'readme']);
   assert.equal((files['index.html'].match(new RegExp(WINDOWS_120, 'g')) || []).length, 1);
   assert.equal((files['index.html'].match(new RegExp(MACOS_120, 'g')) || []).length, 1);
-  assert.match(files['index.html'], /Windows Setup · 1\.2\.0/);
+  assert.match(files['index.html'], /Windows · 64-bit · 1\.2\.0/);
   assert.equal((files['app.js'].match(new RegExp(WINDOWS_120, 'g')) || []).length, 1);
   assert.equal((files['app.js'].match(new RegExp(MACOS_120, 'g')) || []).length, 1);
   assert.ok(files['README.md'].includes(WINDOWS_120));

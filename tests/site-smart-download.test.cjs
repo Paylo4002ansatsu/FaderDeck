@@ -11,6 +11,7 @@ const appVersion = require('../package.json').version;
 const appSource = fs.readFileSync(path.join(__dirname, '../docs/app.js'), 'utf8');
 const WINDOWS_URL = `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/${appVersion}/FaderDeck-Windows-Setup.exe`;
 const MACOS_URL = `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/${appVersion}/FaderDeck-Mac.dmg`;
+const landingHtml = fs.readFileSync(path.join(__dirname, '../docs/index.html'), 'utf8');
 
 class FakeElement {
   constructor(href = '') {
@@ -60,6 +61,24 @@ function createPage(navigatorRef) {
     setImmediate(() => resolve(elements));
   });
 }
+
+test('landing page clearly presents Windows and macOS without development jargon', () => {
+  const description = landingHtml.match(/<meta name="description" content="([^"]+)"/);
+  assert.ok(description);
+  assert.match(description[1], /Windows/);
+  assert.match(description[1], /macOS/);
+  assert.match(landingHtml, /Windows e macOS/);
+  assert.match(landingHtml, /loopMIDI/);
+  assert.match(landingHtml, /no Mac, o FaderDeck faz isso automaticamente/i);
+  assert.doesNotMatch(
+    landingHtml,
+    /WebSocket|CoreMIDI|IP:PORTA|Application Support|token|npm|Node\.js/i,
+  );
+  assert.doesNotMatch(
+    landingHtml,
+    /Seus layouts ficam no seu Mac|Do Mac para o|Ponte virtual no macOS/i,
+  );
+});
 
 test('the main and manual Windows buttons select x64 only for 64-bit Windows', async () => {
   const elements = await createPage({

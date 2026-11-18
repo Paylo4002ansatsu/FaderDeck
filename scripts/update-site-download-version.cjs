@@ -67,11 +67,11 @@ function updateSiteDownloadVersion(docsDirectory, tag) {
 
   updated.html = replaceExpectedCount(
     updated.html,
-    /Windows Setup · \d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/g,
-    `Windows Setup · ${version}`,
+    /Windows · 64-bit · \d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/g,
+    `Windows · 64-bit · ${version}`,
     1,
     'docs/index.html',
-    'rótulo de versão Windows',
+    'rótulo de versão Windows 64-bit',
   );
 
   for (const [key, filePath] of Object.entries(files)) {
