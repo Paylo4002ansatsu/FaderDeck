@@ -44,6 +44,11 @@ test('Pages and installed app contain the same Windows guide and image assets', 
   assert.match(docsGuide, /letter-spacing: 0\.005em/);
   assert.match(docsGuide, /\.step p\s*\{[^}]*line-height: 1\.75/s);
   assert.match(docsGuide, /figcaption\s*\{[^}]*font-size: 14px/s);
+  assert.match(docsGuide, /\.contents a\s*\{[^}]*min-height: 44px/s);
+  assert.match(docsGuide, /\.chip\s*\{[^}]*font-size: 14px/s);
+  assert.match(docsGuide, /\.callout\s*\{[^}]*font-size: 14px/s);
+  assert.match(docsGuide, /\.admin-label\s*\{[^}]*font-size: 14px/s);
+  assert.match(docsGuide, /\.footer\s*\{[^}]*font-size: 14px/s);
   assert.deepEqual(
     fs.readFileSync(path.join(root, 'client', 'faderdeck-icon.png')),
     fs.readFileSync(path.join(root, 'docs', 'faderdeck-icon.png')),
