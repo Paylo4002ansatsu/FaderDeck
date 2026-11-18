@@ -37,7 +37,7 @@ Fonte da captura: [tutorial Silence & Sound sobre loopMIDI](https://www.silencea
 
 ### 3. Selecione a saída MIDI no FaderDeck
 
-1. Com o FaderDeck aberto, clique no ícone do aplicativo na bandeja do Windows.
+1. Com o FaderDeck aberto, vá ao menu superior e clique em FaderDeck
 2. Escolha **Portas MIDI e administração…**.
 3. Em **Saída MIDI para a DAW**, selecione **FaderDeck**.
 4. Clique em **Aplicar portas MIDI** e espere a confirmação.
