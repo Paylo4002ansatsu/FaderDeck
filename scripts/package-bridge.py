@@ -24,6 +24,10 @@ REQUIRED_FILES = (
     ROOT / "fader-bridge" / "package-lock.json",
     ROOT / "README-ponte.md",
     CLIENT_DIR / "index.html",
+    CLIENT_DIR / "guia-midi-windows.html",
+    CLIENT_DIR / "guia-assets" / "loopmidi-window.png",
+    CLIENT_DIR / "guia-assets" / "ableton-midi-ports.png",
+    CLIENT_DIR / "guia-assets" / "fl-studio-midi-input.png",
 )
 
 
@@ -73,6 +77,8 @@ def build_archive() -> None:
             names = set(archive.namelist())
             required_entries = {
                 "client/index.html", "client/admin/index.html", "client/admin/bridge.css", "client/admin/bridge.js",
+                "client/guia-midi-windows.html", "client/guia-assets/loopmidi-window.png",
+                "client/guia-assets/ableton-midi-ports.png", "client/guia-assets/fl-studio-midi-input.png",
                 "server.cjs", "server-utils.cjs", "bridge/midi-manager.cjs", "bridge/auth.cjs",
                 "bridge/websocket-handler.cjs", "bridge/layout-persistence.cjs", "bridge/websocket-gateway.cjs",
                 "bridge/http-router.cjs", "bridge/token-store.cjs", "bridge/network-addresses.cjs",

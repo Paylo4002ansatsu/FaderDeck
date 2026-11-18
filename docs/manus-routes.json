@@ -1,1 +1,6 @@
-{"routes":[{"path":"/","title":"FaderDeck — Controlador MIDI para macOS"}]}
+{
+  "routes": [
+    { "path": "/", "title": "FaderDeck — Controlador MIDI para macOS" },
+    { "path": "/guia-midi-windows.html", "title": "Configuração MIDI do FaderDeck no Windows" }
+  ]
+}

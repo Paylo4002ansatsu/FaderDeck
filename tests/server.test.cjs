@@ -230,6 +230,15 @@ test('server does not listen on import, retries an occupied port, and survives m
   assert.equal(adminCss.status, 200);
   assert.match(adminCss.headers['content-type'], /text\/css/);
 
+  const guidePage = await request(port, '/guia-midi-windows.html');
+  assert.equal(guidePage.status, 200);
+  assert.match(guidePage.headers['content-type'], /text\/html/);
+  assert.match(guidePage.body, /Do loopMIDI ao primeiro/);
+  const guideImage = await request(port, '/guia-assets/loopmidi-window.png');
+  assert.equal(guideImage.status, 200);
+  assert.match(guideImage.headers['content-type'], /image\/png/);
+  assert.ok(guideImage.body.length > 0);
+
   const pairing = await request(port, '/api/pairing');
   assert.equal(pairing.status, 200);
   const pairingData = JSON.parse(pairing.body);

@@ -1,0 +1,69 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+
+const root = path.join(__dirname, '..');
+const docsGuidePath = path.join(root, 'docs', 'guia-midi-windows.html');
+const clientGuidePath = path.join(root, 'client', 'guia-midi-windows.html');
+const requiredImages = [
+  'ableton-midi-ports.png',
+  'fl-studio-midi-input.png',
+  'loopmidi-window.png',
+];
+
+test('Pages and installed app contain the same Windows guide and image assets', () => {
+  const docsGuide = fs.readFileSync(docsGuidePath, 'utf8');
+  const clientGuide = fs.readFileSync(clientGuidePath, 'utf8');
+  assert.equal(clientGuide, docsGuide);
+
+  const imageSources = [...docsGuide.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map(
+    (match) => match[1],
+  );
+  assert.deepEqual(imageSources.sort(), [
+    'guia-assets/ableton-midi-ports.png',
+    'guia-assets/fl-studio-midi-input.png',
+    'guia-assets/loopmidi-window.png',
+  ]);
+
+  for (const imageName of requiredImages) {
+    const docsImage = path.join(root, 'docs', 'guia-assets', imageName);
+    const clientImage = path.join(root, 'client', 'guia-assets', imageName);
+    assert.equal(fs.existsSync(docsImage), true, `Imagem Pages ausente: ${imageName}`);
+    assert.equal(fs.existsSync(clientImage), true, `Imagem do app ausente: ${imageName}`);
+    assert.deepEqual(fs.readFileSync(clientImage), fs.readFileSync(docsImage));
+  }
+});
+
+test('guide documents verified Windows setup and all requested DAWs without inventing UI', () => {
+  const guide = fs.readFileSync(docsGuidePath, 'utf8');
+  for (const requiredText of [
+    'New port-name',
+    'FaderDeck',
+    'Aplicar portas MIDI',
+    'REAPER',
+    'Ableton Live',
+    'FL Studio',
+    'Cubase',
+    'ChurchDAW',
+    'Sistema → Áudio e MIDI',
+    'Ferramentas → Mapear MIDI',
+    'loopMIDI precisa ficar ativo',
+    'Ilustração esquemática',
+    'Captura real',
+  ]) {
+    assert.ok(guide.includes(requiredText), `Conteúdo obrigatório ausente: ${requiredText}`);
+  }
+  assert.equal(guide.includes('Auto detect'), false);
+  assert.equal(guide.includes('Node.js no app desktop'), true);
+});
+
+test('guide route is declared and Electron packaging includes client guide assets', () => {
+  const routes = JSON.parse(fs.readFileSync(path.join(root, 'docs', 'manus-routes.json'), 'utf8'));
+  assert.ok(routes.routes.some((route) => route.path === '/guia-midi-windows.html'));
+
+  const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  assert.ok(packageJson.build.files.includes('client/**/*'));
+});

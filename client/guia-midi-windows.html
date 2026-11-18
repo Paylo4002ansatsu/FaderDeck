@@ -1,0 +1,1751 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0e11" />
+    <meta
+      name="description"
+      content="Tutorial visual do FaderDeck no Windows: instalar e manter o loopMIDI ativo, selecionar a porta e mapear faders nas principais DAWs."
+    />
+    <title>Guia MIDI para Windows · FaderDeck</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0e11;
+        --panel: #12191b;
+        --panel-raised: #192224;
+        --line: #2c3b3c;
+        --text: #edf3f1;
+        --muted: #a6b3b0;
+        --teal: #40ded0;
+        --gold: #ffbd5a;
+        --red: #ff807e;
+        --green: #8de1a0;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 24px;
+      }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(ellipse at 80% -10%, rgb(64 222 208 / 9%), transparent 36rem), var(--bg);
+        color: var(--text);
+        font:
+          16px/1.65 Inter,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
+      a {
+        color: var(--teal);
+        text-underline-offset: 0.18em;
+      }
+      a:hover {
+        color: #8af2e8;
+      }
+      a:focus-visible,
+      summary:focus-visible {
+        outline: 3px solid var(--gold);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+      .skip-link {
+        position: absolute;
+        left: 12px;
+        top: -80px;
+        z-index: 10;
+        padding: 10px 14px;
+        border-radius: 8px;
+        background: var(--teal);
+        color: #071312;
+        font-weight: 800;
+      }
+      .skip-link:focus {
+        top: 12px;
+      }
+      .shell {
+        width: min(100% - 32px, 1080px);
+        margin-inline: auto;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        min-height: 76px;
+        border-bottom: 1px solid rgb(166 179 176 / 15%);
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text);
+        font-weight: 800;
+        letter-spacing: 0.11em;
+        text-decoration: none;
+      }
+      .brand-mark {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border: 1px solid #31514e;
+        border-radius: 10px;
+        background: #162524;
+        color: var(--teal);
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+      .topbar nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        font-size: 13px;
+      }
+      .topbar nav a {
+        color: var(--muted);
+      }
+      .hero {
+        padding: clamp(42px, 8vw, 82px) 0 38px;
+      }
+      .eyebrow,
+      .section-kicker {
+        color: var(--teal);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+      h1,
+      h2,
+      h3 {
+        line-height: 1.14;
+        text-wrap: balance;
+      }
+      h1 {
+        max-width: 900px;
+        margin: 14px 0 18px;
+        font-size: clamp(38px, 7vw, 68px);
+        letter-spacing: -0.045em;
+      }
+      h1 span {
+        color: var(--teal);
+      }
+      .hero-copy {
+        max-width: 790px;
+        color: var(--muted);
+        font-size: clamp(17px, 2vw, 20px);
+      }
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 11px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgb(18 25 27 / 75%);
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .chip::before {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--teal);
+        content: '';
+      }
+      .alert {
+        margin: 0 0 28px;
+        padding: 18px 20px;
+        border: 1px solid #896627;
+        border-left: 4px solid var(--gold);
+        border-radius: 12px;
+        background: #251e12;
+        color: #f5e6ca;
+      }
+      .alert strong {
+        color: #ffd38a;
+      }
+      .alert p {
+        margin: 0;
+      }
+      .alert p + p {
+        margin-top: 8px;
+      }
+      .contents {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin: 0 0 32px;
+        padding: 0;
+        list-style: none;
+      }
+      .contents a {
+        display: inline-block;
+        padding: 7px 11px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        font-size: 12px;
+        text-decoration: none;
+      }
+      .step {
+        margin: 0 0 24px;
+        padding: clamp(20px, 4vw, 34px);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: linear-gradient(155deg, rgb(25 34 36 / 96%), rgb(15 21 23 / 96%));
+        box-shadow: 0 16px 50px rgb(0 0 0 / 16%);
+      }
+      .step-header {
+        display: grid;
+        grid-template-columns: 50px minmax(0, 1fr);
+        gap: 15px;
+        align-items: start;
+        margin-bottom: 20px;
+      }
+      .step-number {
+        display: grid;
+        width: 46px;
+        height: 46px;
+        place-items: center;
+        border: 1px solid #316c67;
+        border-radius: 14px;
+        background: #102523;
+        color: var(--teal);
+        font-size: 14px;
+        font-weight: 900;
+      }
+      .step h2 {
+        margin: 2px 0 9px;
+        font-size: clamp(23px, 3.2vw, 32px);
+        letter-spacing: -0.025em;
+      }
+      .step h3 {
+        margin: 25px 0 10px;
+        font-size: 19px;
+      }
+      .step p,
+      .step li {
+        color: #c1ccca;
+      }
+      .step p {
+        margin: 0 0 14px;
+      }
+      .step ol,
+      .step ul {
+        padding-left: 23px;
+      }
+      .step li + li {
+        margin-top: 8px;
+      }
+      .two-col {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin: 18px 0;
+      }
+      .mini-card {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--panel);
+      }
+      .mini-card strong {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--text);
+      }
+      .mini-card p {
+        margin: 0;
+        font-size: 14px;
+      }
+      figure {
+        margin: 22px 0 12px;
+        overflow: hidden;
+        border: 1px solid #344546;
+        border-radius: 14px;
+        background: #0b1011;
+      }
+      .figure-top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 14px;
+        border-bottom: 1px solid #2c3b3c;
+        background: #101718;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+      .figure-top .real {
+        color: var(--green);
+      }
+      .figure-top .schematic-tag {
+        color: var(--gold);
+      }
+      .image-wrap {
+        position: relative;
+        width: 100%;
+        background: #080a0c;
+      }
+      .image-wrap img {
+        display: block;
+        width: 100%;
+        height: auto;
+        margin: 0 auto;
+      }
+      .annotation {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+      .annotation circle,
+      .annotation rect,
+      .annotation path {
+        fill: none;
+        stroke: var(--gold);
+        stroke-width: 2.5;
+        vector-effect: non-scaling-stroke;
+      }
+      .annotation .arrowhead {
+        fill: var(--gold);
+        stroke: none;
+      }
+      figcaption {
+        padding: 13px 15px 15px;
+        border-top: 1px solid #2c3b3c;
+        color: #bdc8c5;
+        font-size: 13px;
+      }
+      figcaption strong {
+        color: var(--text);
+      }
+      .source-line {
+        display: block;
+        margin-top: 7px;
+        color: #82918e;
+        font-size: 11px;
+      }
+      .schematic {
+        padding: clamp(14px, 3vw, 26px);
+        background: linear-gradient(135deg, rgb(64 222 208 / 4%), transparent 50%), #0d1213;
+      }
+      .mock-browser,
+      .mock-app,
+      .mock-admin,
+      .mock-daw {
+        overflow: hidden;
+        border: 1px solid #3b4c4d;
+        border-radius: 12px;
+        background: #192224;
+        box-shadow: 0 14px 36px rgb(0 0 0 / 24%);
+      }
+      .mock-titlebar {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 12px;
+        border-bottom: 1px solid #354243;
+        background: #232e30;
+        color: #b6c3c0;
+        font-size: 12px;
+      }
+      .mock-titlebar i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #798987;
+      }
+      .mock-browser-body,
+      .mock-app-body,
+      .mock-daw-body {
+        padding: clamp(16px, 3vw, 25px);
+      }
+      .address-bar {
+        padding: 9px 12px;
+        border: 1px solid #3b4a4b;
+        border-radius: 7px;
+        background: #0c1213;
+        color: #b8c7c4;
+        font:
+          12px ui-monospace,
+          SFMono-Regular,
+          Consolas,
+          monospace;
+        overflow-wrap: anywhere;
+      }
+      .mock-browser-body h3 {
+        margin: 22px 0 9px;
+        font-size: 22px;
+      }
+      .download-callout {
+        display: inline-flex;
+        align-items: center;
+        gap: 11px;
+        margin: 9px 0 8px;
+        padding: 12px 16px;
+        border: 2px solid var(--gold);
+        border-radius: 8px;
+        background: #20302d;
+        color: var(--teal);
+        font-weight: 800;
+      }
+      .download-callout b {
+        display: grid;
+        width: 26px;
+        height: 26px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--gold);
+        color: #1a1307;
+      }
+      .mock-browser-body p,
+      .mock-app-body p,
+      .mock-daw-body p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .install-flow {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin: 0 0 16px;
+      }
+      .flow-card {
+        min-height: 132px;
+        padding: 16px;
+        border: 1px solid #354747;
+        border-radius: 12px;
+        background: #182122;
+      }
+      .flow-card .flow-no {
+        display: grid;
+        width: 28px;
+        height: 28px;
+        margin-bottom: 13px;
+        place-items: center;
+        border-radius: 50%;
+        background: #153c38;
+        color: var(--teal);
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .flow-card strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+      .flow-card span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .notice-inline {
+        padding: 13px 15px;
+        border-left: 3px solid var(--gold);
+        border-radius: 6px;
+        background: #241e13;
+        color: #efdfc2;
+        font-size: 13px;
+      }
+      .port-window {
+        max-width: 720px;
+        margin: 0 auto;
+        border: 1px solid #3b4a4b;
+        border-radius: 10px;
+        background: #f3f4f4;
+        color: #182022;
+        font:
+          14px/1.4 'Segoe UI',
+          system-ui,
+          sans-serif;
+      }
+      .port-window-title {
+        padding: 10px 13px;
+        border-bottom: 1px solid #c8cecf;
+        background: #e4e9e9;
+        font-weight: 700;
+      }
+      .port-window-body {
+        padding: 16px;
+      }
+      .port-list-title {
+        margin: 0 0 8px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .port-list-row {
+        margin: 0 0 18px;
+        padding: 8px 10px;
+        border: 1px solid #c6d1d0;
+        border-radius: 4px;
+        background: #d9f3ef;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+      .port-entry {
+        display: grid;
+        grid-template-columns: auto minmax(120px, 1fr) auto;
+        align-items: center;
+        gap: 9px;
+      }
+      .port-entry label {
+        font-size: 12px;
+      }
+      .port-input {
+        padding: 7px 9px;
+        border: 2px solid var(--gold);
+        border-radius: 4px;
+        background: #fff;
+        font-weight: 700;
+      }
+      .plus-button {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        border: 3px solid var(--gold);
+        border-radius: 50%;
+        background: #263a38;
+        color: #fff;
+        font-size: 25px;
+        font-weight: 800;
+      }
+      .numbered-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+        color: #304041;
+        font-size: 12px;
+      }
+      .numbered-row .badge {
+        display: grid;
+        width: 23px;
+        height: 23px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--gold);
+        color: #281c08;
+        font-weight: 900;
+      }
+      .taskbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        min-height: 58px;
+        padding: 9px 14px;
+        border: 1px solid #49595a;
+        border-radius: 9px 9px 0 0;
+        background: linear-gradient(#30393b, #1c2426);
+        color: #f1f4f3;
+        font:
+          14px 'Segoe UI',
+          system-ui,
+          sans-serif;
+      }
+      .tray-caret {
+        color: #e1e8e6;
+        font-size: 19px;
+      }
+      .tray-icon {
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border: 1px solid #4d7470;
+        border-radius: 6px;
+        background: #17312e;
+        color: var(--teal);
+        font-weight: 900;
+      }
+      .tray-menu {
+        width: min(100%, 360px);
+        margin: 0 0 0 auto;
+        padding: 10px;
+        border: 1px solid #4a5b5c;
+        border-radius: 0 0 10px 10px;
+        background: #232d2f;
+        color: #eaf0ee;
+        font:
+          13px/1.5 'Segoe UI',
+          system-ui,
+          sans-serif;
+      }
+      .tray-menu div {
+        padding: 8px 10px;
+        border-radius: 5px;
+      }
+      .tray-menu .highlight {
+        border: 1px solid var(--gold);
+        background: #3b3020;
+        color: #ffdd9d;
+      }
+      .admin-fields {
+        display: grid;
+        gap: 13px;
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      .admin-field {
+        padding: 13px;
+        border: 1px solid #3c4b4c;
+        border-radius: 9px;
+        background: #101718;
+      }
+      .admin-label {
+        display: block;
+        margin-bottom: 7px;
+        color: #aab8b5;
+        font-size: 11px;
+      }
+      .admin-select {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 11px;
+        border: 1px solid #455555;
+        border-radius: 7px;
+        background: #192224;
+        color: var(--text);
+      }
+      .admin-select strong {
+        color: var(--teal);
+      }
+      .admin-button {
+        display: inline-flex;
+        justify-content: center;
+        margin-top: 4px;
+        padding: 11px 16px;
+        border-radius: 7px;
+        background: var(--teal);
+        color: #071715;
+        font-size: 13px;
+        font-weight: 900;
+      }
+      .breadcrumb {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: 16px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .breadcrumb span:not(:last-child)::after {
+        margin-left: 7px;
+        color: var(--gold);
+        content: '›';
+      }
+      .device-row {
+        display: grid;
+        grid-template-columns: minmax(130px, 1fr) auto auto;
+        gap: 12px;
+        align-items: center;
+        margin: 10px 0;
+        padding: 12px;
+        border: 1px solid #435150;
+        border-radius: 8px;
+        background: #101718;
+      }
+      .device-row strong {
+        color: var(--teal);
+      }
+      .check {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #d6dfdd;
+        font-size: 12px;
+      }
+      .check b {
+        display: grid;
+        width: 18px;
+        height: 18px;
+        place-items: center;
+        border: 1px solid var(--teal);
+        border-radius: 3px;
+        background: #163b36;
+        color: var(--teal);
+        font-size: 13px;
+      }
+      .daw-flow {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 15px;
+      }
+      .daw-flow div {
+        padding: 12px;
+        border: 1px solid #3a494a;
+        border-radius: 9px;
+        background: #101718;
+      }
+      .daw-flow b {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--gold);
+        font-size: 12px;
+      }
+      .daw-flow span {
+        color: #c0ccca;
+        font-size: 12px;
+      }
+      .daw-section {
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid #2f3c3d;
+      }
+      .daw-section:first-of-type {
+        margin-top: 0;
+      }
+      .daw-section h3 {
+        margin-top: 0;
+        font-size: 22px;
+      }
+      .callout {
+        margin: 14px 0;
+        padding: 13px 15px;
+        border: 1px solid #3b5551;
+        border-radius: 9px;
+        background: #10201e;
+        color: #cce8e3;
+        font-size: 13px;
+      }
+      .callout.warn {
+        border-color: #755d30;
+        background: #241e13;
+        color: #efdfc2;
+      }
+      .callout strong {
+        color: var(--teal);
+      }
+      .callout.warn strong {
+        color: var(--gold);
+      }
+      .troubleshooting details {
+        padding: 13px 0;
+        border-top: 1px solid #334143;
+      }
+      .troubleshooting summary {
+        color: var(--text);
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .troubleshooting details p {
+        margin: 10px 0 0;
+      }
+      .sources {
+        margin: 0 0 40px;
+        padding: clamp(20px, 4vw, 30px);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--panel);
+      }
+      .sources h2 {
+        margin-top: 0;
+      }
+      .sources li + li {
+        margin-top: 9px;
+      }
+      .footer {
+        padding: 22px 0 38px;
+        border-top: 1px solid rgb(166 179 176 / 15%);
+        color: #879491;
+        font-size: 12px;
+      }
+      .footer p {
+        margin: 0;
+      }
+      @media (max-width: 760px) {
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+          justify-content: center;
+          padding-block: 14px;
+        }
+        .topbar nav {
+          gap: 9px 14px;
+        }
+        .two-col,
+        .install-flow,
+        .daw-flow {
+          grid-template-columns: 1fr;
+        }
+        .flow-card {
+          min-height: 0;
+        }
+        .device-row {
+          grid-template-columns: 1fr 1fr;
+        }
+        .device-row strong {
+          grid-column: 1 / -1;
+        }
+        .step-header {
+          grid-template-columns: 40px minmax(0, 1fr);
+          gap: 11px;
+        }
+        .step-number {
+          width: 38px;
+          height: 38px;
+          border-radius: 12px;
+        }
+      }
+      @media (max-width: 430px) {
+        .shell {
+          width: min(100% - 22px, 1080px);
+        }
+        .step {
+          padding: 17px 14px;
+          border-radius: 14px;
+        }
+        .port-entry {
+          grid-template-columns: 1fr auto;
+        }
+        .port-entry label {
+          grid-column: 1 / -1;
+        }
+        .admin-select {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+      @media print {
+        :root {
+          color-scheme: light;
+          --bg: #fff;
+          --panel: #fff;
+          --panel-raised: #fff;
+          --text: #111;
+          --muted: #444;
+          --line: #bbb;
+        }
+        body {
+          background: #fff;
+          color: #111;
+          font-size: 11pt;
+        }
+        .topbar nav,
+        .contents,
+        .skip-link {
+          display: none;
+        }
+        .step,
+        .sources,
+        figure {
+          break-inside: avoid;
+          box-shadow: none;
+        }
+        .step p,
+        .step li,
+        figcaption {
+          color: #222;
+        }
+        a {
+          color: #00635c;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <header class="topbar shell">
+      <a class="brand" href="index.html" aria-label="FaderDeck, página inicial">
+        <span class="brand-mark" aria-hidden="true">FD</span>
+        <span>FADERDECK</span>
+      </a>
+      <nav aria-label="Etapas do guia">
+        <a href="#loopmidi">loopMIDI</a>
+        <a href="#faderdeck">FaderDeck</a>
+        <a href="#daws">DAWs</a>
+        <a href="#problemas">Solução de problemas</a>
+      </nav>
+    </header>
+
+    <main class="shell" id="conteudo">
+      <section class="hero" id="inicio">
+        <div class="eyebrow">GUIA VISUAL · WINDOWS</div>
+        <h1>Do loopMIDI ao primeiro <span>fader funcionando.</span></h1>
+        <p class="hero-copy">
+          Siga as etapas na ordem. Primeiro crie a porta virtual no Windows, depois selecione-a no
+          FaderDeck e habilite a entrada na sua DAW. As imagens reais e as ilustrações estão
+          identificadas separadamente.
+        </p>
+        <div class="hero-meta" aria-label="Informações importantes">
+          <span class="chip">Windows 64-bit</span>
+          <span class="chip">loopMIDI precisa ficar ativo</span>
+          <span class="chip">Sem Node.js no app desktop</span>
+        </div>
+      </section>
+
+      <aside class="alert" aria-label="Requisito do Windows">
+        <p>
+          <strong>Importante:</strong> nesta implementação, o FaderDeck para Windows não cria a
+          porta MIDI virtual. Instale o loopMIDI, crie a porta com o nome <code>FaderDeck</code> e
+          mantenha o loopMIDI em execução.
+        </p>
+        <p>
+          O instalador atual do FaderDeck para Windows é 64-bit. Este guia não se aplica ao Windows
+          32-bit. O loopMIDI é uma dependência separada; sua página oficial lista Windows 7–10 e não
+          declara explicitamente compatibilidade com Windows 11.
+        </p>
+      </aside>
+
+      <ul class="contents" aria-label="Ir para uma etapa">
+        <li><a href="#download">1 · Baixar loopMIDI</a></li>
+        <li><a href="#instalar">2 · Instalar</a></li>
+        <li><a href="#criar-porta">3 · Criar porta</a></li>
+        <li><a href="#bandeja">4 · Deixar ativo</a></li>
+        <li><a href="#faderdeck">5 · Configurar FaderDeck</a></li>
+        <li><a href="#daws">6 · Habilitar na DAW</a></li>
+      </ul>
+
+      <section class="step" id="download" aria-labelledby="download-title">
+        <div class="step-header">
+          <span class="step-number" aria-hidden="true">01</span>
+          <div>
+            <div class="section-kicker">Instalação</div>
+            <h2 id="download-title">Baixe o loopMIDI da página oficial</h2>
+          </div>
+        </div>
+        <p>
+          Abra a página de
+          <a
+            href="https://www.tobias-erichsen.de/software/loopmidi.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            >loopMIDI — Tobias Erichsen</a
+          >. Clique no link <strong>download loopMIDI</strong>. A página oferece um arquivo ZIP;
+          salve-o e extraia o conteúdo antes de executar o instalador.
+        </p>
+        <figure>
+          <div class="figure-top">
+            <span class="schematic-tag">Ilustração esquemática · não é captura de tela</span
+            ><span>Figura 01</span>
+          </div>
+          <div class="schematic">
+            <div class="mock-browser">
+              <div class="mock-titlebar">
+                <i></i><i></i><i></i><span>Navegador · site oficial</span>
+              </div>
+              <div class="mock-browser-body">
+                <div class="address-bar">tobias-erichsen.de/software/loopmidi.html</div>
+                <h3>loopMIDI</h3>
+                <p>Procure a seção de download do programa no site do desenvolvedor.</p>
+                <div class="download-callout">
+                  <b>1</b><span>download loopMIDI</span><span aria-hidden="true">↓</span>
+                </div>
+                <p>
+                  Este esquema destaca o link a procurar. O layout da página pode mudar; confirme
+                  que está no domínio oficial.
+                </p>
+              </div>
+            </div>
+          </div>
+          <figcaption>
+            <strong>Figura 01.</strong> Esquema do local do link de download. Se preferir, use o
+            <a
+              href="https://www.tobias-erichsen.de/wp-content/uploads/2020/01/loopMIDISetup_1_0_16_27.zip"
+              target="_blank"
+              rel="noopener noreferrer"
+              >ZIP do instalador indicado pela página oficial</a
+            >. O arquivo é separado do instalador do FaderDeck.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="step" id="instalar" aria-labelledby="install-title">
+        <div class="step-header">
+          <span class="step-number" aria-hidden="true">02</span>
+          <div>
+            <div class="section-kicker">Assistente do Windows</div>
+            <h2 id="install-title">Extraia o ZIP e execute o instalador</h2>
+          </div>
+        </div>
+        <ol>
+          <li>Abra a pasta onde salvou o ZIP e extraia os arquivos.</li>
+          <li>Execute o instalador que veio dentro do ZIP e siga as telas do assistente.</li>
+          <li>
+            Use as opções padrão. Se o instalador solicitar a instalação do driver MIDI virtual ou o
+            Windows pedir autorização durante esse processo, confirme a solicitação esperada do
+            loopMIDI.
+          </li>
+          <li>Quando a instalação terminar, abra <strong>loopMIDI</strong> pelo menu Iniciar.</li>
+        </ol>
+        <figure>
+          <div class="figure-top">
+            <span class="schematic-tag">Ilustração do fluxo · não é captura do instalador</span
+            ><span>Figura 02</span>
+          </div>
+          <div class="schematic">
+            <div class="install-flow">
+              <div class="flow-card">
+                <span class="flow-no">1</span><strong>Extrair ZIP</strong
+                ><span>Abra a pasta extraída antes de executar o setup.</span>
+              </div>
+              <div class="flow-card">
+                <span class="flow-no">2</span><strong>Executar setup</strong
+                ><span>Siga o assistente e mantenha as opções padrão.</span>
+              </div>
+              <div class="flow-card">
+                <span class="flow-no">3</span><strong>Permitir o driver</strong
+                ><span>Confirme o driver MIDI virtual se o próprio instalador solicitar.</span>
+              </div>
+            </div>
+            <div class="notice-inline">
+              Não há uma captura atual verificável do assistente no material oficial consultado. Por
+              isso, esta figura representa somente a sequência e não inventa caixas de seleção ou
+              telas específicas.
+            </div>
+          </div>
+          <figcaption>
+            <strong>Figura 02.</strong> Sequência da instalação. O texto e a ordem das telas podem
+            variar conforme a versão do instalador e do Windows.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="step" id="criar-porta" aria-labelledby="port-title">
+        <div class="step-header">
+          <span class="step-number" aria-hidden="true">03</span>
+          <div>
+            <div class="section-kicker">Porta virtual</div>
+            <h2 id="port-title">Abra o loopMIDI e crie a porta FaderDeck</h2>
+          </div>
+        </div>
+        <p>
+          A janela do loopMIDI mostra as portas virtuais existentes e o campo
+          <code>New port-name</code>. A captura abaixo é real, mas os nomes que aparecem nela
+          pertencem a outra instalação. Não copie esses nomes.
+        </p>
+        <figure>
+          <div class="figure-top">
+            <span class="real">Captura real · loopMIDI</span><span>Figura 03</span>
+          </div>
+          <div class="image-wrap">
+            <img
+              src="guia-assets/loopmidi-window.png"
+              alt="Captura real da janela do loopMIDI, mostrando a lista My loopback MIDI ports, os botões de criar e remover uma porta e o campo New port-name."
+              loading="lazy"
+            />
+          </div>
+          <figcaption>
+            <strong>Figura 03.</strong> Janela real do loopMIDI. A porta e o valor do campo exibidos
+            são exemplos de outra instalação; a sua porta deve se chamar <code>FaderDeck</code>.
+            <span class="source-line"
+              >Fonte da captura:
+              <a
+                href="https://www.silenceandsound.com/setup-loopmidi/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >tutorial Silence &amp; Sound sobre loopMIDI</a
+              >. A captura não foi apresentada como screenshot oficial do desenvolvedor.</span
+            >
+          </figcaption>
+        </figure>
+        <p>Agora crie a porta com estes dois controles da janela:</p>
+        <ol>
+          <li>
+            Clique no campo <code>New port-name</code>, apague o valor atual e digite
+            <strong>FaderDeck</strong>.
+          </li>
+          <li>Clique no botão <strong>+</strong> ao lado do campo.</li>
+          <li>
+            Confirme que <strong>FaderDeck</strong> aparece em <em>My loopback MIDI ports</em>. Se
+            já houver uma porta antiga com o mesmo nome, não crie várias cópias; remova ou renomeie
+            a duplicada antes de continuar.
+          </li>
+        </ol>
+        <figure>
+          <div class="figure-top">
+            <span class="schematic-tag">Ilustração esquemática fiel aos rótulos da janela</span
+            ><span>Figura 04</span>
+          </div>
+          <div class="schematic">
+            <div
+              class="port-window"
+              role="img"
+              aria-label="Ilustração do loopMIDI com FaderDeck no campo New port-name e o botão mais destacado"
+            >
+              <div class="port-window-title">loopMIDI · Setup</div>
+              <div class="port-window-body">
+                <div class="port-list-title">My loopback MIDI ports</div>
+                <div class="port-list-row">FaderDeck</div>
+                <div class="port-entry">
+                  <label for="mock-port-name">New port-name</label>
+                  <span class="port-input" id="mock-port-name">FaderDeck</span>
+                  <span class="plus-button" aria-hidden="true">+</span>
+                </div>
+                <div class="numbered-row">
+                  <span class="badge">1</span
+                  ><span>Digite <strong>FaderDeck</strong> em New port-name.</span>
+                </div>
+                <div class="numbered-row">
+                  <span class="badge">2</span
+                  ><span>Clique no botão <strong>+</strong> para criar a porta.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <figcaption>
+            <strong>Figura 04.</strong> Esquema, não screenshot. Mostra o nome a digitar e o botão a
+            clicar; a porta criada deve surgir na lista acima.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="step" id="bandeja" aria-labelledby="tray-title">
+        <div class="step-header">
+          <span class="step-number" aria-hidden="true">04</span>
+          <div>
+            <div class="section-kicker">Deixe a porta ativa</div>
+            <h2 id="tray-title">Minimize; não encerre o loopMIDI</h2>
+          </div>
+        </div>
+        <p>
+          A porta só existe enquanto o loopMIDI está em execução. Você pode manter a janela aberta
+          ou minimizá-la para a bandeja do Windows. Não use no menu do ícone uma ação que desative
+          ou encerre o programa.
+        </p>
+        <p>
+          Para tentar iniciar junto com o Windows, clique com o botão direito no ícone do loopMIDI
+          na área de notificação e ative a opção de inicialização automática em cada logon, se ela
+          estiver disponível na versão instalada. O texto pode variar conforme o idioma. Essa
+          configuração é feita no menu do ícone, não é uma caixa que este guia afirma existir no
+          instalador.
+        </p>
+        <figure>
+          <div class="figure-top">
+            <span class="schematic-tag">Ilustração esquemática · texto do menu pode variar</span
+            ><span>Figura 05</span>
+          </div>
+          <div class="schematic">
+            <div class="taskbar" aria-hidden="true">
+              <span>ENG</span><span>Wi‑Fi</span><span>Som</span><span class="tray-caret">⌃</span
+              ><span class="tray-icon">M</span><span>17:30</span>
+            </div>
+            <div
+              class="tray-menu"
+              role="img"
+              aria-label="Ilustração do menu da bandeja do Windows com uma opção de autostart realçada"
+            >
+              <div>loopMIDI · configurar portas</div>
+              <div>Manter a janela minimizada na bandeja</div>
+              <div class="highlight">✓ Autostart a cada logon do Windows</div>
+            </div>
+          </div>
+          <figcaption>
+            <strong>Figura 05.</strong> Esquema da área de notificação. O nome e a posição da opção
+            de autostart podem variar; procure a opção equivalente no menu de contexto do loopMIDI.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="step" id="faderdeck" aria-labelledby="faderdeck-title">
+        <div class="step-header">
+          <span class="step-number" aria-hidden="true">05</span>
+          <div>
+            <div class="section-kicker">Configurar saída</div>
+            <h2 id="faderdeck-title">Selecione FaderDeck na administração MIDI</h2>
+          </div>
+        </div>
+        <ol>
+          <li>Abra o aplicativo desktop FaderDeck.</li>
+          <li>
+            No ícone do FaderDeck na bandeja do Windows, escolha
+            <strong>Portas MIDI e administração…</strong>. Esse item abre a rota administrativa
+            local usando a porta ativa do aplicativo.
+          </li>
+          <li>
+            Se precisar abrir o endereço manualmente, o padrão é
+            <code>http://127.0.0.1:8787/bridge</code>. Se a porta 8787 estiver ocupada, o FaderDeck
+            escolhe outra porta livre; use o endereço exibido pelo app ou o item do menu em vez de
+            presumir que continuará em 8787.
+          </li>
+          <li>Em <strong>Saída MIDI para a DAW</strong>, selecione <strong>FaderDeck</strong>.</li>
+          <li>
+            Clique em <strong>Aplicar portas MIDI</strong> e confirme a mensagem de sucesso. A
+            entrada MIDI opcional é para MIDI Learn de um controlador externo; ela não substitui a
+            seleção da saída.
+          </li>
+        </ol>
+        <figure>
+          <div class="figure-top">
+            <span class="schematic-tag"
+              >Ilustração esquemática baseada nos rótulos do FaderDeck</span
+            ><span>Figura 06</span>
+          </div>
+          <div class="schematic">
+            <div class="mock-admin">
+              <div class="mock-titlebar">
+                <i></i><i></i><i></i><span>FaderDeck · PONTE MIDI LOCAL</span>
+              </div>
+              <div class="mock-app-body">
+                <div class="admin-fields">
+                  <div class="admin-field">
+                    <span class="admin-label">Saída MIDI para a DAW</span>
+                    <div class="admin-select">
+                      <strong>FaderDeck</strong><span aria-hidden="true">⌄</span>
+                    </div>
+                  </div>
+                  <div class="admin-field">
+                    <span class="admin-label">Entrada MIDI para MIDI Learn (opcional)</span>
+                    <div class="admin-select">
+                      <span>Nenhuma entrada selecionada</span><span aria-hidden="true">⌄</span>
+                    </div>
+                  </div>
+                  <div><span class="admin-button">Aplicar portas MIDI</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <figcaption>
+            <strong>Figura 06.</strong> Esquema, não captura de tela. Os rótulos e a função dos
+            controles correspondem à tela administrativa atual; a aparência pode variar ligeiramente
+            conforme o sistema.
+          </figcaption>
+        </figure>
+        <div class="callout">
+          <strong>Confirmação:</strong> no Windows, o nome <code>FaderDeck</code> vem da porta que
+          você criou no loopMIDI. No macOS, ao contrário, o próprio FaderDeck cria a porta virtual
+          automaticamente; não crie uma segunda porta IAC com o mesmo nome.
+        </div>
+      </section>
+
+      <section class="step" id="daws" aria-labelledby="daws-title">
+        <div class="step-header">
+          <span class="step-number" aria-hidden="true">06</span>
+          <div>
+            <div class="section-kicker">Configurar a DAW</div>
+            <h2 id="daws-title">Habilite a entrada e faça o primeiro mapeamento</h2>
+          </div>
+        </div>
+        <p>
+          Se a DAW já estava aberta quando você criou a porta, feche-a e abra novamente. Alguns
+          programas só atualizam a lista de dispositivos MIDI na inicialização. Nos passos abaixo,
+          selecione a entrada <strong>FaderDeck</strong> (ou a porta loopMIDI com esse nome).
+        </p>
+
+        <section class="daw-section" id="reaper" aria-labelledby="reaper-title">
+          <h3 id="reaper-title">REAPER</h3>
+          <p>
+            Abra <strong>Options → Preferences → Audio → MIDI Inputs</strong>. Clique com o botão
+            direito na entrada FaderDeck e marque <strong>Enable input</strong>. Para usar MIDI
+            Learn em parâmetros de FX, marque também
+            <strong>Enable input for control messages</strong>.
+          </p>
+          <figure>
+            <div class="figure-top">
+              <span class="schematic-tag">Ilustração esquemática · rótulos do REAPER</span
+              ><span>Figura 07</span>
+            </div>
+            <div class="schematic">
+              <div class="mock-daw">
+                <div class="mock-titlebar">
+                  <i></i><i></i><i></i><span>REAPER Preferences</span>
+                </div>
+                <div class="mock-daw-body">
+                  <div class="breadcrumb">
+                    <span>Options</span><span>Preferences</span><span>Audio</span
+                    ><span>MIDI Inputs</span>
+                  </div>
+                  <div class="device-row">
+                    <strong>FaderDeck</strong><span class="check"><b>✓</b> Enable input</span
+                    ><span class="check"><b>✓</b> Enable input for control messages</span>
+                  </div>
+                  <div class="daw-flow">
+                    <div>
+                      <b>1 · Abra um FX</b
+                      ><span>Escolha um parâmetro que possa ser testado com segurança.</span>
+                    </div>
+                    <div>
+                      <b>2 · Param → Learn</b
+                      ><span>Sobre o parâmetro, use o menu Param e selecione Learn.</span>
+                    </div>
+                    <div>
+                      <b>3 · Mova o fader</b
+                      ><span>Mova FaderDeck e confirme a atribuição MIDI.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <figcaption>
+              <strong>Figura 07.</strong> Ilustração esquemática, não screenshot. O texto das duas
+              opções MIDI e o caminho de menu seguem o manual do REAPER.
+            </figcaption>
+          </figure>
+          <ol>
+            <li>Abra um projeto de teste e um efeito com um parâmetro ajustável.</li>
+            <li>Sobre o parâmetro, abra <strong>Param → Learn</strong>.</li>
+            <li>
+              Mova o fader correspondente no FaderDeck. Feche a janela de Learn e mova o fader de
+              novo para testar.
+            </li>
+          </ol>
+          <p class="source-line">
+            Referência:
+            <a
+              href="https://www.reaper.fm/userguide/ReaperUserGuide785c.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              >guia oficial do REAPER, seção “Using FX Parameter MIDI Learn”</a
+            >.
+          </p>
+        </section>
+
+        <section class="daw-section" id="ableton" aria-labelledby="ableton-title">
+          <h3 id="ableton-title">Ableton Live</h3>
+          <p>
+            No Windows, pressione <strong>Ctrl+,</strong> para abrir Settings no Live 12 ou
+            Preferences em versões anteriores. Abra <strong>Link, Tempo &amp; MIDI</strong> e
+            encontre a entrada <strong>FaderDeck</strong> na seção MIDI Ports. Para mapear
+            parâmetros da interface, ligue <strong>Remote</strong>. Ligue
+            <strong>Track</strong> somente se também quiser receber notas de pads em uma faixa MIDI.
+            <strong>Sync</strong> não é necessário para aprender um fader.
+          </p>
+          <figure>
+            <div class="figure-top">
+              <span class="real">Captura real · manual oficial Ableton Live 12</span
+              ><span>Figura 08</span>
+            </div>
+            <div class="image-wrap">
+              <img
+                src="guia-assets/ableton-midi-ports.png"
+                alt="Captura real da tabela MIDI Ports do Ableton Live, com colunas Track, Sync, Remote e MPE para portas de exemplo."
+                loading="lazy"
+              />
+              <svg
+                class="annotation"
+                viewBox="0 0 320 123"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <rect x="184" y="3" width="26" height="49" rx="4"></rect>
+                <rect x="247" y="3" width="26" height="49" rx="4"></rect>
+                <circle cx="197" cy="30" r="8"></circle>
+                <circle cx="260" cy="30" r="8"></circle>
+              </svg>
+            </div>
+            <figcaption>
+              <strong>Figura 08.</strong> Captura real da tabela MIDI Ports. A porta e o dispositivo
+              mostrados na imagem são exemplos; na sua instalação procure a entrada loopMIDI
+              <code>FaderDeck</code>. O destaque marca as colunas Track e Remote.
+              <span class="source-line"
+                >Fonte:
+                <a
+                  href="https://www.ableton.com/en/live-manual/12/synchronizing-with-link-tempo-follower-and-midi/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >manual oficial Ableton Live 12, MIDI Ports</a
+                >.</span
+              >
+            </figcaption>
+          </figure>
+          <ol>
+            <li>Ative <strong>Remote</strong> na linha da entrada FaderDeck.</li>
+            <li>Pressione <strong>Ctrl+M</strong> para entrar em MIDI Map Mode.</li>
+            <li>Clique no controle da DAW que deseja comandar e mova o fader no FaderDeck.</li>
+            <li>
+              Pressione <strong>Ctrl+M</strong> novamente para sair do modo de mapeamento e teste o
+              fader.
+            </li>
+          </ol>
+          <div class="callout warn">
+            <strong>Atenção:</strong> uma nota de pad que você atribui a um controle remoto deixa de
+            poder disparar a mesma nota em uma faixa MIDI. Se o pad precisa tocar notas, mantenha
+            Track ligado e não mapeie essa mesma nota como comando Remote.
+          </div>
+          <p class="source-line">
+            Referência:
+            <a
+              href="https://www.ableton.com/en/live-manual/12/midi-and-key-remote-control/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >manual oficial Ableton Live 12, MIDI and Key Remote Control</a
+            >.
+          </p>
+        </section>
+
+        <section class="daw-section" id="fl-studio" aria-labelledby="fl-title">
+          <h3 id="fl-title">FL Studio</h3>
+          <p>
+            Abra <strong>Options → MIDI settings</strong> ou pressione <strong>F10</strong>. Na
+            seção Input, selecione a entrada FaderDeck e clique em <strong>Enable</strong>. Ao mover
+            um fader, o indicador de atividade MIDI deve piscar.
+          </p>
+          <figure>
+            <div class="figure-top">
+              <span class="real">Captura real · manual oficial FL Studio</span
+              ><span>Figura 09</span>
+            </div>
+            <div class="image-wrap">
+              <img
+                src="guia-assets/fl-studio-midi-input.png"
+                alt="Captura real das configurações MIDI do FL Studio, destacando a lista Input e o controle Enable."
+                loading="lazy"
+              />
+              <svg
+                class="annotation"
+                viewBox="0 0 1002 1091"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <rect x="49" y="466" width="877" height="71" rx="5"></rect>
+                <circle cx="78" cy="613" r="19"></circle>
+              </svg>
+            </div>
+            <figcaption>
+              <strong>Figura 09.</strong> Captura real das configurações MIDI. O dispositivo
+              selecionado na imagem é um FLkey; no seu computador selecione <code>FaderDeck</code>.
+              O destaque indica a lista Input e o botão Enable.
+              <span class="source-line"
+                >Fonte:
+                <a
+                  href="https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/envsettings_midi.htm"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >manual oficial Image-Line, System Settings — MIDI</a
+                >.</span
+              >
+            </figcaption>
+          </figure>
+          <ol>
+            <li>
+              Para mapear um fader, clique com o botão direito no controle da DAW que quer comandar
+              e escolha <strong>Link to controller…</strong>.
+            </li>
+            <li>
+              Mova o fader desejado no FaderDeck. O FL Studio cria o vínculo com o controle que
+              recebeu.
+            </li>
+            <li>
+              Se abrir <strong>Remote control settings</strong>, ajuste somente o que precisar e
+              clique em <strong>Accept</strong>. Depois mova o fader novamente para testar. Se não
+              houver atividade MIDI, confira se FaderDeck continua selecionado e habilitado na lista
+              Input.
+            </li>
+          </ol>
+          <p class="source-line">
+            Referência de mapeamento:
+            <a
+              href="https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/automation_linking.htm"
+              target="_blank"
+              rel="noopener noreferrer"
+              >manual oficial Image-Line, Linking &amp; Using External Hardware Controllers</a
+            >.
+          </p>
+        </section>
+
+        <section class="daw-section" id="cubase" aria-labelledby="cubase-title">
+          <h3 id="cubase-title">Cubase</h3>
+          <p>
+            Abra <strong>Studio → Studio Setup → MIDI Port Setup</strong>. Localize a entrada
+            FaderDeck e confira se <strong>Visible</strong> está marcado. Marque
+            <strong>In “All MIDI Inputs”</strong> se quiser receber a porta como entrada geral de
+            faixas MIDI. Para mapear funções do Cubase, configure uma superfície em MIDI Remote.
+          </p>
+          <figure>
+            <div class="figure-top">
+              <span class="schematic-tag">Ilustração esquemática · não é captura de tela</span
+              ><span>Figura 10</span>
+            </div>
+            <div class="schematic">
+              <div class="mock-daw">
+                <div class="mock-titlebar">
+                  <i></i><i></i><i></i><span>Cubase · Studio Setup</span>
+                </div>
+                <div class="mock-daw-body">
+                  <div class="breadcrumb">
+                    <span>Studio</span><span>Studio Setup</span><span>MIDI Port Setup</span>
+                  </div>
+                  <div class="device-row">
+                    <strong>Windows MIDI · FaderDeck</strong
+                    ><span class="check"><b>✓</b> Visible</span
+                    ><span class="check"><b>✓</b> In “All MIDI Inputs” (opcional)</span>
+                  </div>
+                  <div class="daw-flow">
+                    <div>
+                      <b>1 · MIDI Remote</b><span>Adicione uma MIDI Controller Surface.</span>
+                    </div>
+                    <div>
+                      <b>2 · Input Port</b><span>Escolha a entrada FaderDeck no assistente.</span>
+                    </div>
+                    <div>
+                      <b>3 · Mapping Assistant</b
+                      ><span>Mova o fader, escolha uma função e aplique o mapeamento.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <figcaption>
+              <strong>Figura 10.</strong> Esquema baseado nos nomes e controles documentados no
+              Cubase Pro 15. Não é screenshot; a lista real pode conter outras portas.
+            </figcaption>
+          </figure>
+          <ol>
+            <li>
+              No projeto, abra a aba <strong>MIDI Remote</strong> na zona inferior e escolha
+              <strong>Add MIDI Controller Surface</strong>.
+            </li>
+            <li>
+              Na janela, selecione FaderDeck como <strong>Input Port</strong> e crie a superfície.
+            </li>
+            <li>
+              Abra <strong>Mapping Assistant</strong>, mova o fader para selecionar o controle,
+              escolha a função Cubase desejada e clique <strong>Apply Mapping</strong>.
+            </li>
+          </ol>
+          <p class="source-line">
+            Referências: manual oficial do
+            <a
+              href="https://www.steinberg.help/r/cubase-pro/15.0/en/cubase_nuendo/topics/setting_up/setting_up_midi_port_setup_r.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >MIDI Port Setup</a
+            >
+            e de
+            <a
+              href="https://www.steinberg.help/r/cubase-pro/15.0/en/cubase_nuendo/topics/midi_remote/midi_remote_midi_controller_surfaces_adding_t.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >MIDI Remote e Mapping Assistant</a
+            >.
+          </p>
+        </section>
+
+        <section class="daw-section" id="churchdaw" aria-labelledby="church-title">
+          <h3 id="church-title">ChurchDAW</h3>
+          <p>
+            Na versão desktop descrita pela página oficial consultada, a navegação fica em um trilho
+            com os grupos <strong>Tocar</strong>, <strong>Ferramentas</strong> e
+            <strong>Sistema</strong>. Em <strong>Sistema</strong>, abra
+            <strong>Áudio e MIDI</strong> e selecione FaderDeck como entrada. Depois, em
+            <strong>Ferramentas</strong>, abra <strong>Mapear MIDI</strong>.
+          </p>
+          <figure>
+            <div class="figure-top">
+              <span class="schematic-tag"
+                >Ilustração baseada nos rótulos publicados pelo ChurchDAW · não é captura</span
+              ><span>Figura 11</span>
+            </div>
+            <div class="schematic">
+              <div class="mock-daw">
+                <div class="mock-titlebar">
+                  <i></i><i></i><i></i><span>ChurchDAW · trilho de navegação</span>
+                </div>
+                <div class="mock-daw-body">
+                  <div class="daw-flow">
+                    <div>
+                      <b>1 · Sistema</b
+                      ><span>Abra Áudio e MIDI e selecione a entrada FaderDeck.</span>
+                    </div>
+                    <div><b>2 · Ferramentas</b><span>Abra Mapear MIDI.</span></div>
+                    <div>
+                      <b>3 · Controle na tela</b
+                      ><span
+                        >Clique no controle visível e mova o fader correspondente no
+                        FaderDeck.</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <figcaption>
+              <strong>Figura 11.</strong> Esquema do fluxo; não reproduz a interface do ChurchDAW. A
+              página oficial descreve esses grupos e ações, mas não fornece uma captura atual da
+              tela de seleção de entrada MIDI.
+            </figcaption>
+          </figure>
+          <ol>
+            <li>
+              Em <strong>Sistema → Áudio e MIDI</strong>, escolha FaderDeck como entrada MIDI.
+            </li>
+            <li>
+              Em <strong>Ferramentas → Mapear MIDI</strong>, clique no controle desejado dentro do
+              ChurchDAW.
+            </li>
+            <li>
+              Mova o fader do FaderDeck. O ChurchDAW informa que os mapeamentos ficam salvos no
+              projeto.
+            </li>
+          </ol>
+          <p class="source-line">
+            Referência:
+            <a href="https://churchdaw.com/" target="_blank" rel="noopener noreferrer"
+              >site oficial ChurchDAW</a
+            >. Os rótulos de navegação podem mudar em versões futuras; este caminho corresponde à
+            estrutura descrita na página consultada.
+          </p>
+        </section>
+
+        <div class="callout">
+          <strong>Para testar um pad:</strong> use o mesmo modo de mapeamento da DAW e
+          mova/pressione o pad depois de selecionar um controle. Um pad configurado para enviar Note
+          ou CC pode ser aprendido como comando; um pad de Program Change envia seleção de programa
+          e não é um botão genérico de ligar/desligar.
+        </div>
+      </section>
+
+      <section class="step troubleshooting" id="problemas" aria-labelledby="trouble-title">
+        <div class="step-header">
+          <span class="step-number" aria-hidden="true">07</span>
+          <div>
+            <div class="section-kicker">Se algo não funcionar</div>
+            <h2 id="trouble-title">Solução de problemas</h2>
+          </div>
+        </div>
+        <details>
+          <summary>A porta FaderDeck não aparece na DAW</summary>
+          <p>
+            Confirme que o loopMIDI está aberto e que a porta chamada FaderDeck aparece na lista do
+            próprio loopMIDI. Feche e reabra a DAW depois de criar a porta. No FaderDeck, volte à
+            administração e clique em Aplicar portas MIDI.
+          </p>
+        </details>
+        <details>
+          <summary>A DAW não reconhece uma porta que acabei de criar</summary>
+          <p>
+            Feche completamente e inicie a DAW novamente. Se a porta ainda não surgir, verifique se
+            o loopMIDI continua em execução e se a entrada está habilitada na DAW.
+          </p>
+        </details>
+        <details>
+          <summary>O fader aparece no FaderDeck, mas o parâmetro da DAW não se move</summary>
+          <p>
+            Confira se a saída do FaderDeck está selecionada como FaderDeck e se você clicou Aplicar
+            portas MIDI. Na DAW, habilite a entrada correta, use o modo Learn/Mapping e mova o fader
+            depois de selecionar o parâmetro. Confirme que o controle usa uma mensagem MIDI
+            compatível, como CC.
+          </p>
+        </details>
+        <details>
+          <summary>O celular conecta, mas não chega à DAW</summary>
+          <p>
+            Verifique se celular e computador estão na mesma rede Wi‑Fi, se o Windows Firewall
+            permite conexões do FaderDeck em rede privada, se a saída MIDI correta está aplicada e
+            se a DAW habilitou FaderDeck como entrada. Redes Wi‑Fi para convidados podem impedir que
+            os dispositivos se comuniquem.
+          </p>
+        </details>
+        <details>
+          <summary>A porta some quando reinicio o Windows</summary>
+          <p>
+            Abra o loopMIDI e confirme o nome da porta. No menu do ícone da bandeja, ative a opção
+            equivalente a autostart a cada logon. A porta só existe enquanto o loopMIDI está em
+            execução.
+          </p>
+        </details>
+      </section>
+
+      <section class="sources" aria-labelledby="sources-title">
+        <h2 id="sources-title">Fontes e imagens</h2>
+        <p>
+          Os passos MIDI foram conferidos nas páginas oficiais de cada programa. As figuras com o
+          rótulo “Captura real” preservam imagens existentes; as demais são esquemas produzidos para
+          indicar somente os nomes e as ações confirmados no código ou na documentação.
+        </p>
+        <ul>
+          <li>
+            <a
+              href="https://www.tobias-erichsen.de/software/loopmidi.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >loopMIDI — página oficial e download</a
+            >.
+          </li>
+          <li>
+            <a
+              href="https://www.silenceandsound.com/setup-loopmidi/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Silence &amp; Sound — origem da captura real da janela loopMIDI</a
+            >.
+          </li>
+          <li>
+            <a
+              href="https://www.ableton.com/en/live-manual/12/midi-and-key-remote-control/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Ableton Live 12 — MIDI and Key Remote Control</a
+            >.
+          </li>
+          <li>
+            <a
+              href="https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/envsettings_midi.htm"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Image-Line — configurações MIDI do FL Studio</a
+            >.
+          </li>
+          <li>
+            <a
+              href="https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/automation_linking.htm"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Image-Line — Link to Controller e parâmetros de automação</a
+            >.
+          </li>
+          <li>
+            <a
+              href="https://www.steinberg.help/r/cubase-pro/15.0/en/cubase_nuendo/topics/setting_up/setting_up_midi_port_setup_r.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Steinberg — Cubase MIDI Port Setup</a
+            >.
+          </li>
+          <li>
+            <a
+              href="https://www.steinberg.help/r/cubase-pro/15.0/en/cubase_nuendo/topics/midi_remote/midi_remote_midi_controller_surfaces_adding_t.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Steinberg — MIDI Remote e Mapping Assistant</a
+            >.
+          </li>
+          <li>
+            <a
+              href="https://www.reaper.fm/userguide/ReaperUserGuide785c.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Cockos — guia oficial do REAPER</a
+            >.
+          </li>
+          <li>
+            <a href="https://churchdaw.com/" target="_blank" rel="noopener noreferrer"
+              >ChurchDAW — site oficial e recursos da versão desktop</a
+            >.
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="footer shell">
+      <p>
+        Guia Windows do FaderDeck. O loopMIDI é um software de terceiros e deve permanecer ativo
+        enquanto a DAW usar a porta virtual.
+      </p>
+    </footer>
+  </body>
+</html>

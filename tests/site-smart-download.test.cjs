@@ -6,12 +6,11 @@ const path = require('node:path');
 const vm = require('node:vm');
 const test = require('node:test');
 const platformDetection = require('../docs/platform-detection.js');
+const appVersion = require('../package.json').version;
 
 const appSource = fs.readFileSync(path.join(__dirname, '../docs/app.js'), 'utf8');
-const WINDOWS_URL =
-  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.3/FaderDeck-Windows-Setup.exe';
-const MACOS_URL =
-  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.3/FaderDeck-Mac.dmg';
+const WINDOWS_URL = `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/${appVersion}/FaderDeck-Windows-Setup.exe`;
+const MACOS_URL = `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/${appVersion}/FaderDeck-Mac.dmg`;
 
 class FakeElement {
   constructor(href = '') {

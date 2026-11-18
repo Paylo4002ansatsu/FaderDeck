@@ -205,6 +205,20 @@ button:hover {
   margin-top: 14px;
   line-height: 1.6;
 }
+.guide-link-wrap {
+  margin: 14px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.guide-link {
+  color: #40ded0;
+  text-underline-offset: 3px;
+}
+.guide-link:focus-visible {
+  outline: 2px solid #40ded0;
+  outline-offset: 3px;
+  border-radius: 3px;
+}
 .row {
   display: flex;
   gap: 8px;

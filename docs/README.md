@@ -10,6 +10,7 @@ Esta pasta contém os arquivos estáticos da landing page pública do FaderDeck.
 - A ponte MIDI integrada e a conexão do celular por QR na mesma rede Wi-Fi.
 - A porta MIDI virtual FaderDeck no macOS, a barra de menus e o comportamento da janela.
 - Os instaladores disponíveis para Windows e macOS, os requisitos de macOS e os avisos de primeira abertura/rede.
+- Um tutorial visual para Windows, desde a instalação do loopMIDI até o mapeamento MIDI nas DAWs.
 
 ## Arquivos
 
@@ -17,9 +18,12 @@ Esta pasta contém os arquivos estáticos da landing page pública do FaderDeck.
 - `app.js`: seleção do CTA, atualização das opções de download e interações do menu móvel. As URLs dos instaladores são literais e sincronizadas pelo script de release.
 - `platform-detection.js`: detecção de plataforma e arquitetura. Windows 64-bit recebe o instalador x64; Windows 32-bit recebe um aviso e não pode baixar o executável incompatível. O pacote macOS é universal para Intel e Apple Silicon; quando o navegador não expõe o chip, o site mantém essa opção universal sem adivinhar.
 - `styles.css`: layout, cores e comportamento responsivo.
+- `guia-midi-windows.html`: tutorial responsivo com passos verificados, capturas reais atribuídas e esquemas marcados como ilustração.
+- `guia-assets/`: capturas incluídas no tutorial. O arquivo loopMIDI é uma imagem real de fonte de terceiros; Ableton e FL Studio vêm dos manuais oficiais.
 - `faderdeck-icon.png`: ícone usado pela página.
 
 Os caminhos dos recursos são relativos (`styles.css`, `platform-detection.js`, `app.js` e `faderdeck-icon.png`) para funcionarem no endereço de projeto `/FaderDeck/`.
+O guia usa também caminhos relativos (`guia-assets/...`) e pode ser aberto antes da instalação em `guia-midi-windows.html`.
 
 ## Atualizar e publicar
 
