@@ -14,6 +14,26 @@ const requiredImages = [
   'loopmidi-window.png',
 ];
 
+test('GitHub root README is the single step-by-step guide with working image paths', () => {
+  const readmePath = path.join(root, 'README.md');
+  const readme = fs.readFileSync(readmePath, 'utf8');
+  assert.match(readme, /^# FaderDeck — instalação e configuração/m);
+  assert.match(readme, /## Windows — instalação e primeiro uso/);
+  assert.match(readme, /New port-name/);
+  assert.match(readme, /Aplicar portas MIDI/);
+  assert.equal(fs.existsSync(path.join(root, 'README-ponte.md')), false);
+
+  const imagePaths = [...readme.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)].map((match) => match[1]);
+  assert.equal(imagePaths.length, 3);
+  for (const imagePath of imagePaths) {
+    assert.equal(
+      fs.existsSync(path.join(root, imagePath)),
+      true,
+      `Imagem do README ausente: ${imagePath}`,
+    );
+  }
+});
+
 test('Pages and installed app contain the same Windows guide and image assets', () => {
   const docsGuide = fs.readFileSync(docsGuidePath, 'utf8');
   const clientGuide = fs.readFileSync(clientGuidePath, 'utf8');

@@ -22,7 +22,7 @@ REQUIRED_FILES = (
     ROOT / "bridge" / "network-addresses.cjs",
     ROOT / "fader-bridge" / "package.json",
     ROOT / "fader-bridge" / "package-lock.json",
-    ROOT / "README-ponte.md",
+    ROOT / "README.md",
     CLIENT_DIR / "index.html",
     CLIENT_DIR / "guia-midi-windows.html",
     CLIENT_DIR / "guia-assets" / "loopmidi-window.png",
@@ -58,7 +58,7 @@ def build_archive() -> None:
                 add_file(archive, ROOT / "bridge" / module_name, Path("bridge") / module_name)
             add_file(archive, ROOT / "fader-bridge" / "package.json", "package.json")
             add_file(archive, ROOT / "fader-bridge" / "package-lock.json", "package-lock.json")
-            add_file(archive, ROOT / "README-ponte.md", "README.md")
+            add_file(archive, ROOT / "README.md", "README.md")
 
             for source in sorted(CLIENT_DIR.rglob("*")):
                 if not source.is_file():
