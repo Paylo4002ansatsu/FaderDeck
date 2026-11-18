@@ -9,6 +9,7 @@ const platformDetection = require('../docs/platform-detection.js');
 const appVersion = require('../package.json').version;
 
 const appSource = fs.readFileSync(path.join(__dirname, '../docs/app.js'), 'utf8');
+const siteStyles = fs.readFileSync(path.join(__dirname, '../docs/styles.css'), 'utf8');
 const WINDOWS_URL = `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/${appVersion}/FaderDeck-Windows-Setup.exe`;
 const MACOS_URL = `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/${appVersion}/FaderDeck-Mac.dmg`;
 const landingHtml = fs.readFileSync(path.join(__dirname, '../docs/index.html'), 'utf8');
@@ -128,4 +129,18 @@ test('User-Agent Client Hints can label Apple Silicon while keeping the universa
   assert.equal(elements.get('smart-download').href, MACOS_URL);
   assert.match(elements.get('smart-download-label').textContent, /Apple Silicon/);
   assert.match(elements.get('download-compatibility-message').textContent, /universal/i);
+});
+
+test('landing uses local brand fonts and a readable responsive type scale', () => {
+  assert.doesNotMatch(siteStyles, /fonts\.googleapis\.com/);
+  assert.match(siteStyles, /font-family:Inter;src:url\("assets\/fonts\/inter-400\.woff2"\)/);
+  assert.match(
+    siteStyles,
+    /font-family:"IBM Plex Mono";src:url\("assets\/fonts\/ibm-plex-mono-400\.woff2"\)/,
+  );
+  assert.match(siteStyles, /body\{[^}]*font-size:16px;line-height:1\.7/s);
+  assert.match(siteStyles, /\.feature-card p,\s*\.tray-copy p,[\s\S]*?font-size: 14px/s);
+  assert.match(siteStyles, /\.feature-grid \{ grid-template-columns: 1fr; \}/);
+  assert.match(siteStyles, /\.primary-nav a \{ min-height: 44px;/);
+  assert.match(siteStyles, /\.menu-toggle \{ min-width: 44px; min-height: 44px; \}/);
 });
