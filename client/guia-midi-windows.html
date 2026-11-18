@@ -95,13 +95,16 @@
         display: grid;
         width: 34px;
         height: 34px;
+        overflow: hidden;
         place-items: center;
-        border: 1px solid #31514e;
         border-radius: 10px;
-        background: #162524;
-        color: var(--teal);
-        font-size: 18px;
-        letter-spacing: 0;
+      }
+      .brand-mark img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        object-fit: cover;
       }
       .topbar nav {
         display: flex;
@@ -111,6 +114,11 @@
       }
       .topbar nav a {
         color: var(--muted);
+        text-decoration: none;
+        transition: color 0.2s ease;
+      }
+      .topbar nav a:hover {
+        color: var(--teal);
       }
       .hero {
         padding: clamp(42px, 8vw, 82px) 0 38px;
@@ -871,7 +879,7 @@
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
     <header class="topbar shell">
       <a class="brand" href="index.html" aria-label="FaderDeck, página inicial">
-        <span class="brand-mark" aria-hidden="true">FD</span>
+        <span class="brand-mark" aria-hidden="true"><img src="faderdeck-icon.png" alt="" /></span>
         <span>FADERDECK</span>
       </a>
       <nav aria-label="Etapas do guia">

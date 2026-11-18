@@ -38,11 +38,19 @@ test('Pages and installed app contain the same Windows guide and image assets', 
   const docsGuide = fs.readFileSync(docsGuidePath, 'utf8');
   const clientGuide = fs.readFileSync(clientGuidePath, 'utf8');
   assert.equal(clientGuide, docsGuide);
+  assert.match(docsGuide, /class="brand-mark"[^>]*><img src="faderdeck-icon\.png"/);
+  assert.match(docsGuide, /\.topbar nav a\s*\{[^}]*text-decoration:\s*none/s);
+  assert.match(docsGuide, /\.topbar nav a:hover\s*\{[^}]*color:\s*var\(--teal\)/s);
+  assert.deepEqual(
+    fs.readFileSync(path.join(root, 'client', 'faderdeck-icon.png')),
+    fs.readFileSync(path.join(root, 'docs', 'faderdeck-icon.png')),
+  );
 
   const imageSources = [...docsGuide.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map(
     (match) => match[1],
   );
   assert.deepEqual(imageSources.sort(), [
+    'faderdeck-icon.png',
     'guia-assets/ableton-midi-ports.png',
     'guia-assets/fl-studio-midi-input.png',
     'guia-assets/loopmidi-window.png',
