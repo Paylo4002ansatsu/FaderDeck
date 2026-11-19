@@ -81,6 +81,18 @@ test('landing page clearly presents Windows and macOS without development jargon
   );
 });
 
+test('Monterey compatibility button stays disabled until a public installer exists', () => {
+  const button = landingHtml.match(
+    /<button class="platform-button monterey-download-button"[^>]*>/,
+  );
+  assert.ok(button, 'Monterey button exists');
+  assert.match(button[0], /\bdisabled\b/);
+  assert.doesNotMatch(button[0], /\bhref=/);
+  assert.match(landingHtml, /Mac Intel · macOS Monterey 12/);
+  assert.match(landingHtml, /ainda não está disponível para download público/i);
+  assert.match(siteStyles, /\.monterey-download-button:disabled:hover/);
+});
+
 test('the main and manual Windows buttons select x64 only for 64-bit Windows', async () => {
   const elements = await createPage({
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
