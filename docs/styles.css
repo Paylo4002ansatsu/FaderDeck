@@ -144,6 +144,63 @@
   .footer-bottom { flex-wrap: wrap; gap: 4px 12px; padding-block: 10px; }
 }
 
+.monterey-download-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+  align-items: center;
+  gap: 22px;
+  margin-top: 14px;
+  padding: 22px 25px;
+  border: 1px solid rgba(188, 210, 207, 0.13);
+  border-radius: 9px;
+  background: rgba(17, 23, 27, 0.78);
+}
+.monterey-download-panel h3 {
+  margin: 8px 0 5px;
+  font-size: 18px;
+  line-height: 1.3;
+  letter-spacing: -0.04em;
+}
+.monterey-download-panel p {
+  margin: 0;
+  color: #9ca9a5;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.monterey-download-button {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  appearance: none;
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+.monterey-download-button:disabled:hover {
+  transform: none;
+  border-color: rgba(188, 210, 207, 0.13);
+  background: rgba(8, 12, 14, 0.4);
+}
+.monterey-download-button .platform-arrow {
+  color: #a8b3af;
+  font: 500 9px var(--mono);
+  letter-spacing: 0.04em;
+}
+.monterey-download-panel .monterey-download-status {
+  grid-column: 1 / -1;
+  color: #a8b3af;
+  font-size: 12px;
+}
+@media (max-width: 720px) {
+  .monterey-download-panel {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 18px;
+  }
+  .monterey-download-panel h3 { font-size: 16px; }
+  .monterey-download-panel .monterey-download-status { grid-column: auto; }
+}
+
 .muted-heading { color: #899691; }
 @media (min-width: 721px) {
   .download-note,
