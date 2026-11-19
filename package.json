@@ -20,6 +20,7 @@
     "package:bridge": "node scripts/package-bridge.cjs",
     "update:site-download-version": "node scripts/update-site-download-version.cjs",
     "dist": "electron-builder --mac dmg zip",
+    "dist:mac:monterey": "electron-builder --mac dmg zip --x64 --publish never",
     "dist:universal": "electron-builder --mac dmg zip --universal",
     "dist:win": "electron-builder --win nsis"
   },
@@ -30,7 +31,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "electron": "^45.3.2",
+    "electron": "43.8.12",
     "electron-builder": "^26.18.0",
     "eslint": "^10.15.0",
     "globals": "^17.14.0",
@@ -62,6 +63,7 @@
       "icon": "build/icon.png",
       "identity": null,
       "hardenedRuntime": false,
+      "minimumSystemVersion": "12.0.0",
       "artifactName": "FaderDeck-Mac.${ext}",
       "target": [
         "dmg",

@@ -36,6 +36,13 @@ test('universal macOS merge recognizes shared x64 and ARM64 MIDI prebuilds', () 
   );
 });
 
+test('Monterey compatibility pins Electron 43 and defines an Intel build', () => {
+  assert.match(packageJson.devDependencies.electron, /^43\.\d+\.\d+$/);
+  assert.equal(packageJson.build.mac.minimumSystemVersion, '12.0.0');
+  assert.match(packageJson.scripts['dist:mac:monterey'], /--x64/);
+  assert.match(packageJson.scripts['dist:mac:monterey'], /--publish never/);
+});
+
 test('Windows and macOS artifacts use distinct names suitable for one release', () => {
   assert.equal(packageJson.build.win.artifactName, 'FaderDeck-Windows-Setup.exe');
   assert.equal(packageJson.build.mac.artifactName, 'FaderDeck-Mac.${ext}');
