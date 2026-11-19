@@ -7,6 +7,8 @@ const WINDOWS_URL =
   'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Windows-Setup.exe';
 const MACOS_URL =
   'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Mac.dmg';
+const MACOS_MONTEREY_URL =
+  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Mac-Monterey-Intel.dmg';
 
 const icons = {
   windows:
@@ -83,6 +85,9 @@ async function setupSmartDownload() {
 
   const macButton = document.getElementById('download-mac');
   if (macButton) macButton.href = MACOS_URL;
+
+  const macMontereyButton = document.getElementById('download-macos-monterey');
+  if (macMontereyButton) macMontereyButton.href = MACOS_MONTEREY_URL;
 }
 
 function setupMobileMenu() {

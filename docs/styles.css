@@ -169,6 +169,8 @@
 }
 .monterey-download-button {
   width: 100%;
+}
+.monterey-download-button:disabled {
   font: inherit;
   color: inherit;
   text-align: left;
