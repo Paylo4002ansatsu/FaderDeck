@@ -20,7 +20,7 @@
     "package:bridge": "node scripts/package-bridge.cjs",
     "update:site-download-version": "node scripts/update-site-download-version.cjs",
     "dist": "electron-builder --mac dmg zip",
-    "dist:mac:monterey": "electron-builder --mac dmg zip --x64 -c.mac.artifactName=\"FaderDeck-Mac-Monterey-Intel.${ext}\" --publish never",
+    "dist:mac:monterey": "electron-builder --mac dmg zip --x64 -c.mac.artifactName=\"FaderDeck-Mac-Monterey-Intel.\\${ext}\" --publish never",
     "dist:universal": "electron-builder --mac dmg zip --universal",
     "dist:win": "electron-builder --win nsis"
   },
