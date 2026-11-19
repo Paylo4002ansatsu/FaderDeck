@@ -41,6 +41,10 @@ test('Monterey compatibility pins Electron 43 and defines an Intel build', () =>
   assert.equal(packageJson.build.mac.minimumSystemVersion, '12.0.0');
   assert.match(packageJson.scripts['dist:mac:monterey'], /--x64/);
   assert.match(packageJson.scripts['dist:mac:monterey'], /--publish never/);
+  assert.match(
+    packageJson.scripts['dist:mac:monterey'],
+    /FaderDeck-Mac-Monterey-Intel/,
+  );
 });
 
 test('Windows and macOS artifacts use distinct names suitable for one release', () => {

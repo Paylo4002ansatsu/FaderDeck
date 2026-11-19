@@ -1,0 +1,61 @@
+name: Build FaderDeck macOS Monterey installer
+
+on:
+  push:
+    branches:
+      - compat/macos-monterey-electron43
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Tag de release existente para anexar o instalador (ex.: 1.0.4)
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: faderdeck-monterey-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-monterey:
+    name: Build macOS Monterey Intel installer
+    runs-on: macos-13
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run unit and packaging tests
+        run: npm test
+
+      - name: Build macOS Monterey Intel DMG and ZIP
+        run: npm run dist:mac:monterey
+
+      - name: Upload Monterey Intel build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: FaderDeck-macOS-Monterey-Intel
+          path: |
+            release/*Monterey*.dmg
+            release/*Monterey*.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Attach Monterey installer to existing release
+        if: ${{ inputs.release_tag != '' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          files: |
+            release/*Monterey*.dmg
+            release/*Monterey*.zip
