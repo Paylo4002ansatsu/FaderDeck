@@ -49,6 +49,7 @@ function createPage(navigatorRef) {
     ['download-windows', new FakeElement(WINDOWS_URL)],
     ['download-windows-detail', new FakeElement()],
     ['download-mac', new FakeElement(MACOS_URL)],
+    ['download-macos-monterey', new FakeElement()],
   ]);
   const documentRef = { getElementById: (id) => elements.get(id) || null };
   const windowRef = {
@@ -70,7 +71,12 @@ test('landing page clearly presents Windows and macOS without development jargon
   assert.match(description[1], /macOS/);
   assert.match(landingHtml, /Windows e macOS/);
   assert.match(landingHtml, /loopMIDI/);
-  assert.match(landingHtml, /no Mac, o FaderDeck faz isso automaticamente/i);
+  assert.match(landingHtml, /no Mac, o FaderDeck cria a porta automaticamente/i);
+  assert.match(landingHtml, /loopMIDI em execução/);
+  assert.match(landingHtml, /compatibilidade com Windows 11/);
+  assert.match(landingHtml, /sem isolamento entre eles/);
+  assert.match(landingHtml, /macOS Ventura 13 ou posterior/);
+  assert.match(landingHtml, /não há instalador Monterey para Apple Silicon/);
   assert.doesNotMatch(
     landingHtml,
     /WebSocket|CoreMIDI|IP:PORTA|Application Support|token|npm|Node\.js/i,
@@ -115,19 +121,23 @@ test('the main and manual Windows buttons are disabled on 32-bit Windows', async
   assert.match(elements.get('download-compatibility-message').textContent, /Windows 32-bit/);
 });
 
-test('the Mac fallback never misidentifies Safari as Intel and uses the universal DMG', async () => {
+test('the Mac fallback sends Safari to the version-specific installer choices', async () => {
   const elements = await createPage({
     userAgent:
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15',
   });
 
-  assert.equal(elements.get('smart-download').href, MACOS_URL);
+  assert.equal(elements.get('smart-download').href, '#downloads');
   assert.equal(elements.get('download-mac').href, MACOS_URL);
-  assert.equal(elements.get('smart-download-label').textContent, 'Baixar para macOS (Universal)');
-  assert.match(elements.get('download-compatibility-message').textContent, /Intel e Apple Silicon/);
+  assert.match(elements.get('download-macos-monterey').href, /FaderDeck-Mac-Monterey-Intel\.dmg$/);
+  assert.equal(elements.get('smart-download-label').textContent, 'Escolher instalador para Mac');
+  assert.match(
+    elements.get('download-compatibility-message').textContent,
+    /Monterey 12.*Mac Intel.*macOS 13/,
+  );
 });
 
-test('User-Agent Client Hints can label Apple Silicon while keeping the universal DMG', async () => {
+test('Mac architecture hints do not bypass the macOS version-specific installer choices', async () => {
   const elements = await createPage({
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
     userAgentData: {
@@ -136,9 +146,14 @@ test('User-Agent Client Hints can label Apple Silicon while keeping the universa
     },
   });
 
-  assert.equal(elements.get('smart-download').href, MACOS_URL);
-  assert.match(elements.get('smart-download-label').textContent, /Apple Silicon/);
-  assert.match(elements.get('download-compatibility-message').textContent, /universal/i);
+  assert.equal(elements.get('smart-download').href, '#downloads');
+  assert.equal(elements.get('download-mac').href, MACOS_URL);
+  assert.match(elements.get('download-macos-monterey').href, /FaderDeck-Mac-Monterey-Intel\.dmg$/);
+  assert.equal(elements.get('smart-download-label').textContent, 'Escolher instalador para Mac');
+  assert.match(
+    elements.get('download-compatibility-message').textContent,
+    /macOS 13 Ventura ou posterior/,
+  );
 });
 
 test('landing uses local brand fonts and a readable responsive type scale', () => {

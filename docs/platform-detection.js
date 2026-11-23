@@ -88,17 +88,17 @@
     }
 
     if (platform === 'macos') {
-      const chipLabel =
-        macChip === 'intel' ? 'Intel' : macChip === 'apple-silicon' ? 'Apple Silicon' : null;
+      const message =
+        macChip === 'intel'
+          ? 'Mac Intel detectado. Para macOS 12 Monterey, use o instalador Monterey; para macOS 13 ou posterior, use o Universal.'
+          : macChip === 'apple-silicon'
+            ? 'Mac Apple Silicon detectado. O instalador Universal requer macOS 13 Ventura ou posterior.'
+            : 'Monterey 12 tem instalador somente para Mac Intel. O Universal funciona em Intel e Apple Silicon e requer macOS 13 ou posterior.';
       return {
-        download: 'macos',
+        download: 'downloads',
         available: true,
-        label: chipLabel
-          ? `Baixar para Mac ${chipLabel} (Universal)`
-          : 'Baixar para macOS (Universal)',
-        message: chipLabel
-          ? `Mac ${chipLabel} detectado. O instalador universal também funciona na outra arquitetura.`
-          : 'O instalador universal funciona em Macs Intel e Apple Silicon.',
+        label: 'Escolher instalador para Mac',
+        message,
       };
     }
 

@@ -57,7 +57,7 @@ test('falls back to User-Agent detection if Windows Client Hints fail', async ()
   assert.equal(await detectWindowsBitness(navigatorRef), '64');
 });
 
-test('identifies Mac chips only from architecture hints and otherwise selects universal', async () => {
+test('identifies Mac chips only from architecture hints and otherwise leaves chip unknown', async () => {
   assert.equal(
     await detectMacChip({
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
@@ -90,13 +90,15 @@ test('routes Windows x64 to the supported installer and never offers it to Windo
   assert.match(x86.message, /Windows 32-bit/);
 });
 
-test('routes both Mac architectures to the same universal installer', () => {
+test('routes Mac users to installer choices that account for macOS version', () => {
   const intel = resolveDownloadTarget('macos', 'unknown', 'intel');
   const appleSilicon = resolveDownloadTarget('macos', 'unknown', 'apple-silicon');
   const safariFallback = resolveDownloadTarget('macos', 'unknown', 'unknown');
 
-  assert.equal(intel.download, 'macos');
-  assert.equal(appleSilicon.download, 'macos');
-  assert.equal(safariFallback.download, 'macos');
-  assert.match(safariFallback.message, /Intel e Apple Silicon/);
+  assert.equal(intel.download, 'downloads');
+  assert.equal(appleSilicon.download, 'downloads');
+  assert.equal(safariFallback.download, 'downloads');
+  assert.match(intel.message, /Monterey.*Universal/);
+  assert.match(appleSilicon.message, /macOS 13 Ventura ou posterior/);
+  assert.match(safariFallback.message, /Monterey 12.*somente para Mac Intel.*macOS 13/);
 });
