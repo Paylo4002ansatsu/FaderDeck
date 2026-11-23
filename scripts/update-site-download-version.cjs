@@ -6,11 +6,14 @@ const path = require('node:path');
 const REPOSITORY = 'Paylo4002ansatsu/FaderDeck';
 const WINDOWS_ASSET = 'FaderDeck-Windows-Setup.exe';
 const MACOS_ASSET = 'FaderDeck-Mac.dmg';
+const MONTEREY_ASSET = 'FaderDeck-Mac-Monterey-Intel.dmg';
 const RELEASE_TAG_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 const WINDOWS_URL_PATTERN =
   /https:\/\/github\.com\/Paylo4002ansatsu\/FaderDeck\/releases\/download\/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\/FaderDeck-Windows-Setup\.exe/g;
 const MACOS_URL_PATTERN =
   /https:\/\/github\.com\/Paylo4002ansatsu\/FaderDeck\/releases\/(?:latest\/download|download\/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\/FaderDeck-Mac\.dmg/g;
+const MONTEREY_URL_PATTERN =
+  /https:\/\/github\.com\/Paylo4002ansatsu\/FaderDeck\/releases\/(?:latest\/download|download\/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\/FaderDeck-Mac-Monterey-Intel\.dmg/g;
 
 function validateReleaseTag(tag) {
   if (typeof tag !== 'string' || !RELEASE_TAG_PATTERN.test(tag)) {
@@ -34,6 +37,7 @@ function updateSiteDownloadVersion(docsDirectory, tag) {
   const downloads = {
     windowsUrl: `https://github.com/${REPOSITORY}/releases/download/${version}/${WINDOWS_ASSET}`,
     macosUrl: `https://github.com/${REPOSITORY}/releases/download/${version}/${MACOS_ASSET}`,
+    montereyUrl: `https://github.com/${REPOSITORY}/releases/download/${version}/${MONTEREY_ASSET}`,
   };
   const files = {
     html: path.join(docsDirectory, 'index.html'),
@@ -63,6 +67,9 @@ function updateSiteDownloadVersion(docsDirectory, tag) {
       `docs/${path.basename(files[key])}`,
       'link(s) macOS',
     );
+    if (MONTEREY_URL_PATTERN.test(updated[key])) {
+      updated[key] = updated[key].replace(MONTEREY_URL_PATTERN, downloads.montereyUrl);
+    }
   }
 
   updated.html = replaceExpectedCount(
@@ -72,6 +79,11 @@ function updateSiteDownloadVersion(docsDirectory, tag) {
     1,
     'docs/index.html',
     'rótulo de versão Windows 64-bit',
+  );
+
+  updated.html = updated.html.replace(
+    /Mac Intel · \d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)? · DMG/g,
+    `Mac Intel · ${version} · DMG`,
   );
 
   for (const [key, filePath] of Object.entries(files)) {
