@@ -28,7 +28,7 @@ O guia usa também caminhos relativos (`guia-assets/...`) e pode ser aberto ante
 ## Atualizar e publicar
 
 1. As releases históricas podem conter apenas um sistema: Windows `1.0.0` e macOS `1.0.1`. As próximas versões criadas pelo workflow devem conter os dois instaladores na mesma Release.
-2. Hoje, o link Windows é `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.5/FaderDeck-Windows-Setup.exe` e o link macOS é `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.5/FaderDeck-Mac.dmg`. As tags são numéricas, sem prefixo `v`.
+2. Hoje, o link Windows é `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Windows-Setup.exe` e o link macOS é `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Mac.dmg`. As tags são numéricas, sem prefixo `v`.
 3. O site oferece o instalador Windows x64 apenas quando o navegador identifica um sistema de 64 bits; em Windows 32-bit, desativa o download e informa a incompatibilidade. Para Macs, um único instalador universal funciona em Intel e Apple Silicon.
 4. Para atualizar os links manualmente, depois de confirmar que a Release inclui ambos os arquivos, execute `npm run update:site-download-version -- 1.2.0`, substituindo `1.2.0` pela tag publicada. O script sincroniza `index.html`, `app.js` e este README.
 5. Antes de criar a tag, alinhe `package.json` e `package-lock.json` à mesma versão, por exemplo `npm version 1.0.2 --no-git-tag-version`; faça commit e envie a `main`. O workflow verifica que a tag corresponde à versão do app.
