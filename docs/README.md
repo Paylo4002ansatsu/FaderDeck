@@ -6,7 +6,7 @@ Esta pasta contém a landing estática do FaderDeck, publicada pelo GitHub Pages
 
 ## Conteúdo
 
-A página apresenta o produto e sua interface real, benefícios, fluxo de configuração, compatibilidade documentada para Windows/macOS, downloads existentes, ofertas comerciais planejadas, perguntas frequentes e informações de rodapé. A captura desktop e a captura móvel estão em `assets/product/`; ambas foram feitas do cliente real e mostram explicitamente o estado “SEM PONTE”. A seção de pads é identificada como espaço reservado, pois não há captura real dessa interface disponível na pasta do site.
+A página apresenta o produto e sua interface real, benefícios, fluxo de configuração, compatibilidade documentada para Windows/macOS, downloads existentes, ofertas comerciais planejadas, perguntas frequentes e informações de rodapé. O Hero recupera a composição visual anterior do modo palco, identificada como ilustração e não como captura real. A captura desktop real está na seção de recursos e mantém sua proporção original; ela mostra explicitamente o estado “SEM PONTE”. Onde faltam capturas adequadas, a página mostra placeholders dimensionados: 16:9 para pads e 9:19 para o painel no celular.
 
 O teste gratuito de sete dias e a versão completa por R$ 30,00 são apresentados como ofertas planejadas. Não há checkout, ativação, licenciamento ou cadastro implementado nesta etapa; os CTAs informam esse status e não simulam uma compra ou ativação.
 
@@ -16,7 +16,7 @@ O teste gratuito de sete dias e a versão completa por R$ 30,00 são apresentado
 - `styles.css`: estilo visual, responsividade e fontes locais Inter/IBM Plex Mono.
 - `app.js`: CTA inteligente, seleção de instalador e menu móvel acessível.
 - `platform-detection.js`: detecção de plataforma e arquitetura, preservada.
-- `assets/product/`: capturas reais do painel desktop e mobile; estado sem ponte indicado no texto alternativo e na legenda.
+- `assets/product/`: captura real desktop do painel; estado sem ponte indicado no texto alternativo e na legenda. Capturas pendentes estão marcadas por placeholders com proporções indicadas.
 - `guia-midi-windows.html` e `guia-assets/`: tutorial visual de Windows e capturas associadas.
 - `faderdeck-icon.png`: ícone de marca usado na página.
 
