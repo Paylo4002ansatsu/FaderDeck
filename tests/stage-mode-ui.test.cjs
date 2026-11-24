@@ -391,22 +391,29 @@ test('arrastar uma área não interativa rola os canais; arrastar o trilho do fa
   assert.equal(scroller.scrollLeft, startScrollLeft + 40);
 });
 
-test('landing usa a mesma imagem do ícone desktop e oferece uma prévia de palco interativa', () => {
+test('landing marca a ilustração de palco e reserva capturas nas proporções corretas', () => {
   const desktopIcon = fs.readFileSync(path.join(root, 'build/icon.png'));
   const siteIcon = fs.readFileSync(path.join(root, 'docs/faderdeck-icon.png'));
   const html = fs.readFileSync(path.join(root, 'docs/index.html'), 'utf8');
-  const script = fs.readFileSync(path.join(root, 'docs/app.js'), 'utf8');
   const styles = fs.readFileSync(path.join(root, 'docs/styles.css'), 'utf8');
 
   assert.deepEqual(siteIcon, desktopIcon);
   assert.match(html, /rel="icon" href="faderdeck-icon\.png"/);
   assert.match(html, /rel="apple-touch-icon" href="faderdeck-icon\.png"/);
   assert.doesNotMatch(html, /logo\.svg|class="mini-mark">FD/);
-  assert.match(html, /id="stage-demo-names-toggle"/);
-  assert.equal((html.match(/class="stage-demo-lane"/g) || []).length, 5);
-  assert.match(script, /setupStagePreview/);
-  assert.match(script, /faderdeck\.landing\.stagePreview\.showNames/);
-  assert.match(styles, /\.stage-demo\.names-hidden \.stage-demo-channel-head/);
+  assert.match(html, /class="stage-hero" role="img"/);
+  assert.match(html, /não é uma captura de tela do aplicativo/);
+  assert.equal((html.match(/class="stage-hero-lane"/g) || []).length, 5);
+  assert.match(html, /class="capture-placeholder capture-wide"[^>]*aria-label="[^"]*16 por 9/);
+  assert.match(html, /class="capture-placeholder capture-mobile"[^>]*aria-label="[^"]*9 por 19/);
+  assert.match(html, /faderdeck-client-real-desktop\.png/);
+  assert.match(html, /aviso SEM PONTE/);
+  assert.match(
+    styles,
+    /\.stage-hero-board\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/,
+  );
+  assert.match(styles, /\.capture-wide\{aspect-ratio:16\/9/);
+  assert.match(styles, /\.capture-mobile\{[^}]*aspect-ratio:9\/19/);
   assert.match(styles, /IBM Plex Mono/);
   for (const color of ['#40ded0', '#f8b84e', '#6f9cff', '#c18bff', '#ff7187']) {
     assert.match(html, new RegExp(color));

@@ -4,127 +4,98 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b0e11">
-  <meta name="description" content="FaderDeck: painel MIDI para Windows e macOS. Crie faders e pads e controle sua DAW pelo computador ou celular.">
-  <meta property="og:title" content="FaderDeck — seu palco, sob controle">
-  <meta property="og:description" content="Faders e pads para controlar sua DAW no Windows ou macOS. Use o painel no computador ou no celular.">
+  <meta name="description" content="FaderDeck: transforme seu celular em uma superfície de controle MIDI para sua DAW. Disponível para Windows e macOS.">
+  <meta property="og:title" content="FaderDeck — seu celular. Seu controle. Sua música.">
+  <meta property="og:description" content="Um painel de faders e pads para comandar sua DAW pelo computador ou celular.">
   <meta property="og:type" content="website">
+  <meta property="og:image" content="https://paylo4002ansatsu.github.io/FaderDeck/faderdeck-icon.png">
   <link rel="icon" href="faderdeck-icon.png" type="image/png">
   <link rel="apple-touch-icon" href="faderdeck-icon.png">
-  <meta property="og:image" content="https://paylo4002ansatsu.github.io/FaderDeck/faderdeck-icon.png">
   <link rel="stylesheet" href="styles.css">
-  <title>FaderDeck — seu palco, sob controle</title>
+  <title>FaderDeck — Seu celular. Seu controle. Sua música.</title>
 </head>
 <body>
   <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="#inicio" aria-label="FaderDeck, início">
-        <span class="brand-mark" aria-hidden="true"><img src="faderdeck-icon.png" alt=""></span>
-        <span>Fader<span class="brand-light">Deck</span></span>
-      </a>
+      <a class="brand" href="#inicio" aria-label="FaderDeck, início"><span class="brand-mark"><img src="faderdeck-icon.png" alt=""></span><span>Fader<span class="brand-light">Deck</span></span></a>
       <button class="menu-toggle" id="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Abrir menu"><span></span><span></span></button>
       <nav class="primary-nav" id="primary-nav" aria-label="Navegação principal">
-        <a href="#recursos">Recursos</a>
-        <a href="#como-funciona">Como funciona</a>
-        <a href="#requisitos">Requisitos</a>
-        <a href="guia-midi-windows.html">Guia Windows</a>
-        <a class="nav-download" href="#downloads">Downloads <span aria-hidden="true">↗</span></a>
+        <a href="#recursos">Recursos</a><a href="#como-funciona">Como funciona</a><a href="#compatibilidade">Compatibilidade</a><a href="#planos">Planos</a><a href="#faq">Dúvidas</a><a class="nav-download" href="#downloads">Downloads <span aria-hidden="true">↗</span></a>
       </nav>
     </div>
   </header>
-
   <main id="conteudo">
     <section class="hero section-wrap" id="inicio">
       <div class="hero-copy">
-        <div class="eyebrow"><span class="status-dot"></span> CONTROLADOR MIDI PARA WINDOWS E macOS</div>
-        <h1>Seu palco.<br><span class="headline-accent">Sob controle.</span></h1>
-        <p class="hero-lede">Monte um painel de faders e pads para sua DAW. Use no computador ou conecte seu celular.</p>
+        <span class="eyebrow"><i class="status-dot"></i> CONTROLE MIDI PARA SUA DAW</span>
+        <h1>Seu celular.<br><span class="headline-accent">Seu controle.</span><br>Sua música.</h1>
+        <p class="hero-lede">Transforme seu celular em uma superfície de controle para comandar os recursos da sua DAW de maneira prática e intuitiva.</p>
         <div class="hero-actions">
-          <a class="button button-primary" id="smart-download" href="#downloads">
-            <span class="button-icon" id="smart-download-icon" aria-hidden="true"></span>
-            <span id="smart-download-label">Ver opções de download</span>
-            <svg class="button-arrow" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
-          <a class="text-link" href="#downloads">Outras plataformas e versões <span aria-hidden="true">↓</span></a>
+          <a class="button button-primary" id="smart-download" href="#downloads"><span class="button-icon" id="smart-download-icon" aria-hidden="true"></span><span id="smart-download-label">Ver opções de download</span><span aria-hidden="true">↗</span></a>
+          <a class="button button-secondary" href="#recursos">Conhecer o FaderDeck</a>
         </div>
         <p class="download-compatibility-message" id="download-compatibility-message" role="status" aria-live="polite">Disponível para Windows 64-bit e para Mac Intel ou Apple Silicon.</p>
-        <div class="hero-meta"><span><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2.5 3.5 5v4.4c0 4.1 2.8 6.7 6.5 8.1 3.7-1.4 6.5-4 6.5-8.1V5L10 2.5Z" stroke="currentColor" stroke-width="1.4"/><path d="m7 10 2 2 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Layouts salvos neste computador</span><span class="meta-divider"></span><span>Windows + macOS</span></div>
+        <div class="hero-meta"><span>Windows + macOS</span><span>·</span><span>Faders e pads</span><span>·</span><span>Computador ou celular</span></div>
       </div>
-
-      <div class="hero-visual" role="group" aria-label="Prévia interativa do modo palco do FaderDeck">
-        <div class="visual-glow"></div>
-        <div class="app-window">
-          <div class="window-topbar"><div class="window-dots"><i></i><i></i><i></i></div><div class="window-title"><span class="mini-mark"><img src="faderdeck-icon.png" alt=""></span> FADERDECK <span class="window-live"><i></i> MODO PALCO</span></div><div class="window-more">•••</div></div>
-          <div class="window-content">
-            <div class="stage-demo" id="stage-demo">
-              <div class="stage-demo-toolbar"><span class="stage-demo-title">CANAIS MIDI</span><button class="stage-demo-names-toggle" id="stage-demo-names-toggle" type="button" aria-pressed="true">Nomes: ligado</button><span class="stage-demo-exit" aria-hidden="true">× Sair</span></div>
-              <div class="stage-demo-board" aria-label="Cinco faders de demonstração">
-                <article class="stage-demo-lane" style="--channel-color:#40ded0;--level:70%;--position:30%"><header class="stage-demo-channel-head"><strong>VOCAL</strong><span>01</span></header><div class="stage-demo-control"><div class="stage-demo-track"><i class="stage-demo-fill"></i><i class="stage-demo-thumb"></i></div></div><span class="stage-demo-value">−3.0 dB</span></article>
-                <article class="stage-demo-lane" style="--channel-color:#f8b84e;--level:58%;--position:42%"><header class="stage-demo-channel-head"><strong>DRUMS</strong><span>02</span></header><div class="stage-demo-control"><div class="stage-demo-track"><i class="stage-demo-fill"></i><i class="stage-demo-thumb"></i></div></div><span class="stage-demo-value">−1.5 dB</span></article>
-                <article class="stage-demo-lane" style="--channel-color:#6f9cff;--level:76%;--position:24%"><header class="stage-demo-channel-head"><strong>BASS</strong><span>03</span></header><div class="stage-demo-control"><div class="stage-demo-track"><i class="stage-demo-fill"></i><i class="stage-demo-thumb"></i></div></div><span class="stage-demo-value">0.0 dB</span></article>
-                <article class="stage-demo-lane" style="--channel-color:#c18bff;--level:52%;--position:48%"><header class="stage-demo-channel-head"><strong>KEYS</strong><span>04</span></header><div class="stage-demo-control"><div class="stage-demo-track"><i class="stage-demo-fill"></i><i class="stage-demo-thumb"></i></div></div><span class="stage-demo-value">−4.0 dB</span></article>
-                <article class="stage-demo-lane" style="--channel-color:#ff7187;--level:37%;--position:63%"><header class="stage-demo-channel-head"><strong>FX A</strong><span>05</span></header><div class="stage-demo-control"><div class="stage-demo-track"><i class="stage-demo-fill"></i><i class="stage-demo-thumb"></i></div></div><span class="stage-demo-value">−8.0 dB</span></article>
-              </div>
-            </div>
-          </div>
+      <figure class="stage-hero" role="img" aria-label="Ilustração estática do modo palco do FaderDeck com cinco faders representativos; não é uma captura de tela do aplicativo.">
+        <div class="stage-hero-top"><span><i></i><i></i><i></i></span><strong>FADERDECK <b>·</b> MODO PALCO</strong><small>ILUSTRAÇÃO</small></div>
+        <div class="stage-hero-toolbar"><span>CANAIS MIDI</span><span>NOMES: LIGADO</span><span>× SAIR</span></div>
+        <div class="stage-hero-board">
+          <div class="stage-hero-lane" style="--color:#40ded0;--pos:28%"><strong>VOCAL</strong><span>01</span><i></i><small>CC 1</small></div>
+          <div class="stage-hero-lane" style="--color:#f8b84e;--pos:42%"><strong>DRUMS</strong><span>02</span><i></i><small>CC 2</small></div>
+          <div class="stage-hero-lane" style="--color:#6f9cff;--pos:24%"><strong>BASS</strong><span>03</span><i></i><small>CC 3</small></div>
+          <div class="stage-hero-lane" style="--color:#c18bff;--pos:50%"><strong>KEYS</strong><span>04</span><i></i><small>CC 4</small></div>
+          <div class="stage-hero-lane" style="--color:#ff7187;--pos:64%"><strong>FX A</strong><span>05</span><i></i><small>CC 5</small></div>
         </div>
-        <div class="pairing-float"><div class="qr-art" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><path fill="currentColor" d="M3 3h22v22H3V3Zm5 5v12h12V8H8Zm3 3h6v6h-6v-6ZM39 3h22v22H39V3Zm5 5v12h12V8H44Zm3 3h6v6h-6v-6ZM3 39h22v22H3V39Zm5 5v12h12V44H8Zm3 3h6v6h-6v-6ZM32 3h4v5h-4zM29 13h7v4h-7zM29 22h8v4h-8zM32 30h5v5h-5zM40 30h7v4h-7zM51 30h10v4H51zM29 39h5v6h-5zM37 38h4v9h-4zM45 39h7v4h-7zM57 39h4v10h-4zM29 50h9v4h-9zM41 51h7v5h-7zM51 54h10v5H51zM32 59h5v3h-5z"/></svg></div><div><span class="float-label">PAREAMENTO RÁPIDO</span><strong>Escaneie e conecte</strong><small>Celular + mesma rede Wi‑Fi</small></div><span class="float-spark" aria-hidden="true">↗</span></div>
-        <div class="visual-caption"><span class="caption-line"></span> FADERS E PADS PARA SUA DAW</div>
-      </div>
+        <figcaption>Composição ilustrativa do modo palco, recuperada da prévia anterior. Não representa uma captura real nem uma sessão ativa.</figcaption>
+      </figure>
     </section>
+    <div class="proof-strip" aria-label="Resumo do FaderDeck"><span>01 <b>CONTROLE MIDI</b></span><span>02 <b>LAYOUT PERSONALIZÁVEL</b></span><span>03 <b>ACESSO PELA REDE LOCAL</b></span><span>04 <b>WINDOWS E macOS</b></span></div>
 
-    <section class="trust-strip" aria-label="Resumo do produto"><div><span class="trust-number">01</span><span>Faders e pads</span></div><div><span class="trust-number">02</span><span>Windows + macOS</span></div><div><span class="trust-number">03</span><span>Use no computador ou celular</span></div><div><span class="trust-number">04</span><span>Pronto para sua DAW</span></div></section>
-
-    <section class="features section-wrap" id="recursos">
-      <div class="section-heading"><div><span class="eyebrow">FEITO PARA A SUA DAW</span><h2>Menos cabos.<br><span class="muted-heading">Mais controle.</span></h2></div><p>Os recursos essenciais para levar controles MIDI até onde você precisa — no computador ou na tela do celular.</p></div>
+    <section class="section-wrap features" id="recursos">
+      <div class="section-heading"><div><span class="eyebrow">FEITO PARA O SEU FLUXO</span><h2>Mais controle.<br><span class="muted-heading">Menos distância.</span></h2></div><p>Leve os controles que você usa para perto do instrumento, do computador ou do palco.</p></div>
       <div class="feature-grid">
-        <article class="feature-card feature-main"><div class="feature-visual feature-visual-panel"><div class="mini-screen"><div class="mini-screen-top"><span>FADERDECK</span><i></i></div><div class="mini-faders"><i style="--level:32%"></i><i style="--level:58%"></i><i style="--level:43%"></i><i style="--level:25%"></i><i style="--level:68%"></i></div><div class="mini-pads"><i></i><i></i><i></i><i></i></div></div></div><span class="feature-index">01 / PAINEL</span><h3>Seu controle, do seu jeito.</h3><p>Monte um painel com faders e pads para controlar parâmetros e disparar comandos MIDI na sua DAW.</p></article>
-        <article class="feature-card"><div class="feature-icon icon-bridge"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M15 17H9a6 6 0 0 0 0 12h6m18-12h6a6 6 0 1 1 0 12h-6M16 24h16M24 10v7m0 14v7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="8" r="3" fill="currentColor"/><circle cx="24" cy="40" r="3" fill="currentColor"/></svg></div><span class="feature-index">02 / CONEXÃO</span><h3>Pronto para sua DAW.</h3><p>Use faders e pads para ajustar parâmetros e disparar comandos na sua música.</p><div class="feature-foot"><span class="feature-dot"></span> CONTROLE MIDI</div></article>
-        <article class="feature-card"><div class="feature-icon icon-phone"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="13" y="5" width="22" height="38" rx="5" stroke="currentColor" stroke-width="2"/><path d="M20 10h8M22 37h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 18v-5m0 0h5m-5 0 7 7m31 10v5m0 0h-5m5 0-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="feature-index">03 / PAREAMENTO</span><h3>Controle também pelo celular.</h3><p>Escaneie o QR com a câmera do celular; o painel abre no navegador. Os dois dispositivos precisam estar na mesma rede Wi‑Fi, sem isolamento entre eles. Redes de convidados podem bloquear a conexão.</p><div class="feature-foot"><span class="feature-dot"></span> QR CODE</div></article>
-        <article class="feature-card feature-wide"><div class="feature-wide-copy"><span class="feature-index">04 / WINDOWS E macOS</span><h3>Um aplicativo.<br>Dois sistemas.</h3><p>No Windows, instale e mantenha o loopMIDI em execução para a porta MIDI continuar disponível. No Mac, o FaderDeck cria a porta automaticamente. <a class="inline-link" href="guia-midi-windows.html">Ver passo a passo</a>.</p></div><div class="midi-port-visual"><div class="port-node"><span class="port-symbol">♫</span><span>FADERDECK</span><i>WINDOWS + MACOS</i></div><div class="port-cable"><span></span><span></span><span></span><span></span></div><div class="port-node port-node-daw"><span class="daw-symbol">♫</span><span>SUA DAW</span><i>MIDI IN</i></div></div></article>
+        <article class="feature-card feature-wide"><span class="feature-number">01 / FADERS</span><h3>Ajuste o que importa.</h3><p>Use faders como controles MIDI para parâmetros da sua DAW, conforme o mapeamento configurado no seu fluxo de trabalho.</p></article>
+        <article class="feature-card"><span class="feature-number">02 / PADS</span><h3>Dispare comandos MIDI.</h3><p>Os pads podem ser configurados no painel para enviar comandos MIDI.</p><div class="capture-placeholder capture-wide" role="img" aria-label="Espaço para captura real dos pads em proporção horizontal 16 por 9."><span>CAPTURA DOS PADS PENDENTE</span><strong>16:9</strong><small>Inserir imagem real quando houver uma captura adequada.</small></div></article>
+        <article class="feature-card"><span class="feature-number">03 / SEU LAYOUT</span><h3>Organize seu painel.</h3><p>Monte páginas com controles para o seu uso. Os layouts permanecem salvos neste computador.</p></article>
+        <article class="feature-card"><span class="feature-number">04 / CELULAR</span><h3>Abra no navegador.</h3><p>Na mesma rede local, use o QR exibido pelo aplicativo para abrir o painel no navegador do celular. Redes com isolamento podem impedir a comunicação.</p></article>
       </div>
-      <div class="tray-feature"><div class="tray-copy"><span class="feature-index">05 / SEMPRE À MÃO</span><h3>Acesse o FaderDeck com facilidade.</h3><p>No Windows, o ícone fica na área de notificação; no Mac, na barra de menus. Fechar a janela apenas a esconde, sem encerrar o aplicativo. Use o menu para abrir o painel, mostrar o QR, ajustar o MIDI ou sair.</p></div><div class="tray-actions" aria-label="Ações rápidas do FaderDeck"><span>Abrir painel</span><span>Mostrar QR</span><span>Ajustar MIDI</span><span>Copiar link</span><span>Sair</span></div></div>
+      <figure class="product-detail-figure"><div class="figure-label"><span>CAPTURA REAL DO APLICATIVO</span><span>PAINEL · 8 FADERS</span></div><img src="assets/product/faderdeck-client-real-desktop.png" alt="Captura real do painel FaderDeck com oito faders e o aviso SEM PONTE, indicando que a conexão ainda não foi iniciada." width="1440" height="1000" loading="lazy"><figcaption>Captura desktop real, exibida na proporção original aproximada de 13:9. O aviso SEM PONTE faz parte do estado capturado.</figcaption></figure>
+      <div class="capture-placeholder capture-mobile" role="img" aria-label="Espaço reservado para captura real do FaderDeck no celular em proporção vertical 9 por 19."><span>CAPTURA MOBILE PENDENTE</span><strong>9:19</strong><small>Imagem vertical do painel completo no navegador do celular.<br>Inserir captura real sem cortar controles ou avisos.</small></div>
     </section>
 
     <section class="workflow section-wrap" id="como-funciona">
-      <div class="workflow-copy"><span class="eyebrow">PRONTO PARA CONECTAR</span><h2>Do computador para<br><span class="headline-accent">o seu celular.</span></h2><p>Instale o FaderDeck no Windows ou Mac e escolha a saída MIDI da sua DAW. Para usar o celular, escaneie o QR e abra o painel no navegador.</p><a class="inline-link" href="#downloads">Encontre sua versão <span aria-hidden="true">↗</span></a></div>
-      <div class="workflow-steps"><article><span class="step-number">01</span><div><h3>Baixe e instale</h3><p>Escolha o instalador para Windows ou macOS.</p></div><span class="step-icon">↓</span></article><article><span class="step-number">02</span><div><h3>Conecte o celular</h3><p>Escaneie com a câmera o QR exibido pelo FaderDeck.</p></div><span class="step-icon">▦</span></article><article><span class="step-number">03</span><div><h3>Controle sua DAW</h3><p>Selecione FaderDeck na entrada MIDI e mapeie seus faders e pads.</p></div><span class="step-icon">↗</span></article></div>
+      <div><span class="eyebrow">DO SETUP À SUA DAW</span><h2>Comece em<br><span class="headline-accent">cinco passos.</span></h2><p class="section-copy">A configuração de MIDI depende do sistema. No Windows, é preciso instalar e manter o loopMIDI aberto para a porta virtual. No Mac, o FaderDeck cria a porta automaticamente.</p><a class="inline-link" href="guia-midi-windows.html">Ver guia de instalação do Windows ↗</a></div>
+      <ol class="steps"><li><span>01</span><div><h3>Instale o FaderDeck</h3><p>Escolha a versão compatível com seu computador.</p></div></li><li><span>02</span><div><h3>Prepare o MIDI</h3><p>No Windows, instale e abra o loopMIDI. No Mac, a porta é criada pelo aplicativo.</p></div></li><li><span>03</span><div><h3>Conecte à rede local</h3><p>Deixe computador e celular na mesma rede, sem isolamento entre eles.</p></div></li><li><span>04</span><div><h3>Abra o painel no celular</h3><p>Escaneie o QR exibido pelo FaderDeck e abra o endereço no navegador.</p></div></li><li><span>05</span><div><h3>Mapeie na sua DAW</h3><p>Habilite a entrada MIDI e associe os controles aos parâmetros desejados.</p></div></li></ol>
     </section>
 
-    <section class="download-section section-wrap" id="downloads">
-          <div class="download-panel"><div class="download-copy"><span class="eyebrow">ESCOLHA SUA PLATAFORMA</span><h2>Seu próximo passo<br>começa aqui.</h2><p>Windows requer 64 bits. O instalador Universal para Mac funciona em Intel e Apple Silicon e requer macOS Ventura 13 ou posterior. Para macOS Monterey 12 em Macs Intel, escolha o instalador separado abaixo.</p><div class="download-note"><span class="note-dot"></span> Windows 64-bit · macOS 13+ (Universal)</div></div><div class="download-options">
-
-        <a class="platform-button" id="download-windows" href="https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Windows-Setup.exe"><span class="platform-icon windows-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 4.8 10 3.7v7.7H2V4.8Zm9.1-1.3L22 1.8v9.6H11.1V3.5ZM2 12.7h8v7.7L2 19.3v-6.6Zm9.1 0H22v9.6l-10.9-1.5v-8.1Z"/></svg></span><span><small>INSTALADOR</small><strong>Windows 64-bit</strong><em id="download-windows-detail">Windows · 64-bit · 1.0.4</em></span><span class="platform-arrow">↗</span></a>
-        <a class="platform-button" id="download-mac" href="https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Mac.dmg"><span class="platform-icon apple-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.37 12.22c.02 2.29 2.01 3.05 2.03 3.06-.02.05-.32 1.1-1.05 2.17-.63.92-1.28 1.83-2.31 1.85-1.01.02-1.34-.6-2.5-.6-1.15 0-1.51.58-2.47.62-1 .04-1.77-.99-2.41-1.9-1.31-1.9-2.31-5.37-.96-7.72.67-1.17 1.87-1.91 3.17-1.93.99-.02 1.92.67 2.52.67.59 0 1.71-.83 2.89-.71.49.02 1.87.2 2.76 1.5-.07.04-1.65.97-1.67 2.99ZM14.47 5.8c.53-.64.89-1.53.79-2.42-.77.03-1.7.51-2.25 1.15-.5.57-.94 1.48-.82 2.35.86.07 1.74-.44 2.28-1.08Z"/></svg></span><span><small>INSTALADOR</small><strong>macOS</strong><em>Universal · Intel + Apple Silicon</em></span><span class="platform-arrow">↗</span></a>
+    <section class="compat section-wrap" id="compatibilidade">
+      <div class="section-heading"><div><span class="eyebrow">REQUISITOS REAIS</span><h2>Escolha sua<br><span class="muted-heading">plataforma.</span></h2></div><p>O FaderDeck envia MIDI. A compatibilidade prática depende das entradas MIDI e dos recursos de mapeamento da DAW escolhida.</p></div>
+      <div class="platform-grid"><article class="platform-card"><span class="platform-kicker">WINDOWS</span><h3>Windows 64-bit</h3><p>O instalador disponível é x64. Para criar a porta MIDI virtual, instale o loopMIDI e mantenha o loopMIDI em execução. O fornecedor não confirma compatibilidade com Windows 11 para o loopMIDI.</p><a class="inline-link" href="guia-midi-windows.html">Ver instalação passo a passo ↗</a></article><article class="platform-card"><span class="platform-kicker">macOS</span><h3>Intel ou Apple Silicon</h3><p>O instalador Universal requer macOS Ventura 13 ou posterior. Para Monterey 12, há instalador separado somente para Mac Intel; não há instalador Monterey para Apple Silicon.</p><p class="compat-note">No Mac, o FaderDeck cria a porta automaticamente.</p></article></div>
+      <div class="download-panel" id="downloads"><div class="download-copy"><span class="eyebrow">DOWNLOADS DISPONÍVEIS</span><h3>Baixe a versão<br>do seu sistema.</h3><p>Os botões levam aos instaladores existentes. Requisitos e limitações estão descritos acima.</p><p class="download-note" id="download-compatibility-message-copy">Windows 64-bit · macOS Universal · Monterey Intel.</p></div><div class="download-options">
+        <a class="platform-button" id="download-windows" href="https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Windows-Setup.exe"><span class="platform-icon" aria-hidden="true">⊞</span><span><small>INSTALADOR</small><strong>Windows 64-bit</strong><em id="download-windows-detail">Windows · 64-bit · 1.0.4</em></span><span class="platform-arrow">↗</span></a>
+        <a class="platform-button" id="download-mac" href="https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Mac.dmg"><span class="platform-icon" aria-hidden="true">⌘</span><span><small>INSTALADOR UNIVERSAL</small><strong>macOS</strong><em>Intel + Apple Silicon · macOS 13+</em></span><span class="platform-arrow">↗</span></a>
       </div></div>
-      <div class="monterey-download-panel" aria-labelledby="monterey-download-title">
-        <div>
-          <span class="eyebrow">COMPATIBILIDADE ADICIONAL</span>
-          <h3 id="monterey-download-title">Mac Intel · macOS Monterey 12</h3>
-          <p>Este instalador é para Macs Intel com macOS 12 Monterey. O Universal acima requer macOS Ventura 13 ou posterior; não há instalador Monterey para Apple Silicon.</p>
-        </div>
-        <a class="platform-button monterey-download-button" id="download-macos-monterey" href="https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Mac-Monterey-Intel.dmg">
-          <span class="platform-icon apple-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.37 12.22c.02 2.29 2.01 3.05 2.03 3.06-.02.05-.32 1.1-1.05 2.17-.63.92-1.28 1.83-2.31 1.85-1.01.02-1.34-.6-2.5-.6-1.15 0-1.51.58-2.47.62-1 .04-1.77-.99-2.41-1.9-1.31-1.9-2.31-5.37-.96-7.72.67-1.17 1.87-1.91 3.17-1.93.99-.02 1.92.67 2.52.67.59 0 1.71-.83 2.89-.71.49.02 1.87.2 2.76 1.5-.07.04-1.65.97-1.67 2.99ZM14.47 5.8c.53-.64.89-1.53.79-2.42-.77.03-1.7.51-2.25 1.15-.5.57-.94 1.48-.82 2.35.86.07 1.74-.44 2.28-1.08Z"/></svg></span>
-          <span><small>INSTALADOR</small><strong>Monterey para Intel</strong><em>Mac Intel · 1.0.4 · DMG</em></span>
-          <span class="platform-arrow">↗</span>
-        </a>
-        <p class="monterey-download-status" id="monterey-download-status">Somente Mac Intel (x86_64) com macOS 12 Monterey; não funciona em Apple Silicon.</p>
-      </div>
+      <div class="monterey-download-panel"><div><span class="platform-kicker">COMPATIBILIDADE ADICIONAL</span><h3 id="monterey-download-title">Mac Intel · macOS Monterey 12</h3><p>Somente para Mac Intel. Não funciona em Apple Silicon; o Universal acima requer macOS Ventura 13 ou posterior.</p></div><a class="platform-button monterey-download-button" id="download-macos-monterey" href="https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Mac-Monterey-Intel.dmg"><span class="platform-icon" aria-hidden="true">⌘</span><span><small>INSTALADOR</small><strong>Monterey para Intel</strong><em>Mac Intel · 1.0.4 · DMG</em></span><span class="platform-arrow">↗</span></a><p class="monterey-download-status" id="monterey-download-status">Somente Mac Intel (x86_64) com macOS 12 Monterey; não funciona em Apple Silicon.</p></div>
     </section>
 
-    <section class="requirements section-wrap" id="requisitos">
-      <div class="section-heading requirements-heading"><div><span class="eyebrow">ANTES DE INSTALAR</span><h2>O que você<br><span class="muted-heading">precisa saber.</span></h2></div><p>O FaderDeck está disponível para Windows e macOS. Escolha o instalador correspondente ao seu computador.</p></div>
-      <div class="requirements-grid"><article class="requirement-card"><span class="req-label">SISTEMAS</span><strong>Windows e macOS</strong><p>Instaladores próprios para cada computador.</p></article><article class="requirement-card"><span class="req-label">NO WINDOWS</span><strong>loopMIDI</strong><p>Instale e mantenha-o em execução para a porta MIDI continuar disponível. O fornecedor não confirma compatibilidade com Windows 11. <a class="inline-link" href="guia-midi-windows.html">Veja o guia</a>.</p></article><article class="requirement-card"><span class="req-label">NO MAC</span><strong>Intel + Apple Silicon · macOS 13+</strong><p>O Universal requer Ventura 13 ou posterior. Monterey 12 requer Mac Intel e o instalador separado acima. O FaderDeck configura a porta automaticamente.</p></article></div>
+    <section class="plans section-wrap" id="planos"><div class="section-heading"><div><span class="eyebrow">OFERTAS PLANEJADAS</span><h2>Comece no seu<br><span class="muted-heading">ritmo.</span></h2></div><p>As opções abaixo representam a proposta comercial. Teste, compra e ativação ainda não estão disponíveis nesta etapa.</p></div><div class="plan-grid"><article class="plan-card"><span class="platform-kicker">AVALIAÇÃO</span><h3>Teste gratuito</h3><p class="plan-price">7 <small>dias</small></p><p>A proposta prevê acesso às funcionalidades completas durante sete dias.</p><span class="coming-soon">Disponibilidade pendente</span></article><article class="plan-card plan-featured"><span class="platform-kicker">LANÇAMENTO</span><h3>Versão completa</h3><p class="plan-price"><small>R$</small> 30,00</p><p>Pagamento único, conforme a oferta planejada. Forma de compra e ativação ainda serão definidas.</p><span class="coming-soon">Compra ainda não disponível</span></article></div><p class="review-note">Informações comerciais aguardam implementação e confirmação antes de serem oferecidas ao público.</p></section>
 
-      <div class="notice-card"><span class="notice-icon">i</span><p><strong>Na primeira abertura.</strong> No Mac, siga a confirmação de segurança do sistema e permita o acesso à rede local. No Windows, se o Firewall perguntar, permita conexões do FaderDeck em redes privadas.</p></div>
-      <div class="storage-note"><span class="storage-symbol">⌂</span><p><strong>Seus layouts ficam salvos.</strong> As alterações do seu painel permanecem neste computador quando você fecha e abre o FaderDeck novamente.</p></div>
-    </section>
+    <section class="faq section-wrap" id="faq"><div class="section-heading"><div><span class="eyebrow">PERGUNTAS FREQUENTES</span><h2>O essencial,<br><span class="muted-heading">sem mistério.</span></h2></div><p>Respostas baseadas no funcionamento e nos requisitos documentados do FaderDeck.</p></div><div class="faq-list">
+      <details><summary>O que é o FaderDeck?</summary><p>Um painel de controle MIDI com faders e pads, para uso no computador ou no navegador do celular.</p></details>
+      <details><summary>Preciso instalar algo no celular?</summary><p>Não há aplicativo móvel mencionado na documentação. O painel do celular é aberto pelo navegador, usando o QR exibido pelo aplicativo.</p></details>
+      <details><summary>Funciona no Windows e no macOS?</summary><p>Há instalador para Windows 64-bit e instaladores para macOS. No Mac, o Universal requer macOS 13+; Monterey 12 tem opção apenas para Intel. No Windows, é necessário manter o loopMIDI ativo para a porta virtual.</p></details>
+      <details><summary>Como funciona o teste gratuito de sete dias?</summary><p>É uma oferta planejada, ainda indisponível. O processo de início, elegibilidade e encerramento precisa ser confirmado antes do lançamento. <strong>Revisar antes de publicar.</strong></p></details>
+      <details><summary>Preciso estar na mesma rede Wi-Fi?</summary><p>Para usar o painel pelo celular, computador e celular precisam estar na mesma rede local e sem isolamento entre dispositivos. Redes de convidados podem bloquear a conexão.</p></details>
+      <details><summary>Como faço a ativação após a compra?</summary><p>A compra e o processo de ativação ainda não existem. O método de ativação está pendente de definição. <strong>Revisar antes de publicar.</strong></p></details>
+      <details><summary>Quais DAWs posso utilizar?</summary><p>A documentação inclui instruções para REAPER, Ableton Live, FL Studio, Cubase e ChurchDAW. Não há promessa de compatibilidade universal: a configuração depende dos recursos MIDI de cada DAW e versão. <strong>Validar as versões suportadas.</strong></p></details>
+      <details><summary>Onde encontro ajuda para instalar?</summary><p>O guia de Windows está disponível nesta página. Um canal de suporte e páginas legais ainda não foram informados. <strong>Adicionar contato e links legais antes do lançamento comercial.</strong></p></details>
+    </div></section>
 
-    <section class="final-cta section-wrap"><div class="final-cta-inner"><span class="eyebrow">FADERDECK · CONTROLADOR MIDI</span><h2>Seu setup.<br><span class="headline-accent">Mais perto.</span></h2><a class="button button-primary" href="#downloads"><span>Ver opções de download</span><svg class="button-arrow" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div><div class="final-orbit orbit-one"></div><div class="final-orbit orbit-two"></div><div class="final-lines" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></section>
+    <section class="final-cta section-wrap"><span class="eyebrow">FADERDECK · CONTROLE MIDI</span><h2>Leve seu controle para onde <span class="headline-accent">sua música está.</span></h2><p>Experimente grátis por 7 dias — assim que a avaliação estiver disponível.</p><a class="button button-secondary" href="#planos">Conhecer as ofertas planejadas</a></section>
   </main>
-
-  <footer class="site-footer"><div class="footer-main"><a class="brand" href="#inicio"><span class="brand-mark" aria-hidden="true"><img src="faderdeck-icon.png" alt=""></span><span>Fader<span class="brand-light">Deck</span></span></a><p>Painel MIDI para sua DAW.<br>Desenvolvido para Windows e macOS.</p><a href="#inicio" class="back-top">Voltar ao topo ↑</a></div><div class="footer-bottom"><span>© <span id="year"></span> FaderDeck</span><span>Feito para manter o controle por perto.</span></div></footer>
-  <script src="platform-detection.js" defer></script>
-  <script src="app.js" defer></script>
+  <footer class="site-footer"><div class="footer-main"><a class="brand" href="#inicio"><span class="brand-mark"><img src="faderdeck-icon.png" alt=""></span><span>Fader<span class="brand-light">Deck</span></span></a><p>Painel MIDI para músicos, tecladistas e usuários de DAWs.</p><nav class="footer-links" aria-label="Links institucionais"><a href="guia-midi-windows.html">Guia de instalação</a><span>Contato: a definir</span><span>Termos: em preparação</span><span>Privacidade: em preparação</span></nav></div><div class="footer-bottom"><span>© <span id="year"></span> FaderDeck</span><a href="#inicio">Voltar ao topo ↑</a></div></footer>
+  <script src="platform-detection.js" defer></script><script src="app.js" defer></script>
 </body>
 </html>
