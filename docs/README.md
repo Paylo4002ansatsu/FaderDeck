@@ -1,45 +1,37 @@
 # Página do FaderDeck
 
-Esta pasta contém os arquivos estáticos da landing page pública do FaderDeck. O GitHub Pages publica diretamente desta pasta na branch `main`.
+Esta pasta contém a landing estática do FaderDeck, publicada pelo GitHub Pages a partir de `/docs` na branch `main`.
 
 **Página:** <https://paylo4002ansatsu.github.io/FaderDeck/>
 
-## O que a página apresenta
+## Conteúdo
 
-- O FaderDeck como controlador MIDI para DAW, com painel de faders e pads.
-- A ponte MIDI integrada e a conexão do celular por QR na mesma rede Wi-Fi.
-- A porta MIDI virtual FaderDeck no macOS, a barra de menus e o comportamento da janela.
-- Os instaladores disponíveis para Windows e macOS, os requisitos de macOS e os avisos de primeira abertura/rede.
-- Um tutorial visual para Windows, desde a instalação do loopMIDI até o mapeamento MIDI nas DAWs.
+A página apresenta o produto e sua interface real, benefícios, fluxo de configuração, compatibilidade documentada para Windows/macOS, downloads existentes, ofertas comerciais planejadas, perguntas frequentes e informações de rodapé. A captura desktop e a captura móvel estão em `assets/product/`; ambas foram feitas do cliente real e mostram explicitamente o estado “SEM PONTE”. A seção de pads é identificada como espaço reservado, pois não há captura real dessa interface disponível na pasta do site.
+
+O teste gratuito de sete dias e a versão completa por R$ 30,00 são apresentados como ofertas planejadas. Não há checkout, ativação, licenciamento ou cadastro implementado nesta etapa; os CTAs informam esse status e não simulam uma compra ou ativação.
 
 ## Arquivos
 
-- `index.html`: conteúdo e marcação da página, incluindo os href fixos dos botões de download.
-- `app.js`: seleção do CTA, atualização das opções de download e interações do menu móvel. As URLs dos instaladores são literais e sincronizadas pelo script de release.
-- `platform-detection.js`: detecção de plataforma e arquitetura. Windows 64-bit recebe o instalador x64; Windows 32-bit recebe um aviso e não pode baixar o executável incompatível. O pacote macOS é universal para Intel e Apple Silicon; quando o navegador não expõe o chip, o site mantém essa opção universal sem adivinhar.
-- `styles.css`: layout, cores e comportamento responsivo.
-- `guia-midi-windows.html`: tutorial responsivo com passos verificados, capturas reais atribuídas e esquemas marcados como ilustração.
-- `guia-assets/`: capturas incluídas no tutorial. O arquivo loopMIDI é uma imagem real de fonte de terceiros; Ableton e FL Studio vêm dos manuais oficiais.
-- `faderdeck-icon.png`: ícone usado pela página.
+- `index.html`: conteúdo da landing e hrefs existentes de download.
+- `styles.css`: estilo visual, responsividade e fontes locais Inter/IBM Plex Mono.
+- `app.js`: CTA inteligente, seleção de instalador e menu móvel acessível.
+- `platform-detection.js`: detecção de plataforma e arquitetura, preservada.
+- `assets/product/`: capturas reais do painel desktop e mobile; estado sem ponte indicado no texto alternativo e na legenda.
+- `guia-midi-windows.html` e `guia-assets/`: tutorial visual de Windows e capturas associadas.
+- `faderdeck-icon.png`: ícone de marca usado na página.
 
-Os caminhos dos recursos são relativos (`styles.css`, `platform-detection.js`, `app.js` e `faderdeck-icon.png`) para funcionarem no endereço de projeto `/FaderDeck/`.
-O guia usa também caminhos relativos (`guia-assets/...`) e pode ser aberto antes da instalação em `guia-midi-windows.html`.
+## Downloads e compatibilidade
 
-## Atualizar e publicar
+Os links atuais permanecem fixos em `1.0.4`: Windows 64-bit, macOS Universal e macOS Monterey para Intel. O Universal requer macOS Ventura 13 ou posterior. Monterey 12 tem opção somente para Mac Intel. O instalador Windows depende do loopMIDI instalado e ativo para disponibilizar a porta MIDI virtual. No Mac, o aplicativo cria a porta automaticamente. As DAWs não são anunciadas como universalmente compatíveis.
 
-1. As releases históricas podem conter apenas um sistema: Windows `1.0.0` e macOS `1.0.1`. As próximas versões criadas pelo workflow devem conter os dois instaladores na mesma Release.
-2. Hoje, o link Windows é `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Windows-Setup.exe` e o link macOS é `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Mac.dmg`. As tags são numéricas, sem prefixo `v`.
-3. O site oferece o instalador Windows x64 apenas quando o navegador identifica um sistema de 64 bits; em Windows 32-bit, desativa o download e informa a incompatibilidade. Para Macs, um único instalador universal funciona em Intel e Apple Silicon.
-4. Para atualizar os links manualmente, depois de confirmar que a Release inclui ambos os arquivos, execute `npm run update:site-download-version -- 1.2.0`, substituindo `1.2.0` pela tag publicada. O script sincroniza `index.html`, `app.js` e este README.
-5. Antes de criar a tag, alinhe `package.json` e `package-lock.json` à mesma versão, por exemplo `npm version 1.0.2 --no-git-tag-version`; faça commit e envie a `main`. O workflow verifica que a tag corresponde à versão do app.
-6. Crie e envie a tag numérica correspondente, por exemplo `git tag 1.0.2 && git push origin 1.0.2`. O workflow gera Windows e macOS; somente após os dois builds passarem, publica os assets juntos e atualiza os dois links do site.
-7. Não crie uma Release separada por sistema para as versões novas: ambos os links usam a mesma tag explícita, evitando apontar para uma Release sem o instalador da outra plataforma.
-8. O GitHub Pages publica automaticamente a pasta `/docs` da branch `main`; não é necessário copiar a página para a raiz do aplicativo.
+A seleção automática identifica Windows 64-bit e encaminha macOS/arquiteturas desconhecidas para a escolha manual, preservando os IDs utilizados pelos testes. Não alterar URLs individualmente: para atualizar a versão após confirmar os arquivos da release, execute `npm run update:site-download-version -- 1.2.0` com a tag numérica correspondente.
 
-Para uma prévia local, inicie um servidor estático na raiz do repositório, por exemplo:
+## Prévia local
+
+Na raiz do repositório, inicie um servidor estático:
 
 ```bash
 python3 -m http.server 8000 --directory docs
 ```
 
-Depois abra <http://localhost:8000/> no navegador. Não há dependências de frontend para a landing page.
+Abra <http://localhost:8000/>. A landing não exige dependências de frontend.

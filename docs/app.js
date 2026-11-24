@@ -1,7 +1,5 @@
-/*
- * FADERDECK — SELEÇÃO DO INSTALADOR
- * As URLs são literais; scripts/update-site-download-version.cjs alinha os dois sistemas
- * à mesma tag depois que a release conjunta é publicada.
+/* FADERDECK — DOWNLOADS E NAVEGAÇÃO DA LANDING
+ * URLs literais e IDs preservados para manter a seleção automática existente.
  */
 const WINDOWS_URL =
   'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Windows-Setup.exe';
@@ -23,7 +21,6 @@ const platformDetection = window.FaderDeckPlatformDetection;
 
 function setAnchorTarget(anchor, href, available = true) {
   if (!anchor) return;
-
   anchor.classList.toggle('is-unavailable', !available);
   if (!available) {
     anchor.removeAttribute('href');
@@ -31,7 +28,6 @@ function setAnchorTarget(anchor, href, available = true) {
     anchor.setAttribute('tabindex', '-1');
     return;
   }
-
   anchor.href = href;
   anchor.removeAttribute('aria-disabled');
   anchor.removeAttribute('tabindex');
@@ -47,7 +43,6 @@ async function setupSmartDownload() {
   const platform = platformDetection.detectPlatform(navigatorRef);
   let windowsBitness = 'unknown';
   let macChip = 'unknown';
-
   if (platform === 'windows') {
     windowsBitness = await platformDetection.detectWindowsBitness(navigatorRef);
   } else if (platform === 'macos') {
@@ -57,7 +52,6 @@ async function setupSmartDownload() {
   const target = platformDetection.resolveDownloadTarget(platform, windowsBitness, macChip);
   label.textContent = target.label;
   button.setAttribute('aria-label', target.label);
-
   if (target.download === 'windows') {
     icon.innerHTML = icons.windows;
     setAnchorTarget(button, WINDOWS_URL);
@@ -74,18 +68,14 @@ async function setupSmartDownload() {
 
   const message = document.getElementById('download-compatibility-message');
   if (message) message.textContent = target.message;
-
   const windowsButton = document.getElementById('download-windows');
   const windowsDetail = document.getElementById('download-windows-detail');
   const windowsUnavailable = platform === 'windows' && windowsBitness === '32';
   setAnchorTarget(windowsButton, WINDOWS_URL, !windowsUnavailable);
-  if (windowsUnavailable && windowsDetail) {
+  if (windowsUnavailable && windowsDetail)
     windowsDetail.textContent = 'Indisponível em Windows 32-bit';
-  }
-
   const macButton = document.getElementById('download-mac');
   if (macButton) macButton.href = MACOS_URL;
-
   const macMontereyButton = document.getElementById('download-macos-monterey');
   if (macMontereyButton) macMontereyButton.href = MACOS_MONTEREY_URL;
 }
@@ -100,52 +90,18 @@ function setupMobileMenu() {
     nav.classList.remove('is-open');
   };
   toggle.addEventListener('click', () => {
-    const isOpen = toggle.getAttribute('aria-expanded') === 'true';
-    toggle.setAttribute('aria-expanded', String(!isOpen));
-    toggle.setAttribute('aria-label', isOpen ? 'Abrir menu' : 'Fechar menu');
-    nav.classList.toggle('is-open', !isOpen);
+    const open = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!open));
+    toggle.setAttribute('aria-label', open ? 'Abrir menu' : 'Fechar menu');
+    nav.classList.toggle('is-open', !open);
   });
   nav.querySelectorAll('a').forEach((link) => link.addEventListener('click', close));
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') close();
-  });
-}
-
-function setupStagePreview() {
-  const preview = document.getElementById('stage-demo');
-  const button = document.getElementById('stage-demo-names-toggle');
-  if (!preview || !button) return;
-
-  const storageKey = 'faderdeck.landing.stagePreview.showNames';
-  let showNames = true;
-  try {
-    const saved = window.localStorage.getItem(storageKey);
-    showNames = saved === null || saved === 'true';
-  } catch {
-    // A demonstração continua utilizável mesmo se o navegador bloquear armazenamento local.
-  }
-
-  const applyPreference = () => {
-    preview.classList.toggle('names-hidden', !showNames);
-    button.textContent = `Nomes: ${showNames ? 'ligado' : 'desligado'}`;
-    button.setAttribute('aria-pressed', String(showNames));
-    button.setAttribute(
-      'aria-label',
-      showNames ? 'Esconder nomes dos canais' : 'Mostrar nomes dos canais',
-    );
-  };
-
-  button.addEventListener('click', () => {
-    showNames = !showNames;
-    try {
-      window.localStorage.setItem(storageKey, String(showNames));
-    } catch {
-      // A opção permanece ativa até o visitante fechar a página.
+    if (event.key === 'Escape') {
+      close();
+      toggle.focus();
     }
-    applyPreference();
   });
-
-  applyPreference();
 }
 
 if (typeof document !== 'undefined') {
@@ -159,5 +115,4 @@ if (typeof document !== 'undefined') {
     }
   });
   setupMobileMenu();
-  setupStagePreview();
 }
