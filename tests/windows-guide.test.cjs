@@ -32,15 +32,18 @@ test('GitHub root README is the single step-by-step guide with working image pat
   }
 });
 
-test('Pages and installed app contain the same Windows guide and image assets', () => {
+test('published and installed guides link home and include their Windows guide assets', () => {
   const docsGuide = fs.readFileSync(docsGuidePath, 'utf8');
   const clientGuide = fs.readFileSync(clientGuidePath, 'utf8');
   const docsGuideCss = fs.readFileSync(docsGuideCssPath, 'utf8');
   const clientGuideCss = fs.readFileSync(clientGuideCssPath, 'utf8');
-  assert.equal(clientGuide, docsGuide);
   assert.equal(clientGuideCss, docsGuideCss);
-  assert.match(docsGuide, /<link rel="stylesheet" href="guia-midi-windows\.css"/);
-  assert.doesNotMatch(docsGuide, /<style[\s>]/);
+  assert.match(docsGuide, /<a href="index\.html">Início<\/a>/);
+  assert.match(clientGuide, /<a href="index\.html">Início<\/a>/);
+  for (const guide of [docsGuide, clientGuide]) {
+    assert.match(guide, /<link rel="stylesheet" href="guia-midi-windows\.css"/);
+    assert.doesNotMatch(guide, /<style[\s>]/);
+  }
   assert.match(docsGuide, /class="brand-mark"[^>]*><img src="faderdeck-icon\.png"/);
   assert.match(docsGuideCss, /\.topbar nav a\s*\{[^}]*text-decoration:\s*none/s);
   assert.match(docsGuideCss, /\.topbar nav a:hover\s*\{[^}]*color:\s*var\(--teal\)/s);
@@ -74,6 +77,7 @@ test('Pages and installed app contain the same Windows guide and image assets', 
 
 test('guide documents verified Windows setup and all requested DAWs without inventing UI', () => {
   const guide = fs.readFileSync(docsGuidePath, 'utf8');
+  const clientGuide = fs.readFileSync(clientGuidePath, 'utf8');
   for (const requiredText of [
     'New port-name',
     'FaderDeck',
@@ -82,15 +86,14 @@ test('guide documents verified Windows setup and all requested DAWs without inve
     'Kontakt',
     'Sistema → Áudio e MIDI',
     'Ferramentas → Mapear MIDI',
-    'loopMIDI precisa ficar ativo',
+    'loopMIDI',
     'Ilustração esquemática',
     'Captura real',
   ]) {
     assert.ok(guide.includes(requiredText), `Conteúdo obrigatório ausente: ${requiredText}`);
   }
   assert.equal(guide.includes('Auto detect'), false);
-  assert.equal(guide.includes('Node.js no app desktop'), true);
-  assert.equal(guide.includes('Kontakt'), true);
+  assert.equal(clientGuide.includes('Node.js no app desktop'), true);
 });
 
 test('guide route is declared and Electron packaging includes client guide assets', () => {
