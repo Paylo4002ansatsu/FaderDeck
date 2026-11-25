@@ -56,26 +56,11 @@ O endereço local padrão da administração é `http://127.0.0.1:8787/bridge`. 
 
 Se a DAW já estava aberta quando você criou a porta, feche-a e abra novamente. Alguns programas só atualizam a lista de dispositivos MIDI na inicialização. Em cada programa, selecione e habilite a entrada **FaderDeck**:
 
-- **REAPER:** `Options → Preferences → Audio → MIDI Inputs`. Clique com o botão direito na entrada FaderDeck e habilite `Enable input`. Para MIDI Learn de parâmetros de FX, habilite também `Enable input for control messages`. Abra o FX, escolha `Param → Learn` no parâmetro e mova o fader.
-- **Ableton Live:** `Ctrl+, → Link, Tempo & MIDI`. Na linha FaderDeck, habilite `Remote` para mapear controles. Habilite `Track` se também quiser receber notas de pads em uma faixa MIDI. Para mapear, pressione `Ctrl+M`, clique no parâmetro da DAW, mova o fader e pressione `Ctrl+M` outra vez.
-- **FL Studio:** `Options → MIDI settings` ou `F10`. Em `Input`, selecione FaderDeck e clique `Enable`. Para mapear um controle, clique nele com o botão direito, escolha `Link to Controller` e mova o fader.
-- **Cubase:** `Studio → Studio Setup → MIDI Port Setup`. Deixe `Visible` ativo; marque `In “All MIDI Inputs”` se quiser receber a porta como entrada geral de faixas MIDI. Para controles da interface do Cubase, adicione uma superfície em MIDI Remote, selecione a porta de entrada, use `Mapping Assistant`, escolha a função e aplique o mapeamento.
 - **ChurchDAW:** em `Sistema → Áudio e MIDI`, selecione FaderDeck como entrada. Depois, em `Ferramentas → Mapear MIDI`, clique no controle desejado na tela e mova o fader. O mapeamento é salvo no projeto.
-- **Logic Pro (macOS):** em `Logic Pro → Settings → MIDI → Inputs`, habilite a porta de entrada. Para atribuições, abra `Control Surfaces → Controller Assignments` e use Learn.
+- **Kontakt:** abra `Options → MIDI`, selecione FaderDeck na lista de portas MIDI de entrada e ative-a. Em seguida, clique no controle ou parâmetro desejado no Kontakt e use o recurso MIDI Learn do plugin, movendo o fader correspondente no FaderDeck.
 
-A captura real do Ableton abaixo vem do manual oficial e mostra nomes de dispositivos de exemplo; no seu computador, escolha a entrada FaderDeck.
+Por enquanto, o FaderDeck anuncia suporte documentado somente para **ChurchDAW** e **Kontakt**. Consulte o [guia visual Windows](https://paylo4002ansatsu.github.io/FaderDeck/guia-midi-windows.html) para os passos de configuração.
 
-![Captura real das opções Track, Sync, Remote e MPE em MIDI Ports do Ableton Live.](client/guia-assets/ableton-midi-ports.png)
-
-Fonte: [manual oficial Ableton Live 12](https://www.ableton.com/en/live-manual/12/midi-and-key-remote-control/).
-
-No FL Studio, confirme que a entrada selecionada está habilitada. O nome de dispositivo na captura abaixo é um exemplo; escolha FaderDeck.
-
-![Captura real das configurações MIDI do FL Studio, com a seção Input e a opção Enable.](client/guia-assets/fl-studio-midi-input.png)
-
-Fonte: [manual oficial Image-Line — configurações MIDI](https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/envsettings_midi.htm). Veja o [guia visual Windows](https://paylo4002ansatsu.github.io/FaderDeck/guia-midi-windows.html) para os passos e destaques ilustrados do REAPER, Ableton, FL Studio, Cubase e ChurchDAW.
-
-Pads configurados para enviar **Note** ou **CC** podem ser aprendidos como controles, conforme o modo da DAW. Um pad de **Program Change** envia uma seleção de programa; não é um botão genérico de ligar/desligar. No Ableton, se uma nota de pad for mapeada como comando `Remote`, ela deixa de tocar essa mesma nota em uma faixa MIDI.
 
 ## macOS
 

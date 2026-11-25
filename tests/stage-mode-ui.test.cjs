@@ -404,16 +404,22 @@ test('landing marca a ilustração de palco e reserva capturas nas proporções 
   assert.match(html, /class="stage-hero" role="img"/);
   assert.match(html, /não é uma captura de tela do aplicativo/);
   assert.equal((html.match(/class="stage-hero-lane"/g) || []).length, 5);
-  assert.match(html, /class="product-showcase">[\s\S]*class="product-detail-figure"[\s\S]*class="capture-placeholder capture-mobile"/);
-  assert.match(html, /class="capture-placeholder capture-wide"[^>]*aria-label="[^"]*16 por 9/);
+  assert.match(
+    html,
+    /class="product-showcase">[\s\S]*class="product-detail-figure"[\s\S]*class="capture-placeholder capture-mobile"/,
+  );
   assert.match(html, /class="capture-placeholder capture-mobile"[^>]*aria-label="[^"]*9 por 19/);
   assert.match(html, /faderdeck-client-real-desktop\.png/);
   assert.match(html, /aviso SEM PONTE/);
+  assert.doesNotMatch(html, /(?:^|\W)pads?(?:\W|$)/i);
+  assert.match(
+    html,
+    /class="back-to-top"[^>]*id="back-to-top"[^>]*href="#inicio"[^>]*aria-label="Voltar ao topo"/,
+  );
   assert.match(
     styles,
     /\.stage-hero-board\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/,
   );
-  assert.match(styles, /\.capture-wide\{aspect-ratio:16\/9/);
   assert.match(styles, /\.capture-mobile\{[^}]*aspect-ratio:9\/19/);
   assert.match(styles, /\.product-showcase\{[^}]*grid-template-columns:minmax\(0,1fr\) 240px/);
   assert.match(styles, /@media\(max-width:720px\)\{\.product-showcase\{grid-template-columns:1fr/);

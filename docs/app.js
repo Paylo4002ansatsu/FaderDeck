@@ -104,6 +104,16 @@ function setupMobileMenu() {
   });
 }
 
+function setupBackToTop() {
+  const button = document.getElementById('back-to-top');
+  if (!button) return;
+  const updateVisibility = () => {
+    button.classList.toggle('is-visible', window.scrollY > 360);
+  };
+  window.addEventListener('scroll', updateVisibility, { passive: true });
+  updateVisibility();
+}
+
 if (typeof document !== 'undefined') {
   const year = document.getElementById('year');
   if (year) year.textContent = new Date().getFullYear();
@@ -115,4 +125,5 @@ if (typeof document !== 'undefined') {
     }
   });
   setupMobileMenu();
+  setupBackToTop();
 }

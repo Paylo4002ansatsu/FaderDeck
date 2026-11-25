@@ -234,6 +234,11 @@ test('server does not listen on import, retries an occupied port, and survives m
   assert.equal(guidePage.status, 200);
   assert.match(guidePage.headers['content-type'], /text\/html/);
   assert.match(guidePage.body, /Do loopMIDI ao primeiro/);
+  assert.match(guidePage.body, /guia-midi-windows\.css/);
+  const guideCss = await request(port, '/guia-midi-windows.css');
+  assert.equal(guideCss.status, 200);
+  assert.match(guideCss.headers['content-type'], /text\/css/);
+  assert.match(guideCss.body, /\.topbar/);
   const guideImage = await request(port, '/guia-assets/loopmidi-window.png');
   assert.equal(guideImage.status, 200);
   assert.match(guideImage.headers['content-type'], /image\/png/);
