@@ -1,8 +1,8 @@
 # Página do FaderDeck
 
-Esta pasta contém a landing estática do FaderDeck, publicada pelo GitHub Pages a partir de `/docs` na branch `main`.
+Esta pasta contém a landing estática do FaderDeck, publicada pela Vercel.
 
-**Página:** <https://paylo4002ansatsu.github.io/FaderDeck/>
+**Página:** <https://fader-deck.vercel.app/>
 
 ## Conteúdo
 

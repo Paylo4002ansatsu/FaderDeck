@@ -2,16 +2,20 @@
 
 Este é o guia principal do aplicativo. No GitHub, o arquivo `README.md` da raiz é o que aparece automaticamente na página inicial do repositório.
 
+**Site oficial:** <https://fader-deck.vercel.app/>
+
+**Versão atual:** 1.0.4
+
 O aplicativo desktop não exige Node.js, npm nem comandos no Terminal. No Windows, porém, esta implementação precisa do loopMIDI para criar a porta MIDI virtual. No macOS, o próprio FaderDeck cria essa porta.
 
 ## Downloads
 
-Baixe a versão mais recente para seu sistema:
+Baixe a versão atual (1.0.4) para seu sistema:
 
-- **Windows 64-bit:** [Baixar FaderDeck para Windows](https://github.com/Paylo4002ansatsu/FaderDeck/releases/latest/download/FaderDeck-Windows-Setup.exe). Windows 32-bit não é compatível com o instalador atual.
-- **macOS:** [Baixar FaderDeck para macOS](https://github.com/Paylo4002ansatsu/FaderDeck/releases/latest/download/FaderDeck-Mac.dmg). O pacote é universal e atende Macs Intel e Apple Silicon.
+- **Windows 64-bit:** [Baixar FaderDeck para Windows](https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Windows-Setup.exe). Windows 32-bit não é compatível com o instalador atual.
+- **macOS:** [Baixar FaderDeck para macOS](https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.4/FaderDeck-Mac.dmg). O pacote é universal e atende Macs Intel e Apple Silicon.
 
-Para ver o passo a passo ilustrado, com imagens, destaques e esquemas identificados, abra o [guia visual completo para Windows](https://paylo4002ansatsu.github.io/FaderDeck/guia-midi-windows.html).
+Para ver o passo a passo ilustrado, com imagens, destaques e esquemas identificados, abra o [guia visual completo para Windows](https://fader-deck.vercel.app/guia-midi-windows.html).
 
 ## Windows — instalação e primeiro uso
 
@@ -59,8 +63,7 @@ Se a DAW já estava aberta quando você criou a porta, feche-a e abra novamente.
 - **ChurchDAW:** em `Sistema → Áudio e MIDI`, selecione FaderDeck como entrada. Depois, em `Ferramentas → Mapear MIDI`, clique no controle desejado na tela e mova o fader. O mapeamento é salvo no projeto.
 - **Kontakt:** abra `Options → MIDI`, selecione FaderDeck na lista de portas MIDI de entrada e ative-a. Em seguida, clique no controle ou parâmetro desejado no Kontakt e use o recurso MIDI Learn do plugin, movendo o fader correspondente no FaderDeck.
 
-Por enquanto, o FaderDeck anuncia suporte documentado somente para **ChurchDAW** e **Kontakt**. Consulte o [guia visual Windows](https://paylo4002ansatsu.github.io/FaderDeck/guia-midi-windows.html) para os passos de configuração.
-
+Por enquanto, o FaderDeck anuncia suporte documentado somente para **ChurchDAW** e **Kontakt**. Consulte o [guia visual Windows](https://fader-deck.vercel.app/guia-midi-windows.html) para os passos de configuração.
 
 ## macOS
 
