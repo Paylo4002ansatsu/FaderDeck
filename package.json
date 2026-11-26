@@ -34,7 +34,8 @@
     "electron-builder": "^26.18.0",
     "eslint": "^10.15.0",
     "globals": "^17.14.0",
-    "prettier": "^3.10.1"
+    "prettier": "^3.10.1",
+    "supabase": "^3.4.0"
   },
   "build": {
     "appId": "app.faderdeck",

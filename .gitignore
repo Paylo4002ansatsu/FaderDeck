@@ -3,6 +3,11 @@ node_modules/
 release/
 dist/
 
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
 # Local bridge data and secrets
 .faderdeck-token
 faderdeck-layout.json
