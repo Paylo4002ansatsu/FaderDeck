@@ -29,6 +29,12 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Start local Supabase
+        run: npx supabase start
+
+      - name: Run pgTAP database tests
+        run: npm run test:db
+
       - name: Run ESLint
         run: npm run lint
 
@@ -37,3 +43,31 @@ jobs:
 
       - name: Run test suite
         run: npm test
+
+  public-e2e:
+    name: Public site E2E (Chromium)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Run public site E2E tests
+        run: npm run test:e2e

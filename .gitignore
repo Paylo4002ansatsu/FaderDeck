@@ -2,6 +2,8 @@
 node_modules/
 release/
 dist/
+playwright-report/
+test-results/
 
 # Local environment and secrets
 .env

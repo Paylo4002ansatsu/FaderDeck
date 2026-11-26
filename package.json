@@ -13,6 +13,8 @@
     "start": "electron .",
     "bridge": "node server.cjs",
     "test": "node --test",
+    "test:db": "supabase test db supabase/tests/database",
+    "test:e2e": "playwright test --config tests/e2e/playwright.config.cjs",
     "lint": "eslint .",
     "format": "prettier --write \"*.{js,cjs,mjs,json}\" \"bridge/**/*.{js,cjs,mjs}\" \"client/**/*.{js,cjs,mjs,html,css}\" \"assets/**/*.js\" \"docs/**/*.{js,cjs,mjs}\" \"scripts/**/*.{js,cjs,mjs}\" \"tests/**/*.{js,cjs,mjs}\" \".github/workflows/*.{yml,yaml}\" eslint.config.mjs .prettierrc.json",
     "format:check": "prettier --check \"*.{js,cjs,mjs,json}\" \"bridge/**/*.{js,cjs,mjs}\" \"client/**/*.{js,cjs,mjs,html,css}\" \"assets/**/*.js\" \"docs/**/*.{js,cjs,mjs}\" \"scripts/**/*.{js,cjs,mjs}\" \"tests/**/*.{js,cjs,mjs}\" \".github/workflows/*.{yml,yaml}\" eslint.config.mjs .prettierrc.json",
@@ -30,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.65.1",
     "electron": "^45.3.2",
     "electron-builder": "^26.18.0",
     "eslint": "^10.15.0",

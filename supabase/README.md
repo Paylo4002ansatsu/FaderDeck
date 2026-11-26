@@ -135,6 +135,10 @@ Nenhuma conta ou dado de cliente foi criado nesta preparação.
   chaves estrangeiras, índices, função de autorização administrativa, gatilhos de
   `updated_at`, RLS e grants. O papel `authenticated` só recebe leitura filtrada
   por RLS; escrita é reservada ao backend confiável com `service_role`.
+- `migrations/20261126025315_restrict_is_admin_anon_execution.sql` revoga o
+  privilégio `EXECUTE` de `anon` em `public.is_admin()`. Essa migration incremental
+  foi aplicada ao projeto remoto após a auditoria do ACL hospedado e autorização
+  explícita.
 - A migration foi aplicada e validada no banco local com `npx supabase db lint
 --schema public --fail-on error`, e aplicada ao remoto após autorização. O
   histórico remoto confirma a migration; não há seed nem funções para publicar.
@@ -144,6 +148,30 @@ Nenhuma conta ou dado de cliente foi criado nesta preparação.
 - Separar regras do domínio (pedido, trial, licença, dispositivo) dos adaptadores
   Auth, pagamentos e provedores. Pagamento e liberação de licenças estão fora
   desta etapa.
+
+## Testes locais de banco e RLS
+
+Os testes pgTAP em `supabase/tests/database/` exercitam as migrations aplicadas ao banco
+local, sem acessar o projeto remoto. As fixtures de `auth.users` e das tabelas
+comerciais são criadas dentro de uma transação e revertidas ao final.
+
+Requisitos: Docker Desktop ou Podman configurado como runtime de containers e
+dependências instaladas com `npm ci`.
+Para iniciar a stack e executar os testes:
+
+```sh
+npx supabase start
+npm run test:db
+```
+
+O teste confirma a ACL de `public.is_admin()`, o resultado para usuário comum e
+administrador, visibilidade por RLS e bloqueio das operações de escrita para
+`anon` e `authenticated` (inclusive administrador, conforme os grants atuais).
+Não use `supabase test db --remote` para esses testes.
+
+O workflow de pull request inicia a stack local e executa `npm run test:db`
+antes dos testes Node. Em runners próprios, o serviço Docker precisa estar
+disponível. A stack pode ser encerrada localmente com `npx supabase stop`.
 
 ## Exportação e portabilidade
 
@@ -168,7 +196,8 @@ Não exportar nem compartilhar dumps sem proteção: podem conter dados pessoais
 ## Próximas etapas
 
 1. Revisar o resultado local da migration e as seis policies RLS.
-2. Testes comportamentais com usuários ou registros temporários exigem aprovação
-   separada; nenhum cliente, venda ou administrador fictício foi criado.
+2. Expandir os testes pgTAP junto com novas policies ou mudanças de grants; os
+   usuários e registros usados pelos testes são fictícios e revertidos na
+   transação.
 3. Alterações remotas futuras, inclusive Auth, Edge Functions, pagamentos ou
    licenciamento, exigem revisão e autorização próprias.
