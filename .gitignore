@@ -12,6 +12,7 @@ test-results/
 
 # Local bridge data and secrets
 .faderdeck-token
+.faderdeck-tls/
 faderdeck-layout.json
 
 # Python and operating-system artifacts

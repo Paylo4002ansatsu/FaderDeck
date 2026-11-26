@@ -1,0 +1,104 @@
+.fd-update-open {
+  overflow: hidden;
+}
+.fd-update-overlay {
+  position: fixed;
+  z-index: 2147483000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(5 10 11 / 78%);
+  backdrop-filter: blur(7px);
+}
+.fd-update-dialog {
+  width: min(100%, 520px);
+  max-height: min(80vh, 640px);
+  overflow: auto;
+  border: 1px solid #31514e;
+  border-radius: 18px;
+  background: linear-gradient(155deg, #1c2829 0%, #111819 78%);
+  box-shadow: 0 24px 90px rgb(0 0 0 / 55%);
+  padding: clamp(22px, 5vw, 36px);
+  color: #edf3f1;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    sans-serif;
+}
+.fd-update-eyebrow {
+  margin: 0 0 10px;
+  color: #40ded0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+.fd-update-dialog h2 {
+  margin: 0;
+  font-size: clamp(24px, 5vw, 34px);
+  line-height: 1.15;
+}
+.fd-update-version {
+  margin: 11px 0 0;
+  color: #9ba9a5;
+  font-size: 12px;
+}
+.fd-update-summary {
+  max-height: 34vh;
+  overflow: auto;
+  margin: 22px 0;
+  color: #c5d0cd;
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.fd-update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.fd-update-primary,
+.fd-update-secondary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #40ded0;
+  border-radius: 9px;
+  padding: 0 16px;
+  font:
+    700 12px Inter,
+    system-ui,
+    sans-serif;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.fd-update-primary {
+  background: #40ded0;
+  color: #071a18;
+}
+.fd-update-primary:hover {
+  background: #6cf0e4;
+}
+.fd-update-secondary {
+  border-color: #394747;
+  background: #202a2c;
+  color: #edf3f1;
+}
+.fd-update-primary:focus-visible,
+.fd-update-secondary:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+@media (max-width: 480px) {
+  .fd-update-overlay {
+    padding: 14px;
+  }
+  .fd-update-actions {
+    flex-direction: column;
+  }
+}

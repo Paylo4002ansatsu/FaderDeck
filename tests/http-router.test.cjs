@@ -1,0 +1,226 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const http = require('node:http');
+const path = require('node:path');
+const test = require('node:test');
+const { createHttpHandler } = require('../bridge/http-router.cjs');
+
+async function createFixture({ entitlementService, supabaseClient, updateChecker } = {}) {
+  let port = 0;
+  let selectedPortCalls = 0;
+  let layout = { version: 0, pages: [], activePageId: '' };
+  const server = http.createServer(
+    createHttpHandler({
+      clientDir: path.join(__dirname, '..', 'client'),
+      getPort: () => port,
+      getSecurePort: () => 0,
+      getToken: () => 'bridge-token',
+      getCaCertificate: () => '',
+      getCaFingerprint: () => '',
+      getLayout: () => layout,
+      setLayout: (next) => {
+        layout = next;
+      },
+      setLayoutInitialized() {},
+      getMidiManager: () => ({
+        listPorts: () => ({ outputs: [], inputs: [] }),
+        selectedOutputIndex: -1,
+        selectedInputIndex: -1,
+        selectPorts(outputIndex, inputIndex) {
+          selectedPortCalls += 1;
+          return { outputIndex, inputIndex };
+        },
+      }),
+      getConnectionStatus: () => ({ clients: 0, remoteClients: 0, remoteAddresses: [] }),
+      networkAddress: () => '127.0.0.1',
+      networkAddresses: () => [],
+      rotateToken() {},
+      persistLayout: async () => {},
+      broadcast() {},
+      entitlementService,
+      supabaseClient,
+      updateChecker,
+    }),
+  );
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  port = server.address().port;
+
+  return {
+    port,
+    server,
+    get selectedPortCalls() {
+      return selectedPortCalls;
+    },
+  };
+}
+
+function request(fixture, url, body, method = 'GET') {
+  const payload = body === undefined ? undefined : JSON.stringify(body);
+  return new Promise((resolve, reject) => {
+    const outgoing = http.request(
+      {
+        hostname: '127.0.0.1',
+        port: fixture.port,
+        path: url,
+        method,
+        headers: {
+          Origin: `http://127.0.0.1:${fixture.port}`,
+          ...(payload
+            ? {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload),
+              }
+            : {}),
+        },
+      },
+      (incoming) => {
+        let responseBody = '';
+        incoming.setEncoding('utf8');
+        incoming.on('data', (chunk) => {
+          responseBody += chunk;
+        });
+        incoming.on('end', () =>
+          resolve({ status: incoming.statusCode, body: JSON.parse(responseBody) }),
+        );
+      },
+    );
+    outgoing.once('error', reject);
+    outgoing.end(payload);
+  });
+}
+
+test('requires a valid entitlement before selecting MIDI ports', async (t) => {
+  const fixture = await createFixture({
+    entitlementService: { getEntitlement: async () => ({ allowed: false }) },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+
+  const response = await request(
+    fixture,
+    '/api/ports/select',
+    { token: 'bridge-token', outputIndex: 0, inputIndex: -1 },
+    'POST',
+  );
+
+  assert.equal(response.status, 403);
+  assert.equal(response.body.code, 'ENTITLEMENT_REQUIRED');
+  assert.equal(fixture.selectedPortCalls, 0);
+});
+
+test('allows MIDI port selection when the entitlement is valid', async (t) => {
+  const fixture = await createFixture({
+    entitlementService: { getEntitlement: async () => ({ allowed: true }) },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+
+  const response = await request(
+    fixture,
+    '/api/ports/select',
+    { token: 'bridge-token', outputIndex: 0, inputIndex: -1 },
+    'POST',
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(fixture.selectedPortCalls, 1);
+});
+
+test('account routes mask the email and never return session tokens', async (t) => {
+  let session = null;
+  let entitlementAllowed = false;
+  const calls = [];
+  const fixture = await createFixture({
+    entitlementService: {
+      async getEntitlement() {
+        return {
+          allowed: entitlementAllowed,
+          kind: entitlementAllowed ? 'trial' : 'none',
+          expires_at: entitlementAllowed ? '2026-12-03T12:00:00.000Z' : null,
+          server_time: '2026-11-26T12:00:00.000Z',
+          offline_grace_until: entitlementAllowed ? '2026-11-27T12:00:00.000Z' : null,
+        };
+      },
+      clearCache() {
+        calls.push('clearCache');
+      },
+    },
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+      async getCurrentSession() {
+        return session;
+      },
+      async signInWithEmailAndPassword() {
+        session = {
+          access_token: 'secret-access-token',
+          refresh_token: 'secret-refresh-token',
+          user: { id: 'user-id', email: 'alex@example.com' },
+        };
+      },
+      async invokeEdgeFunction(name) {
+        calls.push(name);
+        if (name === 'trial-start') entitlementAllowed = true;
+        return { trial: null, expired: false };
+      },
+      async signOut() {
+        session = null;
+      },
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+
+  const login = await request(
+    fixture,
+    '/api/account/login',
+    { email: 'alex@example.com', password: 'passphrase' },
+    'POST',
+  );
+  assert.equal(login.status, 200);
+  assert.equal(login.body.session.email, 'a***@e***.com');
+  assert.equal(JSON.stringify(login.body).includes('secret-access-token'), false);
+  assert.equal(JSON.stringify(login.body).includes('secret-refresh-token'), false);
+
+  const started = await request(fixture, '/api/account/trial/start', {}, 'POST');
+  assert.equal(started.status, 200);
+  assert.equal(started.body.entitlement.allowed, true);
+  assert.ok(calls.includes('trial-start'));
+
+  const loggedOut = await request(fixture, '/api/account/logout', {}, 'POST');
+  assert.equal(loggedOut.status, 200);
+  assert.equal(loggedOut.body.session.authenticated, false);
+  assert.ok(calls.includes('clearCache'));
+});
+
+test('update status route returns the injected release-check result', async (t) => {
+  const fixture = await createFixture({
+    updateChecker: {
+      async checkForUpdate() {
+        return {
+          currentVersion: '1.0.4',
+          latestVersion: '1.0.5',
+          updateAvailable: true,
+          mandatory: true,
+          releaseNotes: 'Correções.',
+          downloadUrl: 'https://github.com/FaderDeck/releases/download/v1.0.5/app.dmg',
+          releaseUrl: 'https://github.com/FaderDeck/releases/tag/v1.0.5',
+        };
+      },
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+
+  const response = await request(fixture, '/api/app/update-status');
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    currentVersion: '1.0.4',
+    latestVersion: '1.0.5',
+    updateAvailable: true,
+    mandatory: true,
+    releaseNotes: 'Correções.',
+    downloadUrl: 'https://github.com/FaderDeck/releases/download/v1.0.5/app.dmg',
+    releaseUrl: 'https://github.com/FaderDeck/releases/tag/v1.0.5',
+  });
+});

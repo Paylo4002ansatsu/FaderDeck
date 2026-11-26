@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#111416" />
     <title>FaderDeck · Ponte local</title>
-    <link rel="stylesheet" href="/admin/bridge.css" />
+    <link rel="stylesheet" href="/update-modal.css?v=1" />
+    <link rel="stylesheet" href="/admin/bridge.css?v=commercial-1" />
   </head>
   <body>
     <main class="wrap">
@@ -24,11 +25,58 @@
             Escolha a porta MIDI virtual que a DAW recebe. No Windows, use loopMIDI; no macOS, a
             ponte cria a porta virtual FaderDeck automaticamente.
           </p>
+          <section class="account-panel" aria-labelledby="account-title">
+            <div class="account-heading">
+              <div>
+                <h2 id="account-title">Conta e licença</h2>
+                <p id="account-email" class="account-email" hidden></p>
+              </div>
+              <span id="account-state" class="account-state" data-state="unknown" role="status"
+                >Carregando…</span
+              >
+            </div>
+            <form id="account-login" class="account-login">
+              <label class="label" for="account-login-email">E-mail</label>
+              <input
+                id="account-login-email"
+                name="email"
+                type="email"
+                autocomplete="username"
+                required
+              />
+              <label class="label" for="account-login-password">Senha</label>
+              <input
+                id="account-login-password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+              />
+              <button id="account-login-submit" class="full" type="submit">Entrar</button>
+            </form>
+            <div id="account-actions" class="row account-actions" hidden>
+              <button id="account-trial-start" type="button" hidden>
+                Iniciar teste gratuito de 7 dias
+              </button>
+              <button id="account-logout" class="secondary" type="button" hidden>Sair</button>
+              <a
+                id="account-license-link"
+                class="account-license-link"
+                href="https://fader-deck.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                hidden
+                >Adquirir licença</a
+              >
+            </div>
+            <p id="account-gate-message" class="account-gate-message" hidden></p>
+            <p id="account-message" class="account-message" role="status" aria-live="polite"></p>
+          </section>
           <label class="label" for="output">Saída MIDI para a DAW</label>
           <select id="output"></select>
           <label class="label" for="input">Entrada MIDI para MIDI Learn (opcional)</label>
           <select id="input"></select>
-          <button id="save" class="full" type="button">Aplicar portas MIDI</button>
+          <button id="save" class="full" type="button" disabled>Aplicar portas MIDI</button>
           <div id="midi-warning" class="note warn" hidden></div>
           <div class="note">
             <strong>Firewall do Mac:</strong> se o iPhone não abrir o QR, permita conexões de
@@ -56,7 +104,16 @@
         </section>
         <section class="card side">
           <h2>Conectar celular</h2>
-          <p>Escaneie este QR com a câmera do iPhone conectado à mesma rede Wi-Fi.</p>
+          <p>
+            Na primeira conexão, baixe o certificado, transfira-o ao celular e confie nele nas
+            configurações do dispositivo. Compare a impressão digital antes de instalar.
+          </p>
+          <div class="note">
+            <a href="/bridge-ca.crt" download>Baixar certificado CA</a>
+            <div class="label">Impressão digital SHA-256</div>
+            <code id="ca-fingerprint" class="fingerprint">Carregando…</code>
+          </div>
+          <p>Depois, escaneie o QR com a câmera do iPhone conectado à mesma rede Wi-Fi.</p>
           <div class="qr"><img id="pairing-qr" alt="QR para abrir FaderDeck nesta rede" /></div>
           <div id="pairing-code" class="code">Carregando…</div>
           <div id="mobile-url" class="url"></div>
@@ -67,6 +124,7 @@
         </section>
       </div>
     </main>
-    <script src="/admin/bridge.js" defer></script>
+    <script src="/update-modal.js?v=1" defer></script>
+    <script src="/admin/bridge.js?v=commercial-1" defer></script>
   </body>
 </html>

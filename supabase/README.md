@@ -16,8 +16,10 @@ remoto. Nenhuma Edge Function executável, pagamento ou ativação foi implement
   confirma que `supabase init --force` substitui esse arquivo e remove configurações
   antigas como `config.toml`. Por isso, o JSONC existente foi preservado em vez de
   criar um segundo arquivo de configuração concorrente.
-- A configuração local tem `auth.enable_signup = false`. Isto não altera a
-  configuração hospedada.
+- A configuração local tem `auth.enable_signup = false`, confirmação de e-mail
+  obrigatória e requisitos reforçados para senhas e troca de senha. Isto não altera
+  a configuração hospedada; revise e configure essas opções separadamente no painel
+  do projeto remoto antes de habilitar Auth.
 - O projeto Supabase remoto aparece vinculado neste checkout e a CLI autenticada
   consegue listá-lo como `ACTIVE_HEALTHY`. A migration foi aplicada ao projeto
   remoto após autorização explícita. Nenhuma configuração de Auth ou função remota

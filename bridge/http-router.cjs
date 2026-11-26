@@ -10,10 +10,12 @@ const {
   isSameOriginLocalAdminRequest,
   hasLocalHostHeader,
 } = require('./auth.cjs');
+const defaultSupabaseClient = require('./supabase-client.cjs');
 
 const MAX_REQUEST_BODY_BYTES = 16 * 1024;
 const TOKEN_ROTATION_HEADER = 'x-faderdeck-admin';
 const TOKEN_ROTATION_HEADER_VALUE = 'rotate-token';
+const ENTITLEMENT_REQUIRED = 'ENTITLEMENT_REQUIRED';
 
 function sendJson(response, status, payload) {
   response.writeHead(status, {
@@ -91,10 +93,36 @@ function contentType(filePath) {
   );
 }
 
+function maskEmail(email) {
+  if (typeof email !== 'string') return null;
+  const separator = email.lastIndexOf('@');
+  if (separator <= 0 || separator === email.length - 1) return null;
+  const localPart = email.slice(0, separator);
+  const domain = email.slice(separator + 1);
+  const lastDot = domain.lastIndexOf('.');
+  const visibleDomain = lastDot > 0 ? domain.slice(0, lastDot) : domain;
+  const suffix = lastDot > 0 ? domain.slice(lastDot) : '';
+  return `${localPart[0]}***@${visibleDomain[0]}***${suffix}`;
+}
+
+function safeEntitlement(entitlement) {
+  return {
+    allowed: entitlement?.allowed === true,
+    kind: ['license', 'trial', 'none'].includes(entitlement?.kind) ? entitlement.kind : 'none',
+    expires_at: typeof entitlement?.expires_at === 'string' ? entitlement.expires_at : null,
+    server_time: typeof entitlement?.server_time === 'string' ? entitlement.server_time : null,
+    offline_grace_until:
+      typeof entitlement?.offline_grace_until === 'string' ? entitlement.offline_grace_until : null,
+  };
+}
+
 function createHttpHandler({
   clientDir,
   getPort,
+  getSecurePort,
   getToken,
+  getCaCertificate,
+  getCaFingerprint,
   getLayout,
   setLayout,
   setLayoutInitialized,
@@ -105,7 +133,66 @@ function createHttpHandler({
   rotateToken,
   persistLayout,
   broadcast,
+  entitlementService,
+  supabaseClient = defaultSupabaseClient,
+  updateChecker = { checkForUpdate: async () => null },
 }) {
+  const activeEntitlementService = entitlementService ?? {
+    async getEntitlement() {
+      return { allowed: false };
+    },
+  };
+
+  async function getAccountStatus() {
+    const supabaseConfigured = supabaseClient.isSupabaseConfigured();
+    const session = supabaseConfigured ? await supabaseClient.getCurrentSession() : null;
+
+    if (!session) activeEntitlementService.clearCache?.();
+    const entitlement = session
+      ? safeEntitlement(await activeEntitlementService.getEntitlement())
+      : safeEntitlement(null);
+    let trialStatus = null;
+
+    if (session) {
+      try {
+        trialStatus = await supabaseClient.invokeEdgeFunction('trial-status');
+      } catch (error) {
+        console.warn('Não foi possível atualizar o estado do trial:', error.message);
+      }
+    }
+
+    const trialAvailable = Boolean(
+      session && trialStatus && !trialStatus.trial && entitlement.kind !== 'license',
+    );
+
+    return {
+      session: {
+        authenticated: Boolean(session),
+        email: session ? maskEmail(session.user?.email) : null,
+      },
+      entitlement,
+      supabase_configured: supabaseConfigured,
+      trial_available: trialAvailable,
+      trial_expired: trialStatus?.expired === true,
+    };
+  }
+
+  async function requireEntitlement(response) {
+    let entitlement;
+    try {
+      entitlement = await activeEntitlementService.getEntitlement();
+    } catch (error) {
+      console.error('Não foi possível validar o entitlement antes do acesso MIDI:', error);
+    }
+    if (entitlement?.allowed === true) return true;
+
+    sendJson(response, 403, {
+      code: ENTITLEMENT_REQUIRED,
+      error: 'É necessária uma licença ativa ou um teste gratuito válido para usar MIDI.',
+    });
+    return false;
+  }
+
   return async (request, response) => {
     let requestUrl;
     let pathname;
@@ -125,7 +212,8 @@ function createHttpHandler({
           pathname.startsWith('/api/ports') ||
           pathname === '/api/status' ||
           pathname === '/api/pairing' ||
-          pathname === '/api/token/regenerate') &&
+          pathname === '/api/token/regenerate' ||
+          pathname.startsWith('/api/account/')) &&
         !isLoopbackRequest(request)
       ) {
         return sendJson(response, 403, {
@@ -144,11 +232,100 @@ function createHttpHandler({
         if (request.method !== 'GET')
           return sendJson(response, 405, { error: 'Método não permitido.' });
         if (
-          !isLoopbackRequest(request) &&
+          !(
+            !request.socket.encrypted &&
+            isLoopbackRequest(request) &&
+            isSameOriginLocalAdminRequest(request, getPort())
+          ) &&
           !safeEqual(requestUrl.searchParams.get('token') || '', getToken())
         )
           return sendJson(response, 401, { error: 'Código de pareamento inválido.' });
         return sendJson(response, 200, { authorized: true });
+      }
+      if (pathname === '/api/account/status') {
+        if (request.method !== 'GET')
+          return sendJson(response, 405, { error: 'Método não permitido.' });
+        return sendJson(response, 200, await getAccountStatus());
+      }
+      if (pathname === '/api/app/update-status') {
+        if (request.method !== 'GET')
+          return sendJson(response, 405, { error: 'Método não permitido.' });
+        let updateStatus;
+        try {
+          updateStatus = await updateChecker.checkForUpdate();
+        } catch {
+          updateStatus = null;
+        }
+        return sendJson(response, 200, {
+          currentVersion: updateStatus?.currentVersion ?? null,
+          latestVersion: updateStatus?.latestVersion ?? null,
+          updateAvailable: updateStatus?.updateAvailable === true,
+          mandatory: updateStatus?.mandatory === true,
+          releaseNotes: updateStatus?.releaseNotes ?? '',
+          downloadUrl: updateStatus?.downloadUrl ?? null,
+          releaseUrl: updateStatus?.releaseUrl ?? null,
+        });
+      }
+      if (
+        pathname === '/api/account/login' ||
+        pathname === '/api/account/trial/start' ||
+        pathname === '/api/account/logout'
+      ) {
+        if (request.method !== 'POST')
+          return sendJson(response, 405, { error: 'Método não permitido.' });
+        if (!isSameOriginLocalAdminRequest(request, getPort())) {
+          return sendJson(response, 403, {
+            error: 'Ação permitida somente nesta interface local.',
+          });
+        }
+        const supabaseConfigured = supabaseClient.isSupabaseConfigured();
+        if (!supabaseConfigured && pathname !== '/api/account/logout') {
+          return sendJson(response, 503, {
+            code: 'SUPABASE_NOT_CONFIGURED',
+            error: 'A autenticação comercial ainda não está configurada neste ambiente.',
+          });
+        }
+
+        if (pathname === '/api/account/login') {
+          const body = await readBody(request);
+          if (!body || typeof body !== 'object' || Array.isArray(body)) {
+            return sendJson(response, 400, { error: 'O corpo deve ser um objeto JSON.' });
+          }
+          if (typeof body.email !== 'string' || typeof body.password !== 'string') {
+            return sendJson(response, 400, { error: 'E-mail e senha são obrigatórios.' });
+          }
+          try {
+            await supabaseClient.signInWithEmailAndPassword(body.email.trim(), body.password);
+          } catch (error) {
+            return sendJson(response, error.status === 429 ? 429 : 401, {
+              code: 'AUTHENTICATION_FAILED',
+              error:
+                error.status === 429
+                  ? 'Muitas tentativas. Aguarde antes de tentar novamente.'
+                  : 'Não foi possível autenticar com esse e-mail e senha.',
+            });
+          }
+          return sendJson(response, 200, await getAccountStatus());
+        }
+
+        if (pathname === '/api/account/trial/start') {
+          const session = await supabaseClient.getCurrentSession();
+          if (!session) {
+            return sendJson(response, 401, {
+              code: 'AUTHENTICATION_REQUIRED',
+              error: 'Entre na sua conta antes de iniciar o teste.',
+            });
+          }
+          await supabaseClient.invokeEdgeFunction('trial-start');
+          return sendJson(response, 200, await getAccountStatus());
+        }
+
+        try {
+          if (supabaseConfigured) await supabaseClient.signOut();
+        } finally {
+          activeEntitlementService.clearCache?.();
+        }
+        return sendJson(response, 200, await getAccountStatus());
       }
       if (request.method === 'POST' && pathname === '/api/token/regenerate') {
         if (
@@ -164,13 +341,17 @@ function createHttpHandler({
         return sendJson(response, 200, { tokenUpdated: true });
       }
       if (request.method === 'GET' && pathname === '/api/pairing') {
-        if (!hasLocalHostHeader(request, getPort()))
+        if (
+          !isLoopbackRequest(request) ||
+          !hasLocalHostHeader(request, getPort()) ||
+          !isSameOriginLocalAdminRequest(request, getPort())
+        )
           return sendJson(response, 403, {
             error: 'O pareamento só pode ser consultado neste computador.',
           });
         const ip = networkAddress();
-        const port = getPort();
-        const url = `http://${ip}:${port}/?bridgeToken=${encodeURIComponent(getToken())}`;
+        const port = getSecurePort();
+        const url = `https://${ip}:${port}/#bridgeToken=${encodeURIComponent(getToken())}`;
         const qr = await QRCode.toDataURL(url, {
           margin: 1,
           width: 280,
@@ -181,11 +362,26 @@ function createHttpHandler({
           qr,
           ip,
           port,
+          caFingerprint: getCaFingerprint(),
           addresses: networkAddresses().map((item) => ({
             address: item.address,
             interface: item.interface,
           })),
         });
+      }
+      if (request.method === 'GET' && pathname === '/bridge-ca.crt') {
+        if (!isLoopbackRequest(request) || !hasLocalHostHeader(request, getPort()))
+          return sendJson(response, 403, {
+            error: 'O certificado CA só pode ser baixado neste computador.',
+          });
+        response.writeHead(200, {
+          'Content-Type': 'application/x-x509-ca-cert',
+          'Content-Disposition': 'attachment; filename="faderdeck-local-ca.crt"',
+          'Cache-Control': 'no-store',
+          'X-Content-Type-Options': 'nosniff',
+        });
+        response.end(getCaCertificate());
+        return;
       }
       if (request.method === 'GET' && pathname === '/api/status') {
         return sendJson(response, 200, getConnectionStatus());
@@ -201,7 +397,11 @@ function createHttpHandler({
       }
       if (pathname === '/api/layout' && request.method === 'GET') {
         if (
-          !isLoopbackRequest(request) &&
+          !(
+            !request.socket.encrypted &&
+            isLoopbackRequest(request) &&
+            isSameOriginLocalAdminRequest(request, getPort())
+          ) &&
           !safeEqual(requestUrl.searchParams.get('token') || '', getToken())
         )
           return sendJson(response, 401, { error: 'Código de pareamento inválido.' });
@@ -209,7 +409,14 @@ function createHttpHandler({
       }
       if (pathname === '/api/layout' && request.method === 'PUT') {
         const body = await readBody(request);
-        if (!isLoopbackRequest(request) && !safeEqual(String(body.token || ''), getToken()))
+        if (
+          !(
+            !request.socket.encrypted &&
+            isLoopbackRequest(request) &&
+            isSameOriginLocalAdminRequest(request, getPort())
+          ) &&
+          !safeEqual(String(body.token || ''), getToken())
+        )
           return sendJson(response, 401, { error: 'Código de pareamento inválido.' });
         const currentLayout = getLayout();
         if (
@@ -234,6 +441,7 @@ function createHttpHandler({
         const body = await readBody(request);
         if (!safeEqual(String(body.token || ''), getToken()))
           return sendJson(response, 401, { error: 'Código de pareamento inválido.' });
+        if (!(await requireEntitlement(response))) return;
         const midiManager = getMidiManager();
         const selected = midiManager.selectPorts(Number(body.outputIndex), Number(body.inputIndex));
         const ports = midiManager.listPorts();

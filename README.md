@@ -53,8 +53,10 @@ O endereço local padrão da administração é `http://127.0.0.1:8787/bridge`. 
 ### 4. Conecte o celular
 
 1. Deixe o computador e o celular na mesma rede Wi‑Fi.
-2. Abra o FaderDeck e escaneie o QR exibido na tela.
-3. Se o Firewall do Windows perguntar, permita conexões do FaderDeck em redes privadas. Redes Wi‑Fi de convidados podem bloquear a comunicação entre aparelhos.
+2. Na primeira conexão, abra **Portas MIDI e administração…** no FaderDeck e baixe o certificado CA exibido na tela. Transfira o arquivo ao celular por um meio confiável e compare a impressão digital SHA-256 com a mostrada no computador antes de confiar nele.
+3. Instale e confie no certificado CA nas configurações de segurança do celular. No iPhone, instale o perfil em **Ajustes → Geral → VPN e Gerenciamento de Dispositivo** e habilite confiança total em **Ajustes → Geral → Sobre → Ajustes de Confiança de Certificados**. No Android, use a opção do sistema para instalar um certificado CA; os nomes variam por fabricante.
+4. Depois da instalação, escaneie o QR exibido na tela. O controle remoto usa HTTPS/WSS; o código de pareamento fica no fragmento do link e não é enviado na requisição inicial.
+5. Se o Firewall do Windows perguntar, permita conexões do FaderDeck em redes privadas. Redes Wi‑Fi de convidados podem bloquear a comunicação entre aparelhos.
 
 ### 5. Habilite a entrada na sua DAW
 
@@ -74,13 +76,13 @@ Por enquanto, o FaderDeck anuncia suporte documentado somente para **ChurchDAW**
 5. O FaderDeck cria automaticamente a porta MIDI virtual **FaderDeck**. Não é necessário ativar o IAC Driver. Se já existir uma porta IAC com o mesmo nome, use apenas uma das duas.
 6. Para usar o iPhone, mantenha-o na mesma rede Wi‑Fi do Mac e escaneie o QR exibido pelo FaderDeck.
 
-No macOS, layouts, token de pareamento e dados do painel são guardados fora do app em `~/Library/Application Support/FaderDeck` e preservados nas atualizações.
+No macOS, layouts, token de pareamento, identidade da autoridade certificadora local e dados do painel são guardados fora do app em `~/Library/Application Support/FaderDeck` e preservados nas atualizações. Não compartilhe o arquivo privado da autoridade certificadora; somente o certificado público `faderdeck-local-ca.crt` deve ser instalado no celular. A administração local usa HTTP em loopback; a porta HTTPS da rede começa em `8788` e pode avançar se estiver ocupada.
 
 ## Solução de problemas
 
 - **A porta não aparece:** confirme que o loopMIDI está aberto, que `FaderDeck` aparece na lista do loopMIDI e que a DAW foi reiniciada depois de criar a porta.
 - **A DAW não responde:** confirme a saída selecionada no FaderDeck, clique **Aplicar portas MIDI**, habilite a entrada correta na DAW e repita o fluxo MIDI Learn.
-- **O celular não conecta:** confira se os aparelhos estão na mesma rede Wi‑Fi e se o Firewall permite conexões locais em rede privada. Redes de convidados podem bloquear dispositivos entre si.
+- **O celular não conecta:** confira se os aparelhos estão na mesma rede Wi‑Fi, se o certificado CA do FaderDeck está instalado e confiável, e se o Firewall permite conexões locais em rede privada. Redes de convidados podem bloquear dispositivos entre si.
 - **A porta some ao reiniciar o Windows:** reabra o loopMIDI, recrie `FaderDeck` se necessário e procure no menu do ícone da bandeja a opção de inicialização automática.
 - **MIDI Learn não funciona:** confira o canal e o número CC/nota, e confirme que o tipo de mensagem enviado pelo controle é compatível com o que a DAW espera.
 
@@ -88,13 +90,14 @@ No macOS, layouts, token de pareamento e dados do painel são guardados fora do 
 
 O instalador desktop é o caminho recomendado e não requer Node.js. Estas etapas são somente para executar o pacote separado `fader-bridge.zip`:
 
-1. Instale Node.js 20 ou superior (LTS) e confirme no PowerShell/Terminal: `node -v` e `npm -v`.
+1. Instale Node.js 22 ou superior (LTS) e confirme no PowerShell/Terminal: `node -v` e `npm -v`.
 2. No Windows, instale e abra loopMIDI e crie a porta `FaderDeck`; no macOS, a ponte cria a porta automaticamente.
 3. Extraia o ZIP, abra o PowerShell/Terminal nessa pasta e rode `npm install` na primeira vez; depois rode `npm start`.
 4. Abra `http://127.0.0.1:8787/bridge` no computador. Se 8787 estiver ocupada, use o endereço informado pelo servidor.
-5. Na tela da ponte, selecione a saída MIDI e clique **Aplicar portas MIDI**. Use o QR para conectar o celular na mesma rede local.
+5. Na primeira conexão, baixe o certificado CA na tela, transfira-o ao celular por um meio confiável, confira a impressão digital e instale/confie no certificado.
+6. Na tela da ponte, selecione a saída MIDI e clique **Aplicar portas MIDI**. Use o QR para conectar o celular na mesma rede local por HTTPS.
 
-Se o módulo nativo `@julusian/midi` precisar ser compilado e a instalação falhar, no Windows instale Python 3 e Visual Studio Build Tools com a carga de trabalho C++ Desktop. No macOS, instale as ferramentas de linha de comando do Xcode com `xcode-select --install`. Não exponha a ponte à internet nem encaminhe a porta 8787 no roteador.
+Se o módulo nativo `@julusian/midi` precisar ser compilado e a instalação falhar, no Windows instale Python 3 e Visual Studio Build Tools com a carga de trabalho C++ Desktop. No macOS, instale as ferramentas de linha de comando do Xcode com `xcode-select --install`. Não exponha a ponte à internet nem encaminhe a porta HTTPS LAN no roteador.
 
 ## Desenvolvimento
 

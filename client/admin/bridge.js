@@ -1,6 +1,9 @@
 'use strict';
 
 const statusElement = document.querySelector('#status');
+const accountStateElement = document.querySelector('#account-state');
+const accountEmailElement = document.querySelector('#account-email');
+const accountMessageElement = document.querySelector('#account-message');
 let token = '';
 let mobileUrl = '';
 
@@ -14,10 +17,11 @@ async function requestJson(url, options) {
 async function loadPairing() {
   const pairing = await requestJson('/api/pairing');
   mobileUrl = pairing.url;
-  token = new URL(pairing.url).searchParams.get('bridgeToken') || '';
+  token = new URLSearchParams(new URL(pairing.url).hash.slice(1)).get('bridgeToken') || '';
   document.querySelector('#pairing-qr').src = pairing.qr;
   document.querySelector('#pairing-code').textContent = token;
   document.querySelector('#mobile-url').textContent = mobileUrl;
+  document.querySelector('#ca-fingerprint').textContent = pairing.caFingerprint;
   document.querySelector('#chosen-address').textContent = `${pairing.ip}:${pairing.port}`;
   document.querySelector('#other-ips').textContent =
     pairing.addresses
@@ -53,6 +57,151 @@ async function loadPorts() {
     element.value = String(selected);
   }
 }
+
+function formatAccountDate(value) {
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) return '';
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(timestamp);
+}
+
+function renderAccountStatus(status) {
+  const authenticated = status.session?.authenticated === true;
+  const entitlement = status.entitlement || {};
+  const allowed = entitlement.allowed === true;
+  const trialAvailable = status.trial_available === true;
+  const loginForm = document.querySelector('#account-login');
+  const actions = document.querySelector('#account-actions');
+  const trialButton = document.querySelector('#account-trial-start');
+  const logoutButton = document.querySelector('#account-logout');
+  const licenseLink = document.querySelector('#account-license-link');
+  const gateMessage = document.querySelector('#account-gate-message');
+  const loginButton = document.querySelector('#account-login-submit');
+
+  accountEmailElement.hidden = !authenticated || !status.session.email;
+  accountEmailElement.textContent = authenticated ? `Conta: ${status.session.email || ''}` : '';
+  loginForm.hidden = authenticated || !status.supabase_configured;
+  loginButton.disabled = !status.supabase_configured;
+  actions.hidden = !authenticated;
+  trialButton.hidden = !authenticated || !trialAvailable;
+  logoutButton.hidden = !authenticated;
+  licenseLink.hidden = !authenticated || allowed || trialAvailable;
+
+  if (!status.supabase_configured) {
+    accountStateElement.textContent = 'Não autenticado';
+    accountStateElement.dataset.state = 'unknown';
+    gateMessage.textContent =
+      'Login indisponível neste ambiente. Configure o acesso Supabase no processo local.';
+    gateMessage.hidden = false;
+  } else if (!authenticated) {
+    accountStateElement.textContent = 'Não autenticado';
+    accountStateElement.dataset.state = 'unknown';
+    gateMessage.textContent = 'Entre na sua conta para consultar o entitlement e liberar o MIDI.';
+    gateMessage.hidden = false;
+  } else if (allowed && entitlement.kind === 'trial') {
+    accountStateElement.textContent = 'Teste de 7 dias ativo';
+    accountStateElement.dataset.state = 'active';
+    const endDate = formatAccountDate(entitlement.expires_at);
+    gateMessage.textContent = endDate
+      ? `Seu teste termina em ${endDate}.`
+      : 'Seu teste está ativo.';
+    gateMessage.hidden = false;
+  } else if (allowed && entitlement.kind === 'license') {
+    accountStateElement.textContent = 'Licença ativa';
+    accountStateElement.dataset.state = 'active';
+    const endDate = formatAccountDate(entitlement.expires_at);
+    gateMessage.textContent = endDate
+      ? `Sua licença é válida até ${endDate}.`
+      : 'Sua licença está ativa.';
+    gateMessage.hidden = false;
+  } else if (trialAvailable) {
+    accountStateElement.textContent = 'Teste gratuito disponível';
+    accountStateElement.dataset.state = 'pending';
+    gateMessage.textContent = 'Inicie seu teste gratuito de 7 dias para liberar o MIDI.';
+    gateMessage.hidden = false;
+  } else {
+    accountStateElement.textContent = 'Expirado';
+    accountStateElement.dataset.state = 'expired';
+    gateMessage.textContent =
+      'Não há entitlement ativo. Adquira uma licença para voltar a usar MIDI.';
+    gateMessage.hidden = false;
+  }
+
+  document.querySelector('#save').disabled = !allowed;
+}
+
+async function loadAccountStatus() {
+  try {
+    const status = await requestJson('/api/account/status');
+    renderAccountStatus(status);
+  } catch (error) {
+    accountStateElement.textContent = 'Indisponível';
+    accountStateElement.dataset.state = 'expired';
+    document.querySelector('#account-gate-message').textContent =
+      'Não foi possível consultar a conta. O MIDI permanece bloqueado até validar o entitlement.';
+    document.querySelector('#account-gate-message').hidden = false;
+    document.querySelector('#save').disabled = true;
+    accountMessageElement.textContent = error.message;
+  }
+}
+
+document.querySelector('#account-login').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const email = document.querySelector('#account-login-email').value.trim();
+  const passwordInput = document.querySelector('#account-login-password');
+  const submitButton = document.querySelector('#account-login-submit');
+  submitButton.disabled = true;
+  accountMessageElement.textContent = 'Entrando…';
+
+  try {
+    const status = await requestJson('/api/account/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: passwordInput.value }),
+    });
+    passwordInput.value = '';
+    renderAccountStatus(status);
+    accountMessageElement.textContent = 'Sessão atualizada.';
+  } catch (error) {
+    accountMessageElement.textContent = error.message;
+  } finally {
+    submitButton.disabled = document.querySelector('#account-login').hidden;
+  }
+});
+
+document.querySelector('#account-trial-start').addEventListener('click', async () => {
+  const button = document.querySelector('#account-trial-start');
+  button.disabled = true;
+  accountMessageElement.textContent = 'Iniciando o teste gratuito…';
+
+  try {
+    const status = await requestJson('/api/account/trial/start', { method: 'POST' });
+    renderAccountStatus(status);
+    accountMessageElement.textContent = 'Teste gratuito atualizado.';
+  } catch (error) {
+    accountMessageElement.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.querySelector('#account-logout').addEventListener('click', async () => {
+  const button = document.querySelector('#account-logout');
+  button.disabled = true;
+  accountMessageElement.textContent = 'Saindo…';
+
+  try {
+    const status = await requestJson('/api/account/logout', { method: 'POST' });
+    renderAccountStatus(status);
+    accountMessageElement.textContent = 'Sessão encerrada.';
+  } catch (error) {
+    accountMessageElement.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
 
 document.querySelector('#save').addEventListener('click', async () => {
   statusElement.textContent = 'Aplicando…';
@@ -111,6 +260,6 @@ document.querySelector('#renew-token').addEventListener('click', async () => {
   }
 });
 
-Promise.all([loadPairing(), loadPorts()]).catch((error) => {
+Promise.all([loadPairing(), loadPorts(), loadAccountStatus()]).catch((error) => {
   statusElement.textContent = `Não foi possível carregar a administração: ${error.message}`;
 });

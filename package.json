@@ -27,6 +27,8 @@
   },
   "dependencies": {
     "@julusian/midi": "^3.5.0",
+    "@supabase/supabase-js": "^2.119.2",
+    "node-forge": "^1.4.4",
     "qrcode": "^1.5.4",
     "ws": "^8.18.3"
   },

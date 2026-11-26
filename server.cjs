@@ -1,6 +1,7 @@
 'use strict';
 
 const http = require('node:http');
+const https = require('node:https');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createMidiManager } = require('./bridge/midi-manager.cjs');
@@ -9,14 +10,27 @@ const { createHttpHandler } = require('./bridge/http-router.cjs');
 const { createWebSocketGateway } = require('./bridge/websocket-gateway.cjs');
 const { createTokenStore } = require('./bridge/token-store.cjs');
 const { networkAddresses, networkAddress } = require('./bridge/network-addresses.cjs');
+const { createTlsIdentity } = require('./bridge/tls-identity.cjs');
+const { createEntitlementService } = require('./bridge/entitlement-service.cjs');
+const supabaseClient = require('./bridge/supabase-client.cjs');
+const { createUpdateChecker } = require('./bridge/update-checker.cjs');
 
 const configuredPort = Number(process.env.FADER_BRIDGE_PORT);
 const BASE_PORT =
   Number.isInteger(configuredPort) && configuredPort >= 1 && configuredPort <= 65535
     ? configuredPort
     : 8787;
+const configuredSecurePort = Number(process.env.FADER_BRIDGE_HTTPS_PORT);
+const BASE_SECURE_PORT =
+  Number.isInteger(configuredSecurePort) &&
+  configuredSecurePort >= 0 &&
+  configuredSecurePort <= 65535
+    ? configuredSecurePort
+    : 8788;
 let PORT = BASE_PORT;
-const HOST = '0.0.0.0';
+let SECURE_PORT = BASE_SECURE_PORT;
+const HOST = '127.0.0.1';
+const SECURE_HOST = '0.0.0.0';
 const DATA_DIR = process.env.FADERDECK_DATA_DIR || __dirname;
 const CLIENT_DIR = path.join(__dirname, 'client');
 if (!fs.existsSync(path.join(CLIENT_DIR, 'index.html')))
@@ -28,11 +42,15 @@ let layoutPersistence = null;
 let midi;
 let midiManager = null;
 let connectionManager = null;
+let secureServer = null;
+let tlsIdentity = null;
 let layout = { version: 0, pages: [], activePageId: '' };
 let layoutInitialized = layout.pages.length > 0;
 let layoutSeedOwner = null;
 let initialized = false;
 let shutdownPromise = null;
+const entitlementService = createEntitlementService();
+const updateChecker = createUpdateChecker();
 
 function initialize() {
   if (initialized) return;
@@ -72,6 +90,38 @@ function initialize() {
     );
     throw error;
   }
+  tlsIdentity = createTlsIdentity(
+    DATA_DIR,
+    networkAddresses().map((entry) => entry.address),
+  );
+  secureServer = https.createServer({ key: tlsIdentity.key, cert: tlsIdentity.cert }, httpHandler);
+  secureServer.on('error', logServerError);
+  connectionManager = createWebSocketGateway({
+    servers: [server, secureServer],
+    getToken: () => TOKEN,
+    getLocalPort: () => PORT,
+    layout: {
+      get: () => layout,
+      set: (nextLayout) => {
+        layout = nextLayout;
+      },
+      isInitialized: () => layoutInitialized,
+      setInitialized: (value) => {
+        layoutInitialized = value;
+      },
+      getSeedOwner: () => layoutSeedOwner,
+      setSeedOwner: (socket) => {
+        layoutSeedOwner = socket;
+      },
+      payload: layoutPayload,
+    },
+    scheduleLayoutSave,
+    midiManager: {
+      send: (bytes) => midiManager.send(bytes),
+      hasOutput: () => midiManager.hasOutput(),
+    },
+    entitlementService,
+  });
   initialized = true;
 }
 
@@ -101,101 +151,119 @@ function rotateToken() {
 }
 
 function mobileUrl() {
-  return `http://${networkAddress()}:${PORT}/?bridgeToken=${encodeURIComponent(TOKEN)}`;
+  return `https://${networkAddress()}:${SECURE_PORT}/#bridgeToken=${encodeURIComponent(TOKEN)}`;
 }
 
-const server = http.createServer(
-  createHttpHandler({
-    clientDir: CLIENT_DIR,
-    getPort: () => PORT,
-    getToken: () => TOKEN,
-    getLayout: () => layout,
-    setLayout: (nextLayout) => {
-      layout = nextLayout;
-    },
-    setLayoutInitialized: (value) => {
-      layoutInitialized = value;
-    },
-    getMidiManager: () => midiManager,
-    getConnectionStatus: () => connectionManager.getStatus(),
-    networkAddress,
-    networkAddresses,
-    rotateToken,
-    persistLayout,
-    broadcast,
-  }),
-);
-connectionManager = createWebSocketGateway({
-  server,
-  getToken: () => TOKEN,
-  layout: {
-    get: () => layout,
-    set: (nextLayout) => {
-      layout = nextLayout;
-    },
-    isInitialized: () => layoutInitialized,
-    setInitialized: (value) => {
-      layoutInitialized = value;
-    },
-    getSeedOwner: () => layoutSeedOwner,
-    setSeedOwner: (socket) => {
-      layoutSeedOwner = socket;
-    },
-    payload: layoutPayload,
-  },
-  scheduleLayoutSave,
-  midiManager: {
-    send: (bytes) => midiManager.send(bytes),
-    hasOutput: () => midiManager.hasOutput(),
-  },
-});
-
-server.on('error', (error) => {
+function logServerError(error) {
   if (error.code !== 'EADDRINUSE') console.error(`Erro no servidor: ${error.message}`);
+}
+
+const httpHandler = createHttpHandler({
+  clientDir: CLIENT_DIR,
+  getPort: () => PORT,
+  getSecurePort: () => SECURE_PORT,
+  getToken: () => TOKEN,
+  getCaCertificate: () => tlsIdentity?.caCertificate || '',
+  getCaFingerprint: () => tlsIdentity?.fingerprint || '',
+  getLayout: () => layout,
+  setLayout: (nextLayout) => {
+    layout = nextLayout;
+  },
+  setLayoutInitialized: (value) => {
+    layoutInitialized = value;
+  },
+  getMidiManager: () => midiManager,
+  getConnectionStatus: () => connectionManager.getStatus(),
+  networkAddress,
+  networkAddresses,
+  rotateToken,
+  persistLayout,
+  broadcast,
+  entitlementService,
+  supabaseClient,
+  updateChecker,
 });
+const server = http.createServer(httpHandler);
+server.on('error', logServerError);
+
+function listenWithFallback(listener, firstPort, host) {
+  const lastPort = firstPort === 0 ? 0 : Math.min(firstPort + 20, 65535);
+  let lastError;
+  return (async () => {
+    for (let candidate = firstPort; candidate <= lastPort; candidate += 1) {
+      try {
+        return await new Promise((resolve, reject) => {
+          const onError = (error) => {
+            listener.off('listening', onListening);
+            reject(error);
+          };
+          const onListening = () => {
+            listener.off('error', onError);
+            resolve(listener.address().port);
+          };
+          listener.once('error', onError);
+          listener.once('listening', onListening);
+          listener.listen(candidate, host);
+        });
+      } catch (error) {
+        if (error.code !== 'EADDRINUSE') throw error;
+        lastError = error;
+      }
+    }
+    throw new Error(`Nenhuma porta livre encontrada a partir de ${firstPort}.`, {
+      cause: lastError,
+    });
+  })();
+}
+
+function closeServer(listener) {
+  if (!listener?.listening) return Promise.resolve();
+  return new Promise((resolve) => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(() => {
+      listener.closeAllConnections?.();
+      finish();
+    }, 1500);
+    timer.unref?.();
+    try {
+      listener.close(finish);
+    } catch {
+      finish();
+    }
+  });
+}
 
 async function start(startPort = BASE_PORT) {
-  if (server.listening) return PORT;
+  if (server.listening && secureServer?.listening) return PORT;
   initialize();
   const firstPort =
     Number.isInteger(startPort) && startPort >= 0 && startPort <= 65535 ? startPort : BASE_PORT;
-  const lastPort = firstPort === 0 ? 0 : Math.min(firstPort + 20, 65535);
-  let lastError;
-
-  for (let candidate = firstPort; candidate <= lastPort; candidate += 1) {
-    PORT = candidate;
-    try {
-      await new Promise((resolve, reject) => {
-        const onError = (error) => {
-          server.off('listening', onListening);
-          reject(error);
-        };
-        const onListening = () => {
-          server.off('error', onError);
-          PORT = server.address().port;
-          resolve();
-        };
-        server.once('error', onError);
-        server.once('listening', onListening);
-        server.listen(candidate, HOST);
-      });
-      console.log(`FaderDeck · ponte ativa na porta ${PORT}.`);
-      if (require.main === module) {
-        const ip = networkAddress();
-        console.log(`Painel no celular: ${mobileUrl()}`);
-        console.log(`Admin / QR:        http://127.0.0.1:${PORT}/bridge`);
-        console.log(`Código de pareamento: ${TOKEN}`);
-        console.log(`Endereço de rede: ${ip}. Escaneie o QR na página de administração.`);
-        console.log('Pressione Ctrl+C para encerrar.\n');
-      }
-      return PORT;
-    } catch (error) {
-      if (error.code !== 'EADDRINUSE') throw error;
-      lastError = error;
-    }
+  PORT = await listenWithFallback(server, firstPort, HOST);
+  try {
+    const firstSecurePort =
+      BASE_SECURE_PORT === BASE_PORT && PORT < 65535 ? PORT + 1 : BASE_SECURE_PORT;
+    SECURE_PORT = await listenWithFallback(secureServer, firstSecurePort, SECURE_HOST);
+  } catch (error) {
+    await closeServer(server);
+    PORT = BASE_PORT;
+    throw error;
   }
 
-  throw new Error(`Nenhuma porta livre encontrada a partir de ${firstPort}.`, { cause: lastError });
+  console.log(`FaderDeck · ponte local ativa na porta ${PORT}; HTTPS LAN na ${SECURE_PORT}.`);
+  if (require.main === module) {
+    const ip = networkAddress();
+    console.log(`Painel HTTPS na rede: https://${ip}:${SECURE_PORT}/`);
+    console.log(`Admin / QR:        http://127.0.0.1:${PORT}/bridge`);
+    console.log(`Endereço de rede: ${ip}. Instale o certificado CA antes de conectar.`);
+    console.log('Pressione Ctrl+C para encerrar.\n');
+  }
+  return PORT;
 }
 
 async function shutdown() {
@@ -209,24 +277,8 @@ async function shutdown() {
       }
     }
     midiManager?.shutdown();
-    connectionManager.terminateAll();
-    if (!server.listening) return;
-    await new Promise((resolve) => {
-      const timer = setTimeout(() => {
-        server.closeAllConnections?.();
-        resolve();
-      }, 1500);
-      timer.unref?.();
-      try {
-        server.close(() => {
-          clearTimeout(timer);
-          resolve();
-        });
-      } catch {
-        clearTimeout(timer);
-        resolve();
-      }
-    });
+    connectionManager?.terminateAll();
+    await Promise.all([closeServer(server), closeServer(secureServer)]);
   })();
   try {
     await shutdownPromise;
@@ -259,12 +311,14 @@ if (require.main === module) {
 
 module.exports = {
   server,
+  getHttpsServer: () => secureServer,
   start,
   stop: shutdown,
   shutdown,
   rotateToken,
   getToken: () => TOKEN,
   getPort: () => PORT,
+  getSecurePort: () => SECURE_PORT,
   dataDir: DATA_DIR,
   networkAddress,
   networkAddresses,

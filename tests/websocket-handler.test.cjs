@@ -18,7 +18,7 @@ class FakeSocket extends EventEmitter {
   }
 }
 
-function createFixture({ initialized = false, hasOutput = true } = {}) {
+function createFixture({ initialized = false, hasOutput = true, entitlementAllowed = true } = {}) {
   const wss = new EventEmitter();
   let layout = { version: 0, pages: [], activePageId: '' };
   let ready = initialized;
@@ -51,6 +51,9 @@ function createFixture({ initialized = false, hasOutput = true } = {}) {
         if (!outputAvailable) throw new Error('sem porta');
         midiMessages.push([...bytes]);
       },
+    },
+    entitlementService: {
+      getCachedEntitlement: () => ({ allowed: entitlementAllowed }),
     },
   });
   return {
@@ -116,20 +119,38 @@ test('clears the seed owner on disconnect so a reconnect can initialize layout',
   assert.equal(fixture.layout.activePageId, 'fresh');
 });
 
-test('rejects MIDI without output, malformed/out-of-range payloads, and preserves send failure feedback', () => {
+test('rejects MIDI without output, malformed/out-of-range payloads, and preserves send failure feedback', async () => {
   const fixture = createFixture({ initialized: true, hasOutput: false });
   const socket = fixture.connect();
   socket.message({ type: 'midi', data: [0x90, 60, 100] });
+  await new Promise(setImmediate);
   assert.equal(socket.sent.at(-1).message, 'Selecione uma saída MIDI na tela da ponte.');
   fixture.outputAvailable = true;
   socket.message({ type: 'midi', data: [0x90, 60, 100, 0x80, 60, 0] });
+  await new Promise(setImmediate);
   assert.deepEqual(fixture.midiMessages, [[0x90, 60, 100, 0x80, 60, 0]]);
   socket.message({ type: 'midi', data: [0x90, -1, 100] });
   socket.message({ type: 'midi', data: new Array(257).fill(0) });
+  await new Promise(setImmediate);
   assert.equal(fixture.midiMessages.length, 1);
 });
 
-test('reports output-device send failures to the client without crashing other events', () => {
+test('blocks MIDI with a structured error when entitlement is not allowed', async () => {
+  const fixture = createFixture({ initialized: true, entitlementAllowed: false });
+  const socket = fixture.connect();
+
+  socket.message({ type: 'midi', data: [0x90, 60, 100] });
+  await new Promise(setImmediate);
+
+  assert.deepEqual(socket.sent.at(-1), {
+    type: 'error',
+    code: 'ENTITLEMENT_REQUIRED',
+    message: 'É necessária uma licença ativa ou um teste gratuito válido para usar MIDI.',
+  });
+  assert.deepEqual(fixture.midiMessages, []);
+});
+
+test('reports output-device send failures to the client without crashing other events', async () => {
   const wss = new EventEmitter();
   const socket = new FakeSocket();
   attachWebSocketHandlers(wss, {
@@ -148,9 +169,13 @@ test('reports output-device send failures to the client without crashing other e
         throw new Error('dispositivo desconectado');
       },
     },
+    entitlementService: {
+      getCachedEntitlement: () => ({ allowed: true }),
+    },
   });
   wss.emit('connection', socket, {});
   socket.message({ type: 'midi', data: [0x90, 1, 1] });
+  await new Promise(setImmediate);
   assert.match(socket.sent.at(-1).message, /Falha ao enviar MIDI: dispositivo desconectado/);
   socket.message({ type: 'ping', sentAt: 5 });
   assert.equal(socket.sent.at(-1).sentAt, 5);

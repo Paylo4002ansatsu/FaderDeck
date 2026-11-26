@@ -13,6 +13,8 @@ const nodeFiles = [
 
 const browserFiles = [
   'assets/**/*.js',
+  'client/bridge-bootstrap.js',
+  'client/update-modal.js',
   'client/admin/**/*.js',
   'client/stage-mode-enhancements.js',
   'client/sw.js',

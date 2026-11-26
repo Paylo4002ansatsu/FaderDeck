@@ -2,41 +2,60 @@
 
 const WebSocket = require('ws');
 const { parseRequestTarget } = require('../server-utils.cjs');
-const { safeEqual, isLoopbackHost, isLoopbackRequest } = require('./auth.cjs');
+const {
+  safeEqual,
+  isLoopbackHost,
+  isLoopbackRequest,
+  isSameOriginLocalAdminRequest,
+} = require('./auth.cjs');
 const { attachWebSocketHandlers } = require('./websocket-handler.cjs');
 
-function createWebSocketGateway({ server, getToken, layout, scheduleLayoutSave, midiManager }) {
+function createWebSocketGateway({
+  servers,
+  getToken,
+  getLocalPort,
+  layout,
+  scheduleLayoutSave,
+  midiManager,
+  entitlementService,
+}) {
   const wss = new WebSocket.Server({ noServer: true, maxPayload: 1024 * 1024 });
 
-  server.on('upgrade', (request, socket, head) => {
-    let requestUrl;
-    try {
-      ({ url: requestUrl } = parseRequestTarget(
-        request.url || '/',
-        request.headers.host || 'localhost',
-      ));
-    } catch {
-      socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
-      return;
-    }
-    const localBrowser = isLoopbackHost(requestUrl.hostname) && isLoopbackRequest(request);
-    if (
-      requestUrl.pathname !== '/ws' ||
-      (!localBrowser && !safeEqual(requestUrl.searchParams.get('token') || '', getToken()))
-    ) {
-      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-      socket.destroy();
-      return;
-    }
-    try {
-      wss.handleUpgrade(request, socket, head, (client) => {
-        client.authorized = true;
-        wss.emit('connection', client, request);
-      });
-    } catch {
-      socket.destroy();
-    }
-  });
+  for (const server of servers) {
+    server.on('upgrade', (request, socket, head) => {
+      let requestUrl;
+      try {
+        ({ url: requestUrl } = parseRequestTarget(
+          request.url || '/',
+          request.headers.host || 'localhost',
+        ));
+      } catch {
+        socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
+        return;
+      }
+      const trustedLocalPanel =
+        !request.socket.encrypted &&
+        isLoopbackHost(requestUrl.hostname) &&
+        isLoopbackRequest(request) &&
+        isSameOriginLocalAdminRequest(request, getLocalPort());
+      if (
+        requestUrl.pathname !== '/ws' ||
+        (!trustedLocalPanel && !safeEqual(requestUrl.searchParams.get('token') || '', getToken()))
+      ) {
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+        socket.destroy();
+        return;
+      }
+      try {
+        wss.handleUpgrade(request, socket, head, (client) => {
+          client.authorized = true;
+          wss.emit('connection', client, request);
+        });
+      } catch {
+        socket.destroy();
+      }
+    });
+  }
 
   function broadcast(payload) {
     const frame = JSON.stringify(payload);
@@ -56,6 +75,7 @@ function createWebSocketGateway({ server, getToken, layout, scheduleLayoutSave, 
     scheduleLayoutSave,
     broadcast,
     midiManager,
+    entitlementService,
   });
 
   function getStatus() {

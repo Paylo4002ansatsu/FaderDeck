@@ -13,8 +13,15 @@ function attachWebSocketHandlers(
     scheduleLayoutSave,
     broadcast,
     midiManager,
+    entitlementService,
   },
 ) {
+  const activeEntitlementService = entitlementService ?? {
+    async getCachedEntitlement() {
+      return { allowed: false };
+    },
+  };
+
   wss.on('connection', (socket) => {
     if (!isLayoutInitialized() && !getLayoutSeedOwner()) setLayoutSeedOwner(socket);
     socket.send(JSON.stringify({ type: 'ready' }));
@@ -22,7 +29,7 @@ function attachWebSocketHandlers(
     socket.on('close', () => {
       if (!isLayoutInitialized() && socket === getLayoutSeedOwner()) setLayoutSeedOwner(null);
     });
-    socket.on('message', (raw) => {
+    socket.on('message', async (raw) => {
       let message;
       try {
         message = JSON.parse(raw.toString());
@@ -61,6 +68,24 @@ function attachWebSocketHandlers(
       }
       if (message.type !== 'midi' || !Array.isArray(message.data) || message.data.length > 256)
         return;
+      const readEntitlement =
+        activeEntitlementService.getCachedEntitlement || activeEntitlementService.getEntitlement;
+      let entitlement;
+      try {
+        entitlement = await readEntitlement.call(activeEntitlementService);
+      } catch (error) {
+        console.error('Não foi possível verificar o entitlement antes de encaminhar MIDI:', error);
+      }
+      if (entitlement?.allowed !== true) {
+        socket.send(
+          JSON.stringify({
+            type: 'error',
+            code: 'ENTITLEMENT_REQUIRED',
+            message: 'É necessária uma licença ativa ou um teste gratuito válido para usar MIDI.',
+          }),
+        );
+        return;
+      }
       if (!midiManager.hasOutput()) {
         socket.send(
           JSON.stringify({ type: 'error', message: 'Selecione uma saída MIDI na tela da ponte.' }),

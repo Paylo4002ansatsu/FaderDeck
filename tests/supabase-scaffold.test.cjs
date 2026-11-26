@@ -36,6 +36,11 @@ test('Supabase setup documents secure configuration and the approved schema migr
   assert.match(envExample, /Server-only/);
   assert.match(envExample, /Never expose this variable/);
   assert.match(config, /"enable_signup": false/);
+  assert.match(config, /"minimum_password_length": 8/);
+  assert.match(config, /"password_requirements": "lower_upper_letters_digits_symbols"/);
+  assert.match(config, /"enable_confirmations": true/);
+  assert.match(config, /"secure_password_change": true/);
+  assert.match(config, /"require_current_password": true/);
   const seedConfig = config.match(/"seed": \{([\s\S]*?)\n\s{4}\},/)?.[1];
   assert.ok(seedConfig);
   assert.match(seedConfig, /"enabled": false/);
@@ -44,7 +49,8 @@ test('Supabase setup documents secure configuration and the approved schema migr
   assert.match(setup, /RLS/i);
   assert.match(setup, /aplicada ao banco local e ao projeto Supabase\s+remoto/i);
   assert.match(migrationNotes, /aplicada ao projeto remoto após autorização/i);
-  assert.match(functionNotes, /Não há funções executáveis/);
+  assert.match(functionNotes, /trial-start/);
+  assert.match(functionNotes, /license-validate/);
   assert.equal(migrationFiles.length, 2);
   assert.ok(migrationFiles.includes(initialMigrationFile));
   assert.match(initialMigrationFile, /^\d{14}_initial_commercial_schema\.sql$/);
@@ -62,7 +68,12 @@ test('Supabase setup documents secure configuration and the approved schema migr
   assert.match(migration, /GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE[\s\S]+TO service_role;/);
   assert.doesNotMatch(migration, /(?:CREATE|GRANT)[\s\S]*?\bTO anon\b/);
   assert.doesNotMatch(migration, /GRANT (?:INSERT|UPDATE|DELETE|ALL)[^;]* TO authenticated;/);
-  assert.deepEqual(functionFiles, []);
+  assert.deepEqual(functionFiles.sort(), [
+    '_shared',
+    'license-validate',
+    'trial-start',
+    'trial-status',
+  ]);
 
   for (const relativePath of ['client/index.html', 'docs/index.html', 'main.js', 'server.cjs']) {
     const source = fs.readFileSync(path.join(root, relativePath), 'utf8');

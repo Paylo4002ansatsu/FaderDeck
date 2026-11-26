@@ -20,6 +20,10 @@ REQUIRED_FILES = (
     ROOT / "bridge" / "http-router.cjs",
     ROOT / "bridge" / "token-store.cjs",
     ROOT / "bridge" / "network-addresses.cjs",
+    ROOT / "bridge" / "tls-identity.cjs",
+    ROOT / "bridge" / "supabase-client.cjs",
+    ROOT / "bridge" / "entitlement-service.cjs",
+    ROOT / "bridge" / "update-checker.cjs",
     ROOT / "fader-bridge" / "package.json",
     ROOT / "fader-bridge" / "package-lock.json",
     ROOT / "README.md",
@@ -55,6 +59,8 @@ def build_archive() -> None:
             for module_name in (
                 "midi-manager.cjs", "auth.cjs", "websocket-handler.cjs", "layout-persistence.cjs",
                 "websocket-gateway.cjs", "http-router.cjs", "token-store.cjs", "network-addresses.cjs",
+                "tls-identity.cjs", "supabase-client.cjs", "entitlement-service.cjs",
+                "update-checker.cjs",
             ):
                 add_file(archive, ROOT / "bridge" / module_name, Path("bridge") / module_name)
             add_file(archive, ROOT / "fader-bridge" / "package.json", "package.json")
@@ -78,12 +84,16 @@ def build_archive() -> None:
             names = set(archive.namelist())
             required_entries = {
                 "client/index.html", "client/admin/index.html", "client/admin/bridge.css", "client/admin/bridge.js",
+                "client/bridge-bootstrap.js",
                 "client/guia-midi-windows.html", "client/guia-midi-windows.css",
                 "client/guia-assets/loopmidi-window.png",
                 "client/guia-assets/ableton-midi-ports.png", "client/guia-assets/fl-studio-midi-input.png",
                 "server.cjs", "server-utils.cjs", "bridge/midi-manager.cjs", "bridge/auth.cjs",
                 "bridge/websocket-handler.cjs", "bridge/layout-persistence.cjs", "bridge/websocket-gateway.cjs",
                 "bridge/http-router.cjs", "bridge/token-store.cjs", "bridge/network-addresses.cjs",
+                "bridge/tls-identity.cjs",
+                "bridge/supabase-client.cjs", "bridge/entitlement-service.cjs",
+                "bridge/update-checker.cjs", "client/update-modal.js", "client/update-modal.css",
                 "package.json", "package-lock.json", "README.md",
             }
             missing_entries = sorted(required_entries - names)

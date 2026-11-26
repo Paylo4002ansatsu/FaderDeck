@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const http = require('node:http');
+const https = require('node:https');
 const net = require('node:net');
 const os = require('node:os');
 const path = require('node:path');
@@ -43,12 +44,61 @@ function request(port, requestPath, body, method = 'GET', additionalHeaders = {}
   });
 }
 
+function secureRequest(port, requestPath, ca) {
+  return new Promise((resolve, reject) => {
+    const outgoing = https.get(
+      { hostname: '127.0.0.1', port, path: requestPath, ca },
+      (incoming) => {
+        let body = '';
+        incoming.setEncoding('utf8');
+        incoming.on('data', (chunk) => {
+          body += chunk;
+        });
+        incoming.on('end', () =>
+          resolve({ status: incoming.statusCode, body, headers: incoming.headers }),
+        );
+      },
+    );
+    outgoing.once('error', reject);
+  });
+}
+
+function rejectedWebSocket(url, options = {}) {
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(url, options);
+    let settled = false;
+    const finish = (status) => {
+      if (settled) return;
+      settled = true;
+      resolve(status);
+    };
+    socket.once('unexpected-response', (_request, response) => {
+      response.resume();
+      finish(response.statusCode);
+    });
+    socket.once('open', () => {
+      socket.terminate();
+      finish(101);
+    });
+    socket.once('error', (error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    });
+  });
+}
+
 function waitForMessage(socket, predicate, timeoutMs = 1000) {
   const existing = socket.receivedMessages?.find(predicate);
   if (existing) return Promise.resolve(existing);
   return new Promise((resolve, reject) => {
     const timer = setTimeout(
-      () => reject(new Error('Timeout aguardando mensagem WebSocket')),
+      () =>
+        reject(
+          new Error(
+            `Timeout aguardando mensagem WebSocket (state=${socket.readyState}, received=${(socket.receivedMessages || []).map((message) => message.type).join(',')}).`,
+          ),
+        ),
       timeoutMs,
     );
     const onMessage = (raw) => {
@@ -114,7 +164,13 @@ test('atomic file writer persists the last queued snapshot without temporary fil
 test('server does not listen on import, retries an occupied port, and survives malformed targets', async (t) => {
   const dataDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'faderdeck-server-test-'));
   const previousDataDir = process.env.FADERDECK_DATA_DIR;
+  const previousHttpsPort = process.env.FADER_BRIDGE_HTTPS_PORT;
+  const previousSupabaseUrl = process.env.SUPABASE_URL;
+  const previousSupabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY;
   process.env.FADERDECK_DATA_DIR = dataDirectory;
+  process.env.FADER_BRIDGE_HTTPS_PORT = '0';
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_PUBLISHABLE_KEY;
 
   const Module = require('node:module');
   const originalLoad = Module._load;
@@ -159,7 +215,7 @@ test('server does not listen on import, retries an occupied port, and survives m
     assert.equal(fs.existsSync(path.join(dataDirectory, '.faderdeck-token')), false);
     await new Promise((resolve, reject) => {
       occupiedServer.once('error', reject);
-      occupiedServer.listen(0, '0.0.0.0', resolve);
+      occupiedServer.listen(0, '127.0.0.1', resolve);
     });
     const occupiedPort = occupiedServer.address().port;
     await bridge.start(occupiedPort);
@@ -169,12 +225,21 @@ test('server does not listen on import, retries an occupied port, and survives m
     Module._load = originalLoad;
     if (previousDataDir === undefined) delete process.env.FADERDECK_DATA_DIR;
     else process.env.FADERDECK_DATA_DIR = previousDataDir;
+    if (previousHttpsPort === undefined) delete process.env.FADER_BRIDGE_HTTPS_PORT;
+    else process.env.FADER_BRIDGE_HTTPS_PORT = previousHttpsPort;
+    if (previousSupabaseUrl === undefined) delete process.env.SUPABASE_URL;
+    else process.env.SUPABASE_URL = previousSupabaseUrl;
+    if (previousSupabaseKey === undefined) delete process.env.SUPABASE_PUBLISHABLE_KEY;
+    else process.env.SUPABASE_PUBLISHABLE_KEY = previousSupabaseKey;
   }
 
   const port = bridge.getPort();
-  assert.match(
-    bridge.mobileUrl(),
-    new RegExp(`^http://[^/]+:${port}/\\?bridgeToken=[a-f0-9]{32}$`),
+  const securePort = bridge.getSecurePort();
+  assert.equal(bridge.server.address().address, '127.0.0.1');
+  assert.equal(bridge.getHttpsServer().address().address, '0.0.0.0');
+  assert.ok(
+    new RegExp(`^https://[^/]+:${securePort}/#bridgeToken=[a-f0-9]{32}$`).test(bridge.mobileUrl()),
+    'mobile URL must use HTTPS and keep the pairing code in the fragment',
   );
   const malformed = await request(port, '/%ZZ');
   assert.equal(malformed.status, 400);
@@ -182,22 +247,52 @@ test('server does not listen on import, retries an occupied port, and survives m
 
   const healthy = await request(port, '/api/status');
   assert.equal(healthy.status, 200);
+  const accountStatus = await request(port, '/api/account/status');
+  assert.equal(accountStatus.status, 200);
+  assert.equal(JSON.parse(accountStatus.body).supabase_configured, false);
+  const blockedMidiSelection = await request(
+    port,
+    '/api/ports/select',
+    JSON.stringify({ token: bridge.getToken(), outputIndex: 0, inputIndex: -1 }),
+    'POST',
+  );
+  assert.equal(blockedMidiSelection.status, 403);
+  assert.equal(JSON.parse(blockedMidiSelection.body).code, 'ENTITLEMENT_REQUIRED');
+  const localOrigin = `http://127.0.0.1:${port}`;
+  assert.equal((await request(port, '/api/auth')).status, 401);
+  assert.equal(
+    (await request(port, '/api/auth', undefined, 'GET', { Origin: 'https://attacker.example' }))
+      .status,
+    401,
+  );
+  assert.equal(
+    (await request(port, '/api/auth', undefined, 'GET', { Origin: localOrigin })).status,
+    200,
+  );
+  assert.equal((await request(port, '/api/layout')).status, 401);
+  assert.equal(
+    (await request(port, '/api/layout', undefined, 'GET', { Origin: localOrigin })).status,
+    200,
+  );
   const invalidLayout = await request(
     port,
     '/api/layout',
     JSON.stringify({ layout: { version: 1, pages: [] } }),
     'PUT',
+    { Origin: localOrigin },
   );
   assert.equal(invalidLayout.status, 400);
   const traversal = await request(port, '/%2e%2e/server.cjs');
   assert.equal(traversal.status, 404);
   assert.equal(JSON.parse(healthy.body).remoteClients, 0);
 
-  const invalidJson = await request(port, '/api/layout', '{', 'PUT');
+  const invalidJson = await request(port, '/api/layout', '{', 'PUT', { Origin: localOrigin });
   assert.equal(invalidJson.status, 400);
   assert.match(invalidJson.body, /JSON inválido/);
 
-  const oversized = await request(port, '/api/layout', 'x'.repeat(16 * 1024 + 1), 'PUT');
+  const oversized = await request(port, '/api/layout', 'x'.repeat(16 * 1024 + 1), 'PUT', {
+    Origin: localOrigin,
+  });
   assert.equal(oversized.status, 413);
   assert.match(oversized.body, /limite de 16 KB/);
 
@@ -211,9 +306,10 @@ test('server does not listen on import, retries an occupied port, and survives m
     'X-FaderDeck-Admin': 'rotate-token',
   });
   assert.equal(authorizedRotation.status, 200);
-  assert.equal(
-    fs.readFileSync(path.join(dataDirectory, '.faderdeck-token'), 'utf8').trim(),
-    bridge.getToken(),
+  assert.ok(
+    fs.readFileSync(path.join(dataDirectory, '.faderdeck-token'), 'utf8').trim() ===
+      bridge.getToken(),
+    'rotated credential must persist',
   );
 
   const admin = await request(port, '/bridge');
@@ -226,6 +322,12 @@ test('server does not listen on import, retries an occupied port, and survives m
   const adminScript = await request(port, '/admin/bridge.js');
   assert.equal(adminScript.status, 200);
   assert.match(adminScript.body, /api\/pairing/);
+  const appIndex = await request(port, '/');
+  assert.equal(appIndex.status, 200);
+  assert.match(appIndex.body, /bridge-bootstrap\.js/);
+  const bootstrap = await request(port, '/bridge-bootstrap.js');
+  assert.equal(bootstrap.status, 200);
+  assert.match(bootstrap.body, /location\.hash/);
   const adminCss = await request(port, '/admin/bridge.css');
   assert.equal(adminCss.status, 200);
   assert.match(adminCss.headers['content-type'], /text\/css/);
@@ -244,16 +346,31 @@ test('server does not listen on import, retries an occupied port, and survives m
   assert.match(guideImage.headers['content-type'], /image\/png/);
   assert.ok(guideImage.body.length > 0);
 
-  const pairing = await request(port, '/api/pairing');
+  const pairing = await request(port, '/api/pairing', undefined, 'GET', {
+    Origin: localOrigin,
+  });
   assert.equal(pairing.status, 200);
   const pairingData = JSON.parse(pairing.body);
-  assert.match(pairingData.url, /bridgeToken=/);
-  assert.match(pairingData.qr, /^data:image\/png;base64,/);
-  assert.equal(pairingData.port, bridge.getPort());
+  const pairingUrl = new URL(pairingData.url);
+  assert.equal(pairingUrl.protocol, 'https:');
+  assert.equal(pairingUrl.search, '');
+  assert.ok(new URLSearchParams(pairingUrl.hash.slice(1)).has('bridgeToken'));
+  assert.ok(/^data:image\/png;base64,/.test(pairingData.qr), 'pairing QR must be a PNG data URL');
+  assert.equal(pairingData.port, securePort);
+  assert.match(pairingData.caFingerprint, /^([A-F0-9]{2}:){31}[A-F0-9]{2}$/);
+
+  const caResponse = await request(port, '/bridge-ca.crt');
+  assert.equal(caResponse.status, 200);
+  assert.match(caResponse.headers['content-type'], /application\/x-x509-ca-cert/);
+  const secureIndex = await secureRequest(securePort, '/', caResponse.body);
+  assert.equal(secureIndex.status, 200);
+  assert.match(secureIndex.body, /bridge-bootstrap\.js/);
 
   const connect = () =>
     new Promise((resolve, reject) => {
-      const socket = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+      const socket = new WebSocket(`ws://127.0.0.1:${port}/ws`, {
+        headers: { Origin: localOrigin },
+      });
       socket.receivedMessages = [];
       socket.on('message', (raw) => {
         try {
@@ -263,6 +380,20 @@ test('server does not listen on import, retries an occupied port, and survives m
       socket.once('open', () => resolve(socket));
       socket.once('error', reject);
     });
+  assert.equal(await rejectedWebSocket(`ws://127.0.0.1:${port}/ws`), 401);
+  assert.equal(
+    await rejectedWebSocket(`ws://127.0.0.1:${port}/ws`, {
+      headers: { Origin: 'https://attacker.example' },
+    }),
+    401,
+  );
+  assert.equal(
+    await rejectedWebSocket(`wss://127.0.0.1:${securePort}/ws`, {
+      ca: caResponse.body,
+      headers: { Origin: `https://127.0.0.1:${securePort}` },
+    }),
+    401,
+  );
   const firstClient = await connect();
   t.after(() => {
     try {
@@ -305,6 +436,30 @@ test('server does not listen on import, retries an occupied port, and survives m
   );
   const synchronized = await syncPromise;
   assert.equal(synchronized.layout.activePageId, 'ws-page');
+  const secureClient = await new Promise((resolve, reject) => {
+    const socket = new WebSocket(
+      `wss://127.0.0.1:${securePort}/ws?token=${encodeURIComponent(bridge.getToken())}`,
+      {
+        ca: caResponse.body,
+        headers: { Origin: `https://127.0.0.1:${securePort}` },
+      },
+    );
+    socket.receivedMessages = [];
+    socket.on('message', (raw) => {
+      try {
+        socket.receivedMessages.push(JSON.parse(raw.toString()));
+      } catch {}
+    });
+    socket.once('open', () => resolve(socket));
+    socket.once('error', reject);
+  });
+  t.after(() => {
+    try {
+      secureClient.terminate();
+    } catch {}
+  });
+  const secureReady = await waitForMessage(secureClient, (message) => message.type === 'ready');
+  assert.deepEqual(secureReady, { type: 'ready' });
   const firstClientClosed = new Promise((resolve) => firstClient.once('close', resolve));
   firstClient.close();
   await firstClientClosed;
@@ -326,10 +481,11 @@ test('server does not listen on import, retries an occupied port, and survives m
     'X-FaderDeck-Admin': 'rotate-token',
   });
   assert.equal(rotateWhileConnected.status, 200);
-  assert.notEqual(bridge.getToken(), oldToken);
+  assert.ok(bridge.getToken() !== oldToken, 'token rotation must issue a new credential');
   assert.equal(await rotatedClose, 4001);
-  assert.equal(
-    fs.readFileSync(path.join(dataDirectory, '.faderdeck-token'), 'utf8').trim(),
-    bridge.getToken(),
+  assert.ok(
+    fs.readFileSync(path.join(dataDirectory, '.faderdeck-token'), 'utf8').trim() ===
+      bridge.getToken(),
+    'rotated credential must persist',
   );
 });

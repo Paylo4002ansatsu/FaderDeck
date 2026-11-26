@@ -26,10 +26,11 @@ A medida de ping da CI representa somente round-trip de um processo cliente-serv
 
 ## Ensaio iPhone e rede
 
-1. Conecte o iPhone e o computador à mesma rede Wi-Fi não isolada. Na página `/bridge` do computador, escaneie o QR com a câmera do iPhone e confirme a conexão WebSocket.
-2. Mova um fader dos dois lados. Confirme sincronização de layout/valor e emissão MIDI na DAW. Deixe conectado por alguns minutos e registre desconexões e recuperação.
-3. Repita com Safari e, se aplicável, com o ícone instalado na Tela de Início. Feche/reabra o painel e verifique se o pareamento persistente reconecta.
-4. Em rede corporativa, verifique com o administrador se há isolamento entre clientes, bloqueio de tráfego local ou regras de firewall. Registre a rede e a mensagem apresentada. Não exponha o servidor diretamente à Internet sem revisão de segurança e autorização da organização.
+1. Conecte o iPhone e o computador à mesma rede Wi-Fi não isolada. Na página `/bridge` do computador, baixe o certificado CA, transfira-o ao iPhone por um meio confiável, compare a impressão digital SHA-256 e instale/confie no certificado.
+2. Escaneie o QR com a câmera do iPhone e confirme que o painel abre por HTTPS e conecta via WebSocket seguro (WSS).
+3. Mova um fader dos dois lados. Confirme sincronização de layout/valor e emissão MIDI na DAW. Deixe conectado por alguns minutos e registre desconexões e recuperação.
+4. Repita com Safari e, se aplicável, com o ícone instalado na Tela de Início. Feche/reabra o painel e verifique se o pareamento persistente reconecta.
+5. Em rede corporativa, verifique com o administrador se há isolamento entre clientes, bloqueio de tráfego local ou regras de firewall. Registre a rede e a mensagem apresentada. Não exponha o servidor diretamente à Internet sem revisão de segurança e autorização da organização.
 
 ## Registro recomendado
 
