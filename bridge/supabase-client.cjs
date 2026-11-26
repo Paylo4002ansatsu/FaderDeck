@@ -1,11 +1,60 @@
 'use strict';
 
 const { createClient } = require('@supabase/supabase-js');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const EDGE_FUNCTIONS = new Set(['trial-start', 'trial-status', 'license-validate']);
+const PUBLIC_ENV_KEYS = ['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY'];
 let client;
 let clientUrl;
 let clientKey;
+
+function parseEnvValue(rawValue) {
+  const value = rawValue.trim();
+  const quote = value[0];
+  if ((quote === '"' || quote === "'" || quote === '`') && value.endsWith(quote)) {
+    return value
+      .slice(1, -1)
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '\r')
+      .replace(/\\(["'`\\])/g, '$1');
+  }
+  return value.replace(/\s+#.*$/, '').trim();
+}
+
+function loadPublicSupabaseEnv({
+  env = process.env,
+  envFilePath = path.join(__dirname, '..', '.env'),
+} = {}) {
+  let contents;
+  try {
+    contents = fs.readFileSync(envFilePath, 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+
+  const values = new Map();
+  for (const line of contents.split(/\r?\n/)) {
+    const match = line.match(
+      /^\s*(?:export\s+)?(SUPABASE_URL|SUPABASE_PUBLISHABLE_KEY)\s*=\s*(.*)$/,
+    );
+    if (match) values.set(match[1], parseEnvValue(match[2]));
+  }
+
+  const loadedKeys = [];
+  for (const key of PUBLIC_ENV_KEYS) {
+    if (env[key]?.trim()) continue;
+    const value = values.get(key);
+    if (!value) continue;
+    env[key] = value;
+    loadedKeys.push(key);
+  }
+  return loadedKeys;
+}
+
+loadPublicSupabaseEnv();
 
 function isSupabaseConfigured(env = process.env) {
   return Boolean(env.SUPABASE_URL?.trim() && env.SUPABASE_PUBLISHABLE_KEY?.trim());
@@ -91,6 +140,7 @@ module.exports = {
   getSupabaseClient,
   invokeEdgeFunction,
   isSupabaseConfigured,
+  loadPublicSupabaseEnv,
   signInWithEmailAndPassword,
   signOut,
 };

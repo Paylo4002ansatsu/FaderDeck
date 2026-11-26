@@ -31,8 +31,9 @@ test('Supabase setup documents secure configuration and the approved schema migr
     .filter((name) => name !== 'README.md');
 
   for (const variable of ['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_SECRET_KEY']) {
-    assert.match(envExample, new RegExp(`^${variable}=$`, 'm'));
+    assert.match(envExample, new RegExp(`^${variable}=.*$`, 'm'));
   }
+  assert.match(envExample, /^SUPABASE_SECRET_KEY=$/m);
   assert.match(envExample, /Server-only/);
   assert.match(envExample, /Never expose this variable/);
   assert.match(config, /"enable_signup": false/);

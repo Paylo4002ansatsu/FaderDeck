@@ -350,6 +350,8 @@ test('server does not listen on import, retries an occupied port, and survives m
     Origin: localOrigin,
   });
   assert.equal(pairing.status, 200);
+  const pairingWithoutOrigin = await request(port, '/api/pairing');
+  assert.equal(pairingWithoutOrigin.status, 200);
   const pairingData = JSON.parse(pairing.body);
   const pairingUrl = new URL(pairingData.url);
   assert.equal(pairingUrl.protocol, 'https:');

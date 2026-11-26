@@ -341,10 +341,12 @@ function createHttpHandler({
         return sendJson(response, 200, { tokenUpdated: true });
       }
       if (request.method === 'GET' && pathname === '/api/pairing') {
+        const originAllowed =
+          request.headers.origin === undefined || isSameOriginLocalAdminRequest(request, getPort());
         if (
           !isLoopbackRequest(request) ||
           !hasLocalHostHeader(request, getPort()) ||
-          !isSameOriginLocalAdminRequest(request, getPort())
+          !originAllowed
         )
           return sendJson(response, 403, {
             error: 'O pareamento só pode ser consultado neste computador.',
