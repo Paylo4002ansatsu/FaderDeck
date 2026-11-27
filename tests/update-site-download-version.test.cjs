@@ -15,22 +15,26 @@ const WINDOWS_120 =
   'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.2.0/FaderDeck-Windows-Setup.exe';
 const MACOS_120 =
   'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.2.0/FaderDeck-Mac.dmg';
+const MONTEREY_101 =
+  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.1/FaderDeck-Mac-Monterey-Intel.dmg';
+const MONTEREY_120 =
+  'https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.2.0/FaderDeck-Mac-Monterey-Intel.dmg';
 
 function createDocsFixture() {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'faderdeck-site-version-'));
   fs.writeFileSync(
     path.join(directory, 'index.html'),
-    `<a href="#downloads">Smart download</a> <a href="${WINDOWS_100}">Windows · 64-bit · 1.0.0</a> <a href="${MACOS_101}">Mac download</a>`,
+    `<a href="#downloads">Smart download</a> <a href="${WINDOWS_100}">Windows · 64-bit · 1.0.0</a> <a href="${MACOS_101}">Mac download</a> <a href="${MONTEREY_101}">Mac Intel · 1.0.1 · DMG</a>`,
     'utf8',
   );
   fs.writeFileSync(
     path.join(directory, 'app.js'),
-    `const MACOS_URL = '${MACOS_101}'; button.href = '${WINDOWS_100}';`,
+    `const MACOS_URL = '${MACOS_101}'; button.href = '${WINDOWS_100}'; const MONTEREY_URL = '${MONTEREY_101}';`,
     'utf8',
   );
   fs.writeFileSync(
     path.join(directory, 'README.md'),
-    `Os links atuais permanecem fixos em \`1.0.0\`\nWindows: ${WINDOWS_100}\nmacOS: ${MACOS_101}\n`,
+    'Os links atuais permanecem fixos em `1.0.0`\n',
     'utf8',
   );
   return directory;
@@ -59,8 +63,9 @@ test('updates both platform links and the Windows label to one numeric tag', (t)
   assert.match(files['index.html'], /Windows · 64-bit · 1\.2\.0/);
   assert.equal((files['app.js'].match(new RegExp(WINDOWS_120, 'g')) || []).length, 1);
   assert.equal((files['app.js'].match(new RegExp(MACOS_120, 'g')) || []).length, 1);
-  assert.ok(files['README.md'].includes(WINDOWS_120));
-  assert.ok(files['README.md'].includes(MACOS_120));
+  assert.ok(files['index.html'].includes(MONTEREY_120));
+  assert.ok(files['app.js'].includes(MONTEREY_120));
+  assert.match(files['index.html'], /Mac Intel · 1\.2\.0 · DMG/);
   assert.match(files['README.md'], /Os links atuais permanecem fixos em `1\.2\.0`/);
   for (const text of Object.values(files)) {
     assert.doesNotMatch(text, /releases\/download\/v1\.2\.0\//);

@@ -48,14 +48,14 @@ function updateSiteDownloadVersion(docsDirectory, tag) {
     Object.entries(files).map(([key, filePath]) => [key, fs.readFileSync(filePath, 'utf8')]),
   );
 
-  const expectedMacLinks = { html: 1, script: 1, readme: 1 };
+  const expectedLinks = { html: 1, script: 1, readme: 0 };
   const updated = {};
   for (const key of Object.keys(files)) {
     updated[key] = replaceExpectedCount(
       original[key],
       WINDOWS_URL_PATTERN,
       downloads.windowsUrl,
-      1,
+      expectedLinks[key],
       `docs/${path.basename(files[key])}`,
       'link Windows',
     );
@@ -63,13 +63,18 @@ function updateSiteDownloadVersion(docsDirectory, tag) {
       updated[key],
       MACOS_URL_PATTERN,
       downloads.macosUrl,
-      expectedMacLinks[key],
+      expectedLinks[key],
       `docs/${path.basename(files[key])}`,
       'link(s) macOS',
     );
-    if (MONTEREY_URL_PATTERN.test(updated[key])) {
-      updated[key] = updated[key].replace(MONTEREY_URL_PATTERN, downloads.montereyUrl);
-    }
+    updated[key] = replaceExpectedCount(
+      updated[key],
+      MONTEREY_URL_PATTERN,
+      downloads.montereyUrl,
+      expectedLinks[key],
+      `docs/${path.basename(files[key])}`,
+      'link(s) macOS Monterey',
+    );
   }
 
   updated.html = replaceExpectedCount(
