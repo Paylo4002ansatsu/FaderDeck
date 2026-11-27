@@ -249,7 +249,10 @@ test('server does not listen on import, retries an occupied port, and survives m
   assert.equal(healthy.status, 200);
   const accountStatus = await request(port, '/api/account/status');
   assert.equal(accountStatus.status, 200);
-  assert.equal(JSON.parse(accountStatus.body).supabase_configured, false);
+  assert.equal(
+    JSON.parse(accountStatus.body).supabase_configured,
+    require('../bridge/supabase-client.cjs').isSupabaseConfigured(),
+  );
   const blockedMidiSelection = await request(
     port,
     '/api/ports/select',
