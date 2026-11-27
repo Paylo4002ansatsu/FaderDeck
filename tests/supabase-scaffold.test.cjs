@@ -30,7 +30,13 @@ test('Supabase setup documents secure configuration and the approved schema migr
     .readdirSync(path.join(root, 'supabase/functions'))
     .filter((name) => name !== 'README.md');
 
-  for (const variable of ['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_SECRET_KEY']) {
+  for (const variable of [
+    'SUPABASE_URL',
+    'SUPABASE_PUBLISHABLE_KEY',
+    'SUPABASE_SECRET_KEY',
+    'VITE_SUPABASE_URL',
+    'VITE_SUPABASE_PUBLISHABLE_KEY',
+  ]) {
     assert.match(envExample, new RegExp(`^${variable}=.*$`, 'm'));
   }
   assert.match(envExample, /^SUPABASE_SECRET_KEY=$/m);
@@ -76,7 +82,13 @@ test('Supabase setup documents secure configuration and the approved schema migr
     'trial-status',
   ]);
 
-  for (const relativePath of ['client/index.html', 'docs/index.html', 'main.js', 'server.cjs']) {
+  for (const relativePath of [
+    'client/index.html',
+    'docs/index.html',
+    'docs/auth-callback.js',
+    'main.js',
+    'server.cjs',
+  ]) {
     const source = fs.readFileSync(path.join(root, relativePath), 'utf8');
     assert.doesNotMatch(source, /SUPABASE_SECRET_KEY/);
   }

@@ -177,6 +177,21 @@ function createHttpHandler({
     };
   }
 
+  async function activateTrialIfAvailable() {
+    const status = await getAccountStatus();
+    if (!status.trial_available) return status;
+
+    try {
+      await supabaseClient.invokeEdgeFunction('trial-start');
+    } catch (error) {
+      activeEntitlementService.clearCache?.();
+      console.error('Não foi possível iniciar o trial após autenticar:', error);
+      throw error;
+    }
+
+    return getAccountStatus();
+  }
+
   async function requireEntitlement(response) {
     let entitlement;
     try {
@@ -268,6 +283,9 @@ function createHttpHandler({
       }
       if (
         pathname === '/api/account/login' ||
+        pathname === '/api/account/signup' ||
+        pathname === '/api/account/reset-password' ||
+        pathname === '/api/account/password-reset' ||
         pathname === '/api/account/trial/start' ||
         pathname === '/api/account/logout'
       ) {
@@ -305,7 +323,97 @@ function createHttpHandler({
                   : 'Não foi possível autenticar com esse e-mail e senha.',
             });
           }
-          return sendJson(response, 200, await getAccountStatus());
+          try {
+            return sendJson(response, 200, await activateTrialIfAvailable());
+          } catch {
+            return sendJson(response, 502, {
+              code: 'TRIAL_ACTIVATION_FAILED',
+              error:
+                'Sua conta foi autenticada, mas não foi possível iniciar o teste grátis. Tente novamente.',
+            });
+          }
+        }
+
+        if (pathname === '/api/account/signup') {
+          const body = await readBody(request);
+          if (!body || typeof body !== 'object' || Array.isArray(body)) {
+            return sendJson(response, 400, { error: 'O corpo deve ser um objeto JSON.' });
+          }
+          if (
+            typeof body.email !== 'string' ||
+            !body.email.trim() ||
+            typeof body.password !== 'string' ||
+            !body.password
+          ) {
+            return sendJson(response, 400, { error: 'E-mail e senha são obrigatórios.' });
+          }
+
+          let signup;
+          try {
+            signup = await supabaseClient.signUpWithEmailAndPassword(
+              body.email.trim(),
+              body.password,
+            );
+          } catch (error) {
+            return sendJson(response, error.status === 429 ? 429 : 400, {
+              code: 'SIGNUP_FAILED',
+              error:
+                error.status === 429
+                  ? 'Muitas tentativas. Aguarde antes de tentar novamente.'
+                  : 'Não foi possível criar a conta. Verifique os dados e tente novamente.',
+            });
+          }
+
+          if (signup?.session) {
+            try {
+              await supabaseClient.invokeEdgeFunction('trial-start');
+            } catch (error) {
+              activeEntitlementService.clearCache?.();
+              console.error('Conta criada, mas não foi possível iniciar o trial:', error);
+              return sendJson(response, 502, {
+                code: 'TRIAL_ACTIVATION_FAILED',
+                error:
+                  'Sua conta foi criada, mas não foi possível iniciar o teste grátis. Entre novamente e tente iniciar o teste.',
+              });
+            }
+          }
+
+          const status = await getAccountStatus();
+          return sendJson(response, 200, {
+            ...status,
+            confirmation_required: !signup?.session,
+            message: signup?.session
+              ? null
+              : 'Enviamos um link de confirmação para o seu e-mail. Confirme o cadastro antes de entrar.',
+          });
+        }
+
+        if (
+          pathname === '/api/account/reset-password' ||
+          pathname === '/api/account/password-reset'
+        ) {
+          const body = await readBody(request);
+          if (!body || typeof body !== 'object' || Array.isArray(body)) {
+            return sendJson(response, 400, { error: 'O corpo deve ser um objeto JSON.' });
+          }
+          if (typeof body.email !== 'string' || !body.email.trim()) {
+            return sendJson(response, 400, { error: 'Informe um e-mail válido.' });
+          }
+          try {
+            await supabaseClient.resetPasswordForEmail(body.email.trim());
+          } catch (error) {
+            return sendJson(response, error.status === 429 ? 429 : 502, {
+              code: 'PASSWORD_RESET_FAILED',
+              error:
+                error.status === 429
+                  ? 'Muitas tentativas. Aguarde antes de solicitar outro link.'
+                  : 'Não foi possível solicitar a recuperação de senha. Tente novamente.',
+            });
+          }
+          return sendJson(response, 200, {
+            sent: true,
+            message: 'Se o e-mail estiver cadastrado, enviaremos um link para redefinir a senha.',
+          });
         }
 
         if (pathname === '/api/account/trial/start') {

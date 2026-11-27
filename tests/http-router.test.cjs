@@ -179,6 +179,8 @@ test('account routes mask the email and never return session tokens', async (t) 
   );
   assert.equal(login.status, 200);
   assert.equal(login.body.session.email, 'a***@e***.com');
+  assert.equal(login.body.entitlement.allowed, true);
+  assert.equal(calls.filter((name) => name === 'trial-start').length, 1);
   assert.equal(JSON.stringify(login.body).includes('secret-access-token'), false);
   assert.equal(JSON.stringify(login.body).includes('secret-refresh-token'), false);
 
@@ -191,6 +193,128 @@ test('account routes mask the email and never return session tokens', async (t) 
   assert.equal(loggedOut.status, 200);
   assert.equal(loggedOut.body.session.authenticated, false);
   assert.ok(calls.includes('clearCache'));
+});
+
+test('signup starts a trial immediately when Supabase returns a session', async (t) => {
+  let session = null;
+  let entitlementAllowed = false;
+  const calls = [];
+  const fixture = await createFixture({
+    entitlementService: {
+      async getEntitlement() {
+        return {
+          allowed: entitlementAllowed,
+          kind: entitlementAllowed ? 'trial' : 'none',
+          expires_at: entitlementAllowed ? '2026-12-03T12:00:00.000Z' : null,
+          server_time: '2026-11-26T12:00:00.000Z',
+          offline_grace_until: entitlementAllowed ? '2026-11-27T12:00:00.000Z' : null,
+        };
+      },
+    },
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+      async getCurrentSession() {
+        return session;
+      },
+      async signUpWithEmailAndPassword(email, password) {
+        assert.equal(email, 'new@example.com');
+        assert.equal(password, 'new-password');
+        session = {
+          access_token: 'signup-access-token',
+          refresh_token: 'signup-refresh-token',
+          user: { id: 'new-user-id', email },
+        };
+        return { session };
+      },
+      async invokeEdgeFunction(name) {
+        calls.push(name);
+        if (name === 'trial-start') {
+          assert.ok(session, 'signup session is available before starting the trial');
+          entitlementAllowed = true;
+          return { trial: { status: 'active' } };
+        }
+        return {
+          trial: { status: 'active', ends_at: '2026-12-03T12:00:00.000Z' },
+          expired: false,
+        };
+      },
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+
+  const response = await request(
+    fixture,
+    '/api/account/signup',
+    { email: 'new@example.com', password: 'new-password' },
+    'POST',
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.session.authenticated, true);
+  assert.equal(response.body.entitlement.allowed, true);
+  assert.equal(response.body.confirmation_required, false);
+  assert.equal(calls[0], 'trial-start');
+  assert.equal(JSON.stringify(response.body).includes('signup-access-token'), false);
+  assert.equal(JSON.stringify(response.body).includes('signup-refresh-token'), false);
+});
+
+test('signup asks users to confirm email when Supabase returns no session', async (t) => {
+  const calls = [];
+  const fixture = await createFixture({
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+      async getCurrentSession() {
+        return null;
+      },
+      async signUpWithEmailAndPassword() {
+        return { session: null };
+      },
+      async invokeEdgeFunction(name) {
+        calls.push(name);
+      },
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+
+  const response = await request(
+    fixture,
+    '/api/account/signup',
+    { email: 'confirm@example.com', password: 'new-password' },
+    'POST',
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.session.authenticated, false);
+  assert.equal(response.body.confirmation_required, true);
+  assert.equal(
+    response.body.message,
+    'Enviamos um link de confirmação para o seu e-mail. Confirme o cadastro antes de entrar.',
+  );
+  assert.deepEqual(calls, []);
+});
+
+test('password reset delegates to Supabase without revealing account existence', async (t) => {
+  let resetEmail = null;
+  const fixture = await createFixture({
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+      async resetPasswordForEmail(email) {
+        resetEmail = email;
+      },
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+
+  const response = await request(
+    fixture,
+    '/api/account/reset-password',
+    { email: 'person@example.com' },
+    'POST',
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(resetEmail, 'person@example.com');
+  assert.match(response.body.message, /se o e-mail estiver cadastrado/i);
 });
 
 test('update status route returns the injected release-check result', async (t) => {

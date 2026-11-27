@@ -26,12 +26,24 @@ Os links atuais permanecem fixos em `1.0.4`: Windows 64-bit, macOS Universal e m
 
 A seleção automática identifica Windows 64-bit e encaminha macOS/arquiteturas desconhecidas para a escolha manual, preservando os IDs utilizados pelos testes. Não alterar URLs individualmente: para atualizar a versão após confirmar os arquivos da release, execute `npm run update:site-download-version -- 1.2.0` com a tag numérica correspondente.
 
+## Autenticação e configuração
+
+Os callbacks de confirmação de e-mail e recuperação de senha usam o cliente
+`@supabase/supabase-js`, empacotado pelo Vite. Configure `VITE_SUPABASE_URL` e
+`VITE_SUPABASE_PUBLISHABLE_KEY` nas variáveis de ambiente de build do Vercel e
+no `.env` local (veja `.env.example`). A chave publishable/anon é pública e fica
+no bundle do navegador; nunca configure uma chave `secret` ou `service_role`
+com o prefixo `VITE_`.
+
+O `vercel.json` constrói o site a partir de `docs/` e publica `dist/`. No projeto
+Vercel, use a raiz do repositório como diretório do projeto para aplicar essa
+configuração.
+
 ## Prévia local
 
-Na raiz do repositório, inicie um servidor estático:
-
 ```bash
-python3 -m http.server 8000 --directory docs
+npm run dev:site
 ```
 
-Abra <http://localhost:8000/>. A landing não exige dependências de frontend.
+Abra a URL local apresentada pelo Vite. Para validar o bundle de produção,
+execute `npm run build:site`.

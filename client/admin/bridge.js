@@ -4,8 +4,14 @@ const statusElement = document.querySelector('#status');
 const accountStateElement = document.querySelector('#account-state');
 const accountEmailElement = document.querySelector('#account-email');
 const accountMessageElement = document.querySelector('#account-message');
+const accountFeedbackBannerElement = document.querySelector('#account-feedback-banner');
+const accountTitleElement = document.querySelector('#account-title');
+const accountDescriptionElement = document.querySelector('#account-description');
+const ACCOUNT_EMAIL_SENT_MESSAGE =
+  'Enviamos um link para o seu e-mail. Verifique sua caixa de entrada (e spam) para continuar.';
 let token = '';
 let mobileUrl = '';
+let accountMode = 'login';
 
 async function requestJson(url, options) {
   const response = await fetch(url, { cache: 'no-store', ...options });
@@ -78,11 +84,13 @@ function renderAccountStatus(status) {
   const logoutButton = document.querySelector('#account-logout');
   const licenseLink = document.querySelector('#account-license-link');
   const gateMessage = document.querySelector('#account-gate-message');
+  const authFooter = document.querySelector('#account-auth-footer');
   const loginButton = document.querySelector('#account-login-submit');
 
   accountEmailElement.hidden = !authenticated || !status.session.email;
-  accountEmailElement.textContent = authenticated ? `Conta: ${status.session.email || ''}` : '';
+  accountEmailElement.textContent = authenticated ? status.session.email || '' : '';
   loginForm.hidden = authenticated || !status.supabase_configured;
+  authFooter.hidden = authenticated || !status.supabase_configured;
   loginButton.disabled = !status.supabase_configured;
   actions.hidden = !authenticated;
   trialButton.hidden = !authenticated || !trialAvailable;
@@ -90,46 +98,101 @@ function renderAccountStatus(status) {
   licenseLink.hidden = !authenticated || allowed || trialAvailable;
 
   if (!status.supabase_configured) {
+    accountTitleElement.textContent = 'Acesso indisponível';
+    accountDescriptionElement.textContent = 'Configure o acesso Supabase no processo local.';
     accountStateElement.textContent = 'Não autenticado';
     accountStateElement.dataset.state = 'unknown';
-    gateMessage.textContent =
-      'Login indisponível neste ambiente. Configure o acesso Supabase no processo local.';
     gateMessage.hidden = false;
   } else if (!authenticated) {
+    setAccountMode(accountMode);
     accountStateElement.textContent = 'Não autenticado';
     accountStateElement.dataset.state = 'unknown';
-    gateMessage.textContent = 'Entre na sua conta para consultar o entitlement e liberar o MIDI.';
+    gateMessage.hidden = true;
+  } else {
+    accountTitleElement.textContent = 'Sua conta FaderDeck';
+    accountDescriptionElement.textContent =
+      'Gerencie seu teste grátis e sua licença neste computador.';
     gateMessage.hidden = false;
-  } else if (allowed && entitlement.kind === 'trial') {
+  }
+
+  if (authenticated && allowed && entitlement.kind === 'trial') {
     accountStateElement.textContent = 'Teste de 7 dias ativo';
     accountStateElement.dataset.state = 'active';
     const endDate = formatAccountDate(entitlement.expires_at);
     gateMessage.textContent = endDate
       ? `Seu teste termina em ${endDate}.`
       : 'Seu teste está ativo.';
-    gateMessage.hidden = false;
-  } else if (allowed && entitlement.kind === 'license') {
+  } else if (authenticated && allowed && entitlement.kind === 'license') {
     accountStateElement.textContent = 'Licença ativa';
     accountStateElement.dataset.state = 'active';
     const endDate = formatAccountDate(entitlement.expires_at);
     gateMessage.textContent = endDate
       ? `Sua licença é válida até ${endDate}.`
       : 'Sua licença está ativa.';
-    gateMessage.hidden = false;
-  } else if (trialAvailable) {
+  } else if (authenticated && trialAvailable) {
     accountStateElement.textContent = 'Teste gratuito disponível';
     accountStateElement.dataset.state = 'pending';
-    gateMessage.textContent = 'Inicie seu teste gratuito de 7 dias para liberar o MIDI.';
-    gateMessage.hidden = false;
-  } else {
-    accountStateElement.textContent = 'Expirado';
+    gateMessage.textContent = 'Seu teste grátis de 7 dias está disponível para esta conta.';
+  } else if (authenticated) {
+    accountStateElement.textContent = 'Sem licença ativa';
     accountStateElement.dataset.state = 'expired';
     gateMessage.textContent =
-      'Não há entitlement ativo. Adquira uma licença para voltar a usar MIDI.';
-    gateMessage.hidden = false;
+      'Seu teste expirou ou não há uma licença ativa. Adquira uma licença para continuar.';
   }
 
   document.querySelector('#save').disabled = !allowed;
+}
+
+function showAccountFeedbackBanner(message, state = 'success') {
+  accountFeedbackBannerElement.textContent = message;
+  accountFeedbackBannerElement.dataset.state = state;
+  accountFeedbackBannerElement.hidden = false;
+}
+
+function clearAccountFeedbackBanner() {
+  accountFeedbackBannerElement.hidden = true;
+  accountFeedbackBannerElement.textContent = '';
+}
+
+function setAccountMode(mode, { clearFeedback = false } = {}) {
+  const modeChanged = accountMode !== mode;
+  accountMode = mode;
+  if (clearFeedback && modeChanged) clearAccountFeedbackBanner();
+  if (modeChanged) {
+    document.querySelector('#account-login-password').value = '';
+    document.querySelector('#account-password-confirm').value = '';
+    document.querySelector('#account-password-confirm').setCustomValidity('');
+  }
+
+  const isLogin = mode === 'login';
+  const isSignup = mode === 'signup';
+  const isReset = mode === 'reset';
+  document.querySelector('#account-password-wrap').hidden = isReset;
+  document.querySelector('#account-login-password').required = !isReset;
+  document.querySelector('#account-login-password').autocomplete = isLogin
+    ? 'current-password'
+    : 'new-password';
+  document.querySelector('#account-password-confirm-wrap').hidden = !isSignup;
+  document.querySelector('#account-password-confirm').required = isSignup;
+  document.querySelector('#account-remember-wrap').hidden = !isLogin;
+  document.querySelector('#account-login-footer').hidden = !isLogin;
+  document.querySelector('#account-signup-footer').hidden = !isSignup;
+  document.querySelector('#account-reset-footer').hidden = !isReset;
+  accountTitleElement.textContent = isSignup
+    ? 'Criar sua conta'
+    : isReset
+      ? 'Recuperar acesso'
+      : 'Bem-vindo de volta';
+  accountDescriptionElement.textContent = isSignup
+    ? 'Cadastre-se para liberar seu teste grátis de 7 dias.'
+    : isReset
+      ? 'Informe o e-mail da sua conta para receber o link de redefinição.'
+      : 'Entre com o e-mail da sua conta para ativar o FaderDeck.';
+  document.querySelector('#account-login-submit').textContent = isSignup
+    ? 'Criar conta e testar grátis'
+    : isReset
+      ? 'Enviar link de redefinição'
+      : 'Entrar no FaderDeck';
 }
 
 async function loadAccountStatus() {
@@ -149,31 +212,100 @@ async function loadAccountStatus() {
 
 document.querySelector('#account-login').addEventListener('submit', async (event) => {
   event.preventDefault();
+  clearAccountFeedbackBanner();
   const email = document.querySelector('#account-login-email').value.trim();
   const passwordInput = document.querySelector('#account-login-password');
+  const confirmPasswordInput = document.querySelector('#account-password-confirm');
   const submitButton = document.querySelector('#account-login-submit');
+  const isSignup = accountMode === 'signup';
+  const isReset = accountMode === 'reset';
+  const loadingText = isSignup ? 'Criando conta…' : isReset ? 'Enviando…' : 'Entrando…';
+
+  if (isSignup && passwordInput.value !== confirmPasswordInput.value) {
+    confirmPasswordInput.setCustomValidity('As senhas não coincidem.');
+    confirmPasswordInput.reportValidity();
+    showAccountFeedbackBanner('As senhas não coincidem.', 'error');
+    return;
+  }
+  confirmPasswordInput.setCustomValidity('');
   submitButton.disabled = true;
-  accountMessageElement.textContent = 'Entrando…';
+  submitButton.textContent = loadingText;
+  accountMessageElement.textContent = loadingText;
 
   try {
-    const status = await requestJson('/api/account/login', {
+    if (isReset) {
+      await requestJson('/api/account/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      accountMessageElement.textContent = '';
+      showAccountFeedbackBanner(ACCOUNT_EMAIL_SENT_MESSAGE);
+      return;
+    }
+
+    const status = await requestJson(isSignup ? '/api/account/signup' : '/api/account/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password: passwordInput.value }),
     });
     passwordInput.value = '';
+    confirmPasswordInput.value = '';
     renderAccountStatus(status);
-    accountMessageElement.textContent = 'Sessão atualizada.';
+    if (status.confirmation_required) {
+      setAccountMode('login');
+      accountMessageElement.textContent = '';
+      showAccountFeedbackBanner(ACCOUNT_EMAIL_SENT_MESSAGE);
+    } else {
+      accountMessageElement.textContent =
+        status.message || (isSignup ? 'Conta criada.' : 'Sessão atualizada.');
+    }
   } catch (error) {
-    accountMessageElement.textContent = error.message;
+    accountMessageElement.textContent = '';
+    showAccountFeedbackBanner(error.message, 'error');
   } finally {
     submitButton.disabled = document.querySelector('#account-login').hidden;
+    submitButton.textContent =
+      accountMode === 'signup'
+        ? 'Criar conta e testar grátis'
+        : accountMode === 'reset'
+          ? 'Enviar link de redefinição'
+          : 'Entrar no FaderDeck';
   }
+});
+
+document.querySelector('#account-mode-login').addEventListener('click', () => {
+  setAccountMode('login', { clearFeedback: true });
+});
+
+document.querySelector('#account-mode-signup').addEventListener('click', () => {
+  setAccountMode('signup', { clearFeedback: true });
+});
+
+document.querySelector('#account-forgot-password').addEventListener('click', async () => {
+  setAccountMode('reset', { clearFeedback: true });
+  document.querySelector('#account-login-email').focus();
+});
+
+document.querySelector('#account-reset-back').addEventListener('click', () => {
+  setAccountMode('login', { clearFeedback: true });
+});
+
+document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const input = document.getElementById(button.dataset.passwordToggle);
+    const visible = input.type === 'password';
+    input.type = visible ? 'text' : 'password';
+    button.textContent = visible ? 'Ocultar' : 'Mostrar';
+    button.setAttribute('aria-pressed', String(visible));
+    button.setAttribute('aria-label', visible ? 'Ocultar senha' : 'Mostrar senha');
+  });
 });
 
 document.querySelector('#account-trial-start').addEventListener('click', async () => {
   const button = document.querySelector('#account-trial-start');
   button.disabled = true;
+  button.textContent = 'Iniciando…';
   accountMessageElement.textContent = 'Iniciando o teste gratuito…';
 
   try {
@@ -184,13 +316,15 @@ document.querySelector('#account-trial-start').addEventListener('click', async (
     accountMessageElement.textContent = error.message;
   } finally {
     button.disabled = false;
+    button.textContent = 'Iniciar teste grátis de 7 dias';
   }
 });
 
 document.querySelector('#account-logout').addEventListener('click', async () => {
   const button = document.querySelector('#account-logout');
   button.disabled = true;
-  accountMessageElement.textContent = 'Saindo…';
+  button.textContent = 'Trocando…';
+  accountMessageElement.textContent = 'Trocando de conta…';
 
   try {
     const status = await requestJson('/api/account/logout', { method: 'POST' });
@@ -200,6 +334,7 @@ document.querySelector('#account-logout').addEventListener('click', async () => 
     accountMessageElement.textContent = error.message;
   } finally {
     button.disabled = false;
+    button.textContent = 'Trocar de conta';
   }
 });
 
@@ -263,3 +398,4 @@ document.querySelector('#renew-token').addEventListener('click', async () => {
 Promise.all([loadPairing(), loadPorts(), loadAccountStatus()]).catch((error) => {
   statusElement.textContent = `Não foi possível carregar a administração: ${error.message}`;
 });
+setAccountMode('login');

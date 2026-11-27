@@ -50,4 +50,10 @@ export default [
       globals: globals.browser,
     },
   },
+  {
+    files: ['docs/auth-callback.js'],
+    languageOptions: {
+      sourceType: 'module',
+    },
+  },
 ];

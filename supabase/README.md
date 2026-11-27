@@ -6,7 +6,9 @@ remoto. Nenhuma Edge Function executável, pagamento ou ativação foi implement
 
 ## Auditoria e estado atual
 
-- O site é HTML/CSS/JavaScript estático em `docs/`; não há framework nem cliente Supabase.
+- O site é HTML/CSS/JavaScript estático em `docs/`, empacotado pelo Vite. O bundle
+  usa `@supabase/supabase-js` somente para processar callbacks de confirmação e
+  recuperação de senha; não implementa cadastro público, compra ou licenciamento.
 - O desktop é Electron. O processo principal abre uma janela com `contextIsolation`,
   `sandbox` e `nodeIntegration: false`; o painel web é servido pela ponte local em
   `server.cjs`. A comunicação MIDI e o servidor local não fazem parte desta integração.
@@ -37,14 +39,17 @@ remoto. Nenhuma Edge Function executável, pagamento ou ativação foi implement
 ## Variáveis de ambiente
 
 `.env.example` lista `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` e
-`SUPABASE_SECRET_KEY` sem valores. Copie-o para `.env` apenas quando houver uma
-integração local confiável. Arquivos `.env` são ignorados pelo Git.
+`SUPABASE_SECRET_KEY` sem valores para o backend local. Também documenta
+`VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` para o site; estas duas
+variáveis são intencionalmente públicas e são incluídas no bundle do navegador.
+Configure-as no ambiente de build do Vercel e no `.env` local. Arquivos `.env`
+são ignorados pelo Git.
 
-O site estático e o Electron **não** recebem a chave secreta. A chave publicável
-pode ser usada por um cliente após implementação, sempre com RLS. A chave secreta
-fica somente em um backend confiável, como Edge Functions futuras; ela não deve
-ser incluída no renderer, em `docs/`, em `client/`, em builds Electron nem em
-variáveis de frontend como `VITE_*` ou `NEXT_PUBLIC_*`.
+O site e o Electron **nunca** recebem a chave secreta. A chave publishable/anon é
+projetada para uso público no cliente; autorizações e acesso a dados continuam
+protegidos por RLS. A chave secreta fica somente em um backend confiável, como
+Edge Functions, e não deve ser incluída no renderer, em `docs/`, em `client/`,
+em builds Electron nem em variáveis de frontend como `VITE_*` ou `NEXT_PUBLIC_*`.
 
 Para configurar o CLI em outra máquina:
 

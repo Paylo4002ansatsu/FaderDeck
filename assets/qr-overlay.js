@@ -28,6 +28,7 @@
   .fdqr-act{cursor:pointer;border-radius:9px;border:1px solid #2fe0c0;background:#2fe0c0;color:#0c1716;font:700 13px -apple-system,sans-serif;padding:9px 14px}
   .fdqr-act.sec{background:transparent;color:#2fe0c0}
   .fdqr-note{margin:6px 0 0;font-size:12px;line-height:1.5;color:#a9c4c0;text-align:left}
+  .fdqr-cert-hint{display:block;margin-top:7px;color:#a9c4c0;font-size:inherit;line-height:inherit}
   .fdqr-status{min-height:18px;margin:8px 0 0;font-size:13px;color:#a9c4c0}
   .fdqr-status.ok{color:#2fe0c0;font-weight:700}
   #fd-account-status{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));z-index:2147482000;display:flex;align-items:center;gap:8px;max-width:calc(100vw - 28px);padding:7px 10px;border:1px solid #2a3d3b;border-radius:10px;background:#13201f;color:#a9c4c0;box-shadow:0 4px 18px rgba(0,0,0,.4);font:11px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -39,6 +40,10 @@
   .fdqr-access label{display:block;margin:12px 0 5px;color:#a9c4c0;font-size:12px}
   .fdqr-access input{width:100%;height:40px;box-sizing:border-box;border:1px solid #2a3d3b;border-radius:8px;background:#0c1716;color:#eef8f6;padding:0 10px;font:13px -apple-system,sans-serif}
   .fdqr-access input:focus-visible,.fdqr-access button:focus-visible,.fdqr-access a:focus-visible{outline:2px solid #2fe0c0;outline-offset:2px}
+  .fdqr-auth-switch{display:flex;gap:6px;margin:0 0 12px;padding:4px;border-radius:10px;background:#0c1716}
+  .fdqr-auth-tab{flex:1;padding:8px;border:1px solid transparent;border-radius:7px;background:transparent;color:#a9c4c0;font:600 12px -apple-system,sans-serif;cursor:pointer}
+  .fdqr-auth-tab.active{border-color:#2a3d3b;background:#20302e;color:#2fe0c0}
+  .fdqr-reset-link{display:block;margin:10px auto 0;padding:0;border:0;background:transparent;color:#a9c4c0;font:12px -apple-system,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
   .fdqr-access .fdqr-act{width:100%;margin-top:12px}
   .fdqr-access .fdqr-act:disabled{opacity:.55;cursor:wait}
   .fdqr-access .fdqr-act.sec{width:auto}
@@ -47,12 +52,60 @@
   .fdqr-access-message{min-height:18px;margin:10px 0 0;color:#a9c4c0;font-size:12px;line-height:1.45}
   .fdqr-access-error{color:#ffb8a8}
   @media (max-height:560px) and (min-width:600px){
-    .fdqr-card{width:min(780px,94vw);display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:24px;text-align:left;align-content:start;padding:20px 24px}
-    .fdqr-card>h2,.fdqr-card>.fdqr-sub,.fdqr-card>.fdqr-url,.fdqr-card>.fdqr-btnrow,.fdqr-card>.fdqr-note,.fdqr-card>.fdqr-status{grid-column:2}
-    .fdqr-card>.fdqr-qr{grid-column:1;grid-row:1 / span 6}
+    .fdqr-card:not(.fdqr-access){width:min(780px,94vw);display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:24px;text-align:left;align-content:start;padding:20px 24px}
+    .fdqr-card:not(.fdqr-access)>h2,.fdqr-card:not(.fdqr-access)>.fdqr-sub,.fdqr-card:not(.fdqr-access)>.fdqr-url,.fdqr-card:not(.fdqr-access)>.fdqr-btnrow,.fdqr-card:not(.fdqr-access)>.fdqr-note,.fdqr-card:not(.fdqr-access)>.fdqr-status{grid-column:2}
+    .fdqr-card:not(.fdqr-access)>.fdqr-qr{grid-column:1;grid-row:1 / span 6}
     .fdqr-btnrow{justify-content:flex-start}
   }
-  @media (max-width:420px){.fdqr-card{padding:22px 16px 18px}}`;
+  @media (max-width:420px){.fdqr-card{padding:22px 16px 18px}}
+  .fdqr-backdrop{padding:24px;box-sizing:border-box}
+  .fdqr-card.fdqr-access{display:grid;width:min(1020px,calc(100vw - 48px));min-height:min(570px,calc(100vh - 96px));max-height:calc(100vh - 48px);grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:16px;overflow:auto;padding:16px;border-color:rgba(255,255,255,.07);border-radius:20px;background:#0b0d10;text-align:left}
+  .fdqr-identity,.fdqr-account-panel{min-width:0;border:1px solid rgba(255,255,255,.07);border-radius:16px}
+  .fdqr-identity{display:flex;flex-direction:column;justify-content:space-between;padding:clamp(28px,4vw,48px);background:radial-gradient(ellipse at 0 0,rgba(16,185,129,.14),transparent 58%),linear-gradient(145deg,#11171a,#101216 72%)}
+  .fdqr-identity-brand{display:flex;align-items:center;gap:12px;margin-bottom:clamp(32px,6vh,60px);color:#f3f5f6;font-size:19px;font-weight:750;letter-spacing:-.03em}
+  .fdqr-identity-brand img{width:54px;height:54px;border:1px solid rgba(255,255,255,.1);border-radius:14px;object-fit:cover}
+  .fdqr-identity-kicker{margin:0 0 12px;color:#34d399;font-size:10px;font-weight:750;letter-spacing:.18em}
+  .fdqr-identity h1{margin:0;color:#f5f7f8;font-size:clamp(36px,4vw,50px);font-weight:760;line-height:1.07;letter-spacing:-.055em}
+  .fdqr-identity-description{max-width:350px;margin:18px 0 0;color:#a7afb7;font-size:13px;line-height:1.75}
+  .fdqr-security-pill{display:inline-flex;min-height:42px;max-width:100%;align-items:center;gap:10px;padding:0 13px;border:1px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(255,255,255,.04);color:#bdc5cc;font-size:9px;font-weight:700;letter-spacing:.07em}
+  .fdqr-security-dot{position:relative;width:8px;height:8px;flex:none;border-radius:50%;background:#34d399;box-shadow:0 0 12px rgba(52,211,153,.6)}
+  .fdqr-security-dot:after{position:absolute;inset:-4px;border:1px solid rgba(52,211,153,.45);border-radius:50%;content:"";animation:fdqr-pulse 2s ease-out infinite}
+  @keyframes fdqr-pulse{0%{transform:scale(.65);opacity:.8}100%{transform:scale(1.7);opacity:0}}
+  .fdqr-account-panel{display:flex;min-height:0;flex-direction:column;justify-content:center;padding:clamp(28px,4vw,48px);background:#14171d;box-shadow:0 22px 60px rgba(0,0,0,.28)}
+  .fdqr-access [hidden]{display:none!important}
+  .fdqr-account-heading{margin:0 0 20px}
+  .fdqr-account-heading h2{margin:0 0 8px;color:#f3f5f7;font-size:clamp(25px,3vw,31px);font-weight:750;line-height:1.16;letter-spacing:-.04em}
+  .fdqr-account-heading .fdqr-sub{margin:0;color:#a7afb7;font-size:13px;line-height:1.6}
+  .fdqr-access-message{min-height:0;margin:0;color:#a7f3d0;font-size:12px;line-height:1.55}
+  .fdqr-access-message:not([hidden]){margin:0 0 18px;padding:11px 13px;border:1px solid rgba(52,211,153,.34);border-radius:9px;background:rgba(16,185,129,.1);font-weight:600}
+  .fdqr-access-message.fdqr-access-error{border-color:rgba(251,113,133,.42);background:rgba(251,113,133,.1);color:#fecdd3}
+  .fdqr-auth-switch{display:flex;gap:7px;margin:0 0 18px;padding:4px;border:1px solid rgba(255,255,255,.04);border-radius:10px;background:#101318}
+  .fdqr-auth-tab{min-height:36px;padding:7px 10px;border:1px solid transparent;border-radius:7px;background:transparent;color:#aab2bb;font:600 11px -apple-system,sans-serif}
+  .fdqr-auth-tab.active{border-color:rgba(52,211,153,.25);background:rgba(16,185,129,.11);color:#6ee7b7}
+  .fdqr-auth-form{display:grid;gap:14px}
+  .fdqr-access .fdqr-auth-form>label{display:grid;gap:7px;margin:0;color:#aab2bb;font-size:9px;font-weight:750;letter-spacing:.13em}
+  .fdqr-access .fdqr-auth-form input:not([type=checkbox]){height:47px;padding:0 13px;border-color:rgba(255,255,255,.09);border-radius:8px;background:#101318;color:#f2f4f6;font:13px -apple-system,sans-serif}
+  .fdqr-access .fdqr-auth-form input:not([type=checkbox]):focus{border-color:#10b981;outline:2px solid rgba(16,185,129,.15)}
+  .fdqr-password-wrap{position:relative}
+  .fdqr-password-wrap input{padding-right:76px!important}
+  .fdqr-password-toggle{position:absolute;top:50%;right:10px;transform:translateY(-50%);padding:5px;border:0;background:transparent;color:#aab2bb;font:600 10px -apple-system,sans-serif;cursor:pointer}
+  .fdqr-remember{display:flex!important;align-items:center;gap:9px;margin:0!important;color:#bdc5cc!important;font-size:10px!important;font-weight:500!important;letter-spacing:0!important;cursor:pointer}
+  .fdqr-remember input{width:16px;height:16px;margin:0;accent-color:#10b981}
+  .fdqr-access .fdqr-auth-form .fdqr-act,.fdqr-account-action{width:100%;min-height:46px;margin:2px 0 0;border-radius:8px;background:#10b981;color:#06251b;font-size:12px}
+  .fdqr-access .fdqr-auth-form .fdqr-act:hover,.fdqr-account-action:hover{background:#34d399}
+  .fdqr-access .fdqr-auth-form .fdqr-act:disabled,.fdqr-account-action:disabled{opacity:.55;cursor:wait}
+  .fdqr-access-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}
+  .fdqr-access-footer a,.fdqr-access-footer button,.fdqr-reset-link{width:auto;margin:0;padding:0;border:0;background:transparent;color:#aab2bb;font:600 10px -apple-system,sans-serif;text-align:left;text-decoration:none;cursor:pointer}
+  .fdqr-access-footer a{color:#6ee7b7}
+  .fdqr-access-footer button:hover,.fdqr-access-footer a:hover,.fdqr-reset-link:hover{color:#6ee7b7}
+  .fdqr-reset-link{display:block;margin:14px 0 0;color:#6ee7b7}
+  .fdqr-reset-link:disabled{opacity:.55;cursor:wait}
+  .fdqr-account-panel .fdqr-btnrow{justify-content:flex-start;margin:12px 0}
+  .fdqr-account-panel .fdqr-btnrow a{display:inline-flex;min-height:42px;align-items:center;padding:0 14px;border:1px solid #10b981;border-radius:8px;color:#6ee7b7;font-size:11px;font-weight:700;text-decoration:none}
+  .fdqr-account-panel>.fdqr-act{margin-top:8px}
+  @media (max-width:760px){.fdqr-card.fdqr-access{width:min(540px,calc(100vw - 32px));min-height:0;grid-template-columns:minmax(0,1fr);gap:12px;padding:12px}.fdqr-identity{min-height:230px;padding:24px}.fdqr-identity-brand{margin-bottom:26px}.fdqr-identity h1{font-size:36px}.fdqr-identity-description{margin-top:12px}.fdqr-security-pill{min-height:36px;margin-top:20px}.fdqr-account-panel{padding:26px}}
+  @media (max-width:420px){.fdqr-card.fdqr-access{width:calc(100vw - 20px);max-height:calc(100vh - 20px);gap:10px;padding:10px}.fdqr-identity{min-height:205px;padding:20px}.fdqr-identity-brand img{width:44px;height:44px}.fdqr-identity h1{font-size:32px}.fdqr-account-panel{padding:20px}.fdqr-access-footer{align-items:flex-start;flex-direction:column;gap:10px}}
+  @media (prefers-reduced-motion:reduce){.fdqr-security-dot:after{animation:none}}`;
   document.head.appendChild(style);
 
   const esc = (t) =>
@@ -170,21 +223,56 @@
     card.setAttribute('aria-modal', 'true');
     card.setAttribute('aria-labelledby', 'fdqr-access-title');
 
+    const identity = document.createElement('section');
+    identity.className = 'fdqr-identity';
+    const brand = document.createElement('div');
+    brand.className = 'fdqr-identity-brand';
+    const logo = document.createElement('img');
+    logo.src = '/faderdeck-icon.png';
+    logo.alt = '';
+    const brandName = document.createElement('span');
+    brandName.textContent = 'FaderDeck';
+    brand.append(logo, brandName);
+    const kicker = document.createElement('p');
+    kicker.className = 'fdqr-identity-kicker';
+    kicker.textContent = 'FADERDECK / DESKTOP';
+    const identityTitle = document.createElement('h1');
+    identityTitle.append('Seu controlador.', document.createElement('br'), 'Sua licença.');
+    const identityDescription = document.createElement('p');
+    identityDescription.className = 'fdqr-identity-description';
+    identityDescription.textContent =
+      '7 dias grátis no cadastro. Gerencie sua licença com segurança pela sua conta.';
+    const identityContent = document.createElement('div');
+    identityContent.append(brand, kicker, identityTitle, identityDescription);
+    const securityPill = document.createElement('div');
+    securityPill.className = 'fdqr-security-pill';
+    const securityDot = document.createElement('span');
+    securityDot.className = 'fdqr-security-dot';
+    securityDot.setAttribute('aria-hidden', 'true');
+    const securityText = document.createElement('span');
+    securityText.textContent = 'SESSÃO PROTEGIDA PELO SISTEMA';
+    securityPill.append(securityDot, securityText);
+    identity.append(identityContent, securityPill);
+    card.appendChild(identity);
+
+    const accountPanel = document.createElement('section');
+    accountPanel.className = 'fdqr-account-panel';
+    const heading = document.createElement('header');
+    heading.className = 'fdqr-account-heading';
     const title = document.createElement('h2');
     title.id = 'fdqr-access-title';
-    title.textContent = 'Acesso e Licenciamento';
-    card.appendChild(title);
-
     const accountMessage = document.createElement('p');
     accountMessage.className = 'fdqr-sub';
-    accountMessage.textContent = status?.session?.authenticated
-      ? `Conta: ${status.session.email || ''}`
-      : 'Entre na sua conta para ativar o FaderDeck.';
-    card.appendChild(accountMessage);
+    const authenticated = status?.session?.authenticated === true;
+    title.textContent = authenticated ? 'Sua conta FaderDeck' : '';
+    accountMessage.textContent = authenticated ? `Conta: ${status.session.email || ''}` : '';
+    heading.append(title, accountMessage);
+    accountPanel.appendChild(heading);
 
     const message = document.createElement('p');
     message.className = `fdqr-access-message${errorMessage ? ' fdqr-access-error' : ''}`;
     message.setAttribute('role', 'status');
+    message.setAttribute('aria-live', 'polite');
     message.textContent =
       errorMessage ||
       (status?.supabase_configured === false
@@ -197,60 +285,260 @@
               ? status.trial_available
                 ? 'Sua conta pode iniciar o teste grátis de 7 dias.'
                 : 'Seu acesso expirou. Adquira uma licença para continuar.'
-              : 'Entre na sua conta para ativar o FaderDeck.');
-    card.appendChild(message);
+              : '');
+    message.hidden = !message.textContent;
+    accountPanel.appendChild(message);
 
     if (!status?.session?.authenticated) {
+      let authMode = 'login';
+      const authSwitch = document.createElement('div');
+      authSwitch.className = 'fdqr-auth-switch';
+      authSwitch.setAttribute('role', 'tablist');
+      authSwitch.setAttribute('aria-label', 'Acesso à conta');
+      const loginTab = document.createElement('button');
+      loginTab.className = 'fdqr-auth-tab';
+      loginTab.type = 'button';
+      loginTab.setAttribute('role', 'tab');
+      loginTab.textContent = 'Entrar';
+      const signupTab = document.createElement('button');
+      signupTab.className = 'fdqr-auth-tab';
+      signupTab.type = 'button';
+      signupTab.setAttribute('role', 'tab');
+      signupTab.textContent = 'Criar conta';
+      authSwitch.append(loginTab, signupTab);
+      accountPanel.appendChild(authSwitch);
+
       const form = document.createElement('form');
+      form.className = 'fdqr-auth-form';
+      form.id = 'fdqr-account-form';
       const emailLabel = document.createElement('label');
-      emailLabel.textContent = 'E-mail';
+      emailLabel.htmlFor = 'fdqr-account-email';
+      emailLabel.textContent = 'E-MAIL';
       const email = document.createElement('input');
+      email.id = 'fdqr-account-email';
       email.type = 'email';
       email.name = 'email';
       email.autocomplete = 'username';
       email.required = true;
-      emailLabel.appendChild(email);
+      emailLabel.append(email);
 
       const passwordLabel = document.createElement('label');
-      passwordLabel.textContent = 'Senha';
+      passwordLabel.htmlFor = 'fdqr-account-password';
+      passwordLabel.textContent = 'SENHA';
+      const passwordWrap = document.createElement('div');
+      passwordWrap.className = 'fdqr-password-wrap';
       const password = document.createElement('input');
+      password.id = 'fdqr-account-password';
       password.type = 'password';
       password.name = 'password';
       password.autocomplete = 'current-password';
       password.required = true;
-      passwordLabel.appendChild(password);
+      passwordWrap.appendChild(password);
+      const passwordToggle = document.createElement('button');
+      passwordToggle.className = 'fdqr-password-toggle';
+      passwordToggle.type = 'button';
+      passwordToggle.textContent = 'Mostrar';
+      passwordToggle.setAttribute('aria-controls', password.id);
+      passwordToggle.setAttribute('aria-pressed', 'false');
+      passwordToggle.setAttribute('aria-label', 'Mostrar senha');
+      passwordToggle.addEventListener('click', () => {
+        const visible = password.type === 'password';
+        password.type = visible ? 'text' : 'password';
+        passwordToggle.textContent = visible ? 'Ocultar' : 'Mostrar';
+        passwordToggle.setAttribute('aria-pressed', String(visible));
+        passwordToggle.setAttribute('aria-label', visible ? 'Ocultar senha' : 'Mostrar senha');
+      });
+      passwordWrap.appendChild(passwordToggle);
+      passwordLabel.append(passwordWrap);
+
+      const confirmLabel = document.createElement('label');
+      confirmLabel.htmlFor = 'fdqr-account-password-confirm';
+      confirmLabel.textContent = 'CONFIRMAR SENHA';
+      const confirmPassword = document.createElement('input');
+      confirmPassword.id = 'fdqr-account-password-confirm';
+      confirmPassword.type = 'password';
+      confirmPassword.name = 'password-confirm';
+      confirmPassword.autocomplete = 'new-password';
+      confirmLabel.append(confirmPassword);
+
+      const rememberLabel = document.createElement('label');
+      rememberLabel.className = 'fdqr-remember';
+      const remember = document.createElement('input');
+      remember.type = 'checkbox';
+      remember.checked = true;
+      const rememberText = document.createElement('span');
+      rememberText.textContent = 'Manter conectado neste computador';
+      rememberLabel.append(remember, rememberText);
 
       const login = document.createElement('button');
       login.className = 'fdqr-act';
       login.type = 'submit';
-      login.textContent = 'Entrar';
-      form.append(emailLabel, passwordLabel, login);
+      const resetLink = document.createElement('button');
+      resetLink.className = 'fdqr-reset-link';
+      resetLink.type = 'button';
+      resetLink.textContent = 'Esqueci minha senha';
+      const signupFooter = document.createElement('button');
+      signupFooter.className = 'fdqr-reset-link';
+      signupFooter.type = 'button';
+      signupFooter.textContent = 'Já tenho conta · Entrar';
+      const resetFooter = document.createElement('button');
+      resetFooter.className = 'fdqr-reset-link';
+      resetFooter.type = 'button';
+      resetFooter.textContent = 'Voltar para o login';
+
+      function updateAuthMode({ clearMessage = true } = {}) {
+        const signingUp = authMode === 'signup';
+        const resetting = authMode === 'reset';
+        loginTab.classList.toggle('active', !signingUp && !resetting);
+        loginTab.setAttribute('aria-selected', String(!signingUp && !resetting));
+        signupTab.classList.toggle('active', signingUp);
+        signupTab.setAttribute('aria-selected', String(signingUp));
+        authSwitch.hidden = resetting;
+        title.textContent = signingUp
+          ? 'Criar sua conta'
+          : resetting
+            ? 'Recuperar acesso'
+            : 'Bem-vindo de volta';
+        accountMessage.textContent = signingUp
+          ? 'Cadastre-se para liberar seu teste grátis de 7 dias.'
+          : resetting
+            ? 'Informe o e-mail da sua conta para receber o link de redefinição.'
+            : 'Entre com o e-mail da sua conta para ativar o FaderDeck.';
+        passwordLabel.hidden = resetting;
+        password.required = !resetting;
+        password.minLength = signingUp ? 8 : 0;
+        password.autocomplete = signingUp ? 'new-password' : 'current-password';
+        confirmLabel.hidden = !signingUp;
+        confirmPassword.required = signingUp;
+        rememberLabel.hidden = !(!signingUp && !resetting);
+        resetLink.hidden = !(!signingUp && !resetting);
+        signupFooter.hidden = !signingUp;
+        resetFooter.hidden = !resetting;
+        login.textContent = signingUp
+          ? 'Criar conta e testar grátis'
+          : resetting
+            ? 'Enviar link de redefinição'
+            : 'Entrar no FaderDeck';
+        login.disabled = false;
+        if (clearMessage) {
+          message.textContent = '';
+          message.hidden = true;
+          message.classList.remove('fdqr-access-error');
+          message.classList.add('fdqr-access-success');
+        }
+        password.type = 'password';
+        passwordToggle.textContent = 'Mostrar';
+        passwordToggle.setAttribute('aria-pressed', 'false');
+        passwordToggle.setAttribute('aria-label', 'Mostrar senha');
+        password.value = '';
+        confirmPassword.value = '';
+        confirmPassword.setCustomValidity('');
+      }
+      loginTab.addEventListener('click', () => {
+        authMode = 'login';
+        updateAuthMode();
+      });
+      signupTab.addEventListener('click', () => {
+        authMode = 'signup';
+        updateAuthMode();
+      });
+      resetLink.addEventListener('click', () => {
+        authMode = 'reset';
+        updateAuthMode();
+        email.focus();
+      });
+      signupFooter.addEventListener('click', () => {
+        authMode = 'login';
+        updateAuthMode();
+      });
+      resetFooter.addEventListener('click', () => {
+        authMode = 'login';
+        updateAuthMode();
+      });
+      updateAuthMode({ clearMessage: false });
+      form.append(emailLabel, passwordLabel, confirmLabel, rememberLabel, login);
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
-        login.disabled = true;
-        message.textContent = 'Entrando…';
+        const signingUp = authMode === 'signup';
+        const resetting = authMode === 'reset';
+        message.textContent = '';
+        message.hidden = true;
         message.classList.remove('fdqr-access-error');
+        message.classList.add('fdqr-access-success');
+        if (signingUp && password.value !== confirmPassword.value) {
+          confirmPassword.setCustomValidity('As senhas não coincidem.');
+          confirmPassword.reportValidity();
+          message.textContent = 'As senhas não coincidem.';
+          message.classList.remove('fdqr-access-success');
+          message.classList.add('fdqr-access-error');
+          message.hidden = false;
+          return;
+        }
+        confirmPassword.setCustomValidity('');
+        login.disabled = true;
+        message.textContent = resetting ? 'Enviando…' : signingUp ? 'Criando conta…' : 'Entrando…';
         try {
-          const nextStatus = await requestJson('/api/account/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email.value.trim(), password: password.value }),
-          });
+          if (resetting) {
+            await requestJson('/api/account/reset-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: email.value.trim() }),
+            });
+            message.textContent =
+              'Enviamos um link para o seu e-mail. Verifique sua caixa de entrada (e spam) para continuar.';
+            login.disabled = false;
+            return;
+          }
+
+          const accountStatus = await requestJson(
+            signingUp ? '/api/account/signup' : '/api/account/login',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: email.value.trim(), password: password.value }),
+            },
+          );
           password.value = '';
-          setAccountStatus(nextStatus);
-          if (nextStatus.entitlement?.allowed === true) {
+          setAccountStatus(accountStatus);
+          if (signingUp && accountStatus.confirmation_required) {
+            authMode = 'login';
+            updateAuthMode({ clearMessage: false });
+            message.textContent =
+              'Enviamos um link para o seu e-mail. Verifique sua caixa de entrada (e spam) para continuar.';
+            message.hidden = false;
+            return;
+          }
+          if (accountStatus.entitlement?.allowed === true) {
             close();
             await open();
           } else {
-            showAccess(nextStatus);
+            showAccess(accountStatus);
           }
         } catch (error) {
+          if (signingUp) {
+            const latestStatus = await getAccountStatus(true);
+            if (latestStatus?.session?.authenticated) {
+              setAccountStatus(latestStatus);
+              showAccess(latestStatus, error.message);
+              return;
+            }
+          }
           message.textContent = error.message;
           message.classList.add('fdqr-access-error');
+          message.classList.remove('fdqr-access-success');
+          message.hidden = false;
           login.disabled = false;
         }
       });
-      card.appendChild(form);
+      const footer = document.createElement('div');
+      footer.className = 'fdqr-access-footer';
+      const purchaseLink = document.createElement('a');
+      purchaseLink.href = 'https://fader-deck.vercel.app/';
+      purchaseLink.target = '_blank';
+      purchaseLink.rel = 'noopener noreferrer';
+      purchaseLink.textContent = 'Comprar uma licença';
+      footer.append(resetLink, purchaseLink);
+      accountPanel.append(authSwitch, form, footer, signupFooter, resetFooter);
     }
 
     if (status?.session?.authenticated && status.trial_available) {
@@ -261,7 +549,9 @@
       startTrial.addEventListener('click', async () => {
         startTrial.disabled = true;
         message.textContent = 'Iniciando o teste grátis…';
+        message.hidden = false;
         message.classList.remove('fdqr-access-error');
+        message.classList.add('fdqr-access-success');
         try {
           const nextStatus = await requestJson('/api/account/trial/start', { method: 'POST' });
           setAccountStatus(nextStatus);
@@ -274,10 +564,12 @@
         } catch (error) {
           message.textContent = error.message;
           message.classList.add('fdqr-access-error');
+          message.classList.remove('fdqr-access-success');
           startTrial.disabled = false;
         }
       });
-      card.appendChild(startTrial);
+      startTrial.classList.add('fdqr-account-action');
+      accountPanel.appendChild(startTrial);
     }
 
     if (
@@ -293,7 +585,30 @@
       const row = document.createElement('div');
       row.className = 'fdqr-btnrow';
       row.appendChild(purchase);
-      card.appendChild(row);
+      accountPanel.appendChild(row);
+    }
+
+    if (status?.session?.authenticated) {
+      const switchAccount = document.createElement('button');
+      switchAccount.className = 'fdqr-reset-link';
+      switchAccount.type = 'button';
+      switchAccount.textContent = 'Trocar de conta';
+      switchAccount.addEventListener('click', async () => {
+        switchAccount.disabled = true;
+        message.textContent = 'Encerrando sessão…';
+        message.hidden = false;
+        try {
+          const nextStatus = await requestJson('/api/account/logout', { method: 'POST' });
+          setAccountStatus(nextStatus);
+          showAccess(nextStatus);
+        } catch (error) {
+          message.textContent = error.message;
+          message.classList.add('fdqr-access-error');
+          message.classList.remove('fdqr-access-success');
+          switchAccount.disabled = false;
+        }
+      });
+      accountPanel.appendChild(switchAccount);
     }
 
     if (status?.entitlement?.allowed === true) {
@@ -305,9 +620,10 @@
         close();
         await open();
       });
-      card.appendChild(continueButton);
+      accountPanel.appendChild(continueButton);
     }
 
+    card.appendChild(accountPanel);
     modal.appendChild(card);
     document.body.appendChild(modal);
     document.addEventListener('keydown', onKey, true);
@@ -402,7 +718,8 @@
         modal.querySelector('.fdqr-note').innerHTML =
           '<strong>IPs deste computador:</strong> ' +
           esc(ips) +
-          '<br><strong>Não abre no celular?</strong> Confira o mesmo Wi-Fi e permita conexões de entrada para o FaderDeck em Ajustes do Sistema → Rede → Firewall.';
+          '<br><strong>Não abre no celular?</strong> Confira o mesmo Wi-Fi e permita conexões de entrada para o FaderDeck em Ajustes do Sistema → Rede → Firewall.' +
+          '<span class="fdqr-cert-hint">Aviso no navegador (&#39;Conexão não é privada&#39;)? Toque em Mostrar Detalhes → Visitar este site (iPhone/Safari) ou Avançado → Ir para o endereço (Android/Chrome).</span>';
       } catch {
         modal.querySelector('.fdqr-qr').textContent =
           'Não foi possível carregar o QR. Verifique a conexão com a ponte e tente novamente.';

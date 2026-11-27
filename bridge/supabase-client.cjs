@@ -114,6 +114,23 @@ async function signInWithEmailAndPassword(email, password) {
   return data;
 }
 
+async function signUpWithEmailAndPassword(email, password) {
+  const { data, error } = await requireSupabaseClient().auth.signUp({
+    email,
+    password,
+  });
+  if (error) throw error;
+  return data;
+}
+
+async function resetPasswordForEmail(email) {
+  const { data, error } = await requireSupabaseClient().auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://fader-deck.vercel.app/',
+  });
+  if (error) throw error;
+  return data;
+}
+
 async function signOut() {
   const { error } = await requireSupabaseClient().auth.signOut({ scope: 'local' });
   if (error) throw error;
@@ -141,6 +158,8 @@ module.exports = {
   invokeEdgeFunction,
   isSupabaseConfigured,
   loadPublicSupabaseEnv,
+  resetPasswordForEmail,
   signInWithEmailAndPassword,
+  signUpWithEmailAndPassword,
   signOut,
 };

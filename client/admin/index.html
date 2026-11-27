@@ -3,48 +3,68 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <meta name="theme-color" content="#111416" />
-    <title>FaderDeck · Ponte local</title>
+    <meta name="theme-color" content="#0b0d10" />
+    <title>FaderDeck — Acesso</title>
     <link rel="stylesheet" href="/update-modal.css?v=1" />
-    <link rel="stylesheet" href="/admin/bridge.css?v=commercial-1" />
+    <link rel="stylesheet" href="/admin/bridge.css?v=commercial-4" />
   </head>
   <body>
-    <main class="wrap">
-      <header class="top">
-        <div class="mark" aria-hidden="true">≋</div>
-        <div>
-          <strong>FADER<span>DECK</span></strong
-          ><small>PONTE MIDI LOCAL</small>
-        </div>
-      </header>
-      <div class="layout">
-        <section class="card">
-          <div class="pill"><i class="dot"></i> PONTE ATIVA</div>
-          <h1>Conecte a DAW</h1>
-          <p>
-            Escolha a porta MIDI virtual que a DAW recebe. No Windows, use loopMIDI; no macOS, a
-            ponte cria a porta virtual FaderDeck automaticamente.
+    <header class="window-header">
+      <img src="/faderdeck-icon.png" alt="" />
+      <span>FaderDeck — Acesso</span>
+    </header>
+    <main class="access-shell">
+      <section class="identity-panel" aria-labelledby="identity-title">
+        <div class="identity-content">
+          <div class="identity-brand">
+            <img src="/faderdeck-icon.png" alt="FaderDeck" />
+            <span>FaderDeck</span>
+          </div>
+          <p class="identity-kicker">FADERDECK / DESKTOP</p>
+          <h1 id="identity-title">Seu controlador.<br />Sua licença.</h1>
+          <p class="identity-description">
+            7 dias grátis no cadastro. Gerencie sua licença com segurança pela sua conta.
           </p>
-          <section class="account-panel" aria-labelledby="account-title">
-            <div class="account-heading">
-              <div>
-                <h2 id="account-title">Conta e licença</h2>
-                <p id="account-email" class="account-email" hidden></p>
-              </div>
-              <span id="account-state" class="account-state" data-state="unknown" role="status"
-                >Carregando…</span
-              >
-            </div>
-            <form id="account-login" class="account-login">
-              <label class="label" for="account-login-email">E-mail</label>
-              <input
-                id="account-login-email"
-                name="email"
-                type="email"
-                autocomplete="username"
-                required
-              />
-              <label class="label" for="account-login-password">Senha</label>
+        </div>
+        <div class="security-pill">
+          <i class="security-dot" aria-hidden="true"></i>
+          <span>SESSÃO PROTEGIDA PELO SISTEMA</span>
+        </div>
+      </section>
+
+      <section class="access-card" aria-labelledby="account-title">
+        <header class="account-heading">
+          <div class="account-heading-copy">
+            <h2 id="account-title">Bem-vindo de volta</h2>
+            <p id="account-description">Entre com o e-mail da sua conta para ativar o FaderDeck.</p>
+          </div>
+          <span id="account-state" class="account-state" data-state="unknown" role="status">
+            Carregando…
+          </span>
+        </header>
+        <p id="account-email" class="account-email" hidden></p>
+        <p
+          id="account-feedback-banner"
+          class="account-feedback-banner"
+          data-state="success"
+          role="status"
+          aria-live="polite"
+          hidden
+        ></p>
+        <form id="account-login" class="account-login">
+          <div class="account-field">
+            <label for="account-login-email">E-MAIL</label>
+            <input
+              id="account-login-email"
+              name="email"
+              type="email"
+              autocomplete="username"
+              required
+            />
+          </div>
+          <div id="account-password-wrap" class="account-field">
+            <label for="account-login-password">SENHA</label>
+            <div class="password-input-wrap">
               <input
                 id="account-login-password"
                 name="password"
@@ -52,26 +72,102 @@
                 autocomplete="current-password"
                 required
               />
-              <button id="account-login-submit" class="full" type="submit">Entrar</button>
-            </form>
-            <div id="account-actions" class="row account-actions" hidden>
-              <button id="account-trial-start" type="button" hidden>
-                Iniciar teste gratuito de 7 dias
+              <button
+                id="account-password-toggle"
+                class="password-visibility"
+                type="button"
+                data-password-toggle="account-login-password"
+                aria-controls="account-login-password"
+                aria-pressed="false"
+                aria-label="Mostrar senha"
+              >
+                Mostrar
               </button>
-              <button id="account-logout" class="secondary" type="button" hidden>Sair</button>
+            </div>
+          </div>
+          <div id="account-password-confirm-wrap" class="account-field" hidden>
+            <label for="account-password-confirm">CONFIRMAR SENHA</label>
+            <input
+              id="account-password-confirm"
+              name="password-confirm"
+              type="password"
+              autocomplete="new-password"
+            />
+          </div>
+          <label id="account-remember-wrap" class="remember-toggle">
+            <input id="account-remember" type="checkbox" checked />
+            <span class="remember-track" aria-hidden="true"></span>
+            <span>Manter conectado neste computador</span>
+          </label>
+          <button id="account-login-submit" class="account-submit" type="submit">
+            Entrar no FaderDeck
+          </button>
+        </form>
+
+        <nav id="account-auth-footer" class="account-auth-footer" aria-label="Opções de conta">
+          <div id="account-login-footer" class="account-footer-row">
+            <button id="account-forgot-password" class="account-link" type="button">
+              Esqueci minha senha
+            </button>
+            <div class="account-footer-right">
+              <button id="account-mode-signup" class="account-link" type="button">
+                Criar conta
+              </button>
               <a
-                id="account-license-link"
-                class="account-license-link"
+                id="account-buy-license"
+                class="account-link"
                 href="https://fader-deck.vercel.app/"
                 target="_blank"
                 rel="noopener noreferrer"
-                hidden
-                >Adquirir licença</a
               >
+                Comprar uma licença
+              </a>
             </div>
-            <p id="account-gate-message" class="account-gate-message" hidden></p>
-            <p id="account-message" class="account-message" role="status" aria-live="polite"></p>
-          </section>
+          </div>
+          <div id="account-signup-footer" class="account-footer-row" hidden>
+            <span>Já tenho conta ·</span>
+            <button id="account-mode-login" class="account-link" type="button">Entrar</button>
+          </div>
+          <div id="account-reset-footer" class="account-footer-row" hidden>
+            <button id="account-reset-back" class="account-link" type="button">
+              Voltar para o login
+            </button>
+          </div>
+        </nav>
+
+        <div id="account-actions" class="account-actions" hidden>
+          <button id="account-trial-start" class="account-submit" type="button" hidden>
+            Iniciar teste grátis de 7 dias
+          </button>
+          <a
+            id="account-license-link"
+            class="account-submit account-license-link"
+            href="https://fader-deck.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            hidden
+          >
+            Adquirir licença permanente
+          </a>
+          <button id="account-logout" class="account-link account-change-user" type="button" hidden>
+            Trocar de conta
+          </button>
+        </div>
+        <p id="account-gate-message" class="account-gate-message" hidden></p>
+        <p id="account-message" class="account-message" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <details class="bridge-tools">
+      <summary>Configuração da ponte MIDI e conexão com celular</summary>
+      <div class="layout">
+        <section class="card">
+          <div class="pill"><i class="dot"></i> PONTE ATIVA</div>
+          <h2>Conecte a DAW</h2>
+          <p>
+            Escolha a porta MIDI virtual que a DAW recebe. No Windows, use loopMIDI; no macOS, a
+            ponte cria a porta virtual FaderDeck automaticamente.
+          </p>
           <label class="label" for="output">Saída MIDI para a DAW</label>
           <select id="output"></select>
           <label class="label" for="input">Entrada MIDI para MIDI Learn (opcional)</label>
@@ -123,8 +219,8 @@
           </div>
         </section>
       </div>
-    </main>
+    </details>
     <script src="/update-modal.js?v=1" defer></script>
-    <script src="/admin/bridge.js?v=commercial-1" defer></script>
+    <script src="/admin/bridge.js?v=commercial-4" defer></script>
   </body>
 </html>
