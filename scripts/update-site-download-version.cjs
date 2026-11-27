@@ -85,6 +85,10 @@ function updateSiteDownloadVersion(docsDirectory, tag) {
     /Mac Intel · \d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)? · DMG/g,
     `Mac Intel · ${version} · DMG`,
   );
+  updated.readme = updated.readme.replace(
+    /Os links atuais permanecem fixos em `\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?`/g,
+    `Os links atuais permanecem fixos em \`${version}\``,
+  );
 
   for (const [key, filePath] of Object.entries(files)) {
     if (updated[key] !== original[key]) fs.writeFileSync(filePath, updated[key], 'utf8');

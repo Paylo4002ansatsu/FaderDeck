@@ -11,9 +11,13 @@ const rootReadme = fs.readFileSync(path.join(__dirname, '../README.md'), 'utf8')
 
 const appSource = fs.readFileSync(path.join(__dirname, '../docs/app.js'), 'utf8');
 const siteStyles = fs.readFileSync(path.join(__dirname, '../docs/styles.css'), 'utf8');
-const WINDOWS_URL = `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/${appVersion}/FaderDeck-Windows-Setup.exe`;
-const MACOS_URL = `https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/${appVersion}/FaderDeck-Mac.dmg`;
 const landingHtml = fs.readFileSync(path.join(__dirname, '../docs/index.html'), 'utf8');
+const WINDOWS_URL = landingHtml.match(
+  /https:\/\/github\.com\/Paylo4002ansatsu\/FaderDeck\/releases\/download\/[^/]+\/FaderDeck-Windows-Setup\.exe/,
+)?.[0];
+const MACOS_URL = landingHtml.match(
+  /https:\/\/github\.com\/Paylo4002ansatsu\/FaderDeck\/releases\/download\/[^/]+\/FaderDeck-Mac\.dmg/,
+)?.[0];
 
 test('README links to the current release and Vercel site', () => {
   assert.ok(rootReadme.includes(`**Versão atual:** ${appVersion}`));

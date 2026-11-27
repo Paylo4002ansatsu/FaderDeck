@@ -30,7 +30,7 @@ function createDocsFixture() {
   );
   fs.writeFileSync(
     path.join(directory, 'README.md'),
-    `Windows: ${WINDOWS_100}\nmacOS: ${MACOS_101}\n`,
+    `Os links atuais permanecem fixos em \`1.0.0\`\nWindows: ${WINDOWS_100}\nmacOS: ${MACOS_101}\n`,
     'utf8',
   );
   return directory;
@@ -61,6 +61,7 @@ test('updates both platform links and the Windows label to one numeric tag', (t)
   assert.equal((files['app.js'].match(new RegExp(MACOS_120, 'g')) || []).length, 1);
   assert.ok(files['README.md'].includes(WINDOWS_120));
   assert.ok(files['README.md'].includes(MACOS_120));
+  assert.match(files['README.md'], /Os links atuais permanecem fixos em `1\.2\.0`/);
   for (const text of Object.values(files)) {
     assert.doesNotMatch(text, /releases\/download\/v1\.2\.0\//);
   }

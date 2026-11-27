@@ -49,6 +49,9 @@ test('tagged release publishes both platforms before updating site links', () =>
   assert.match(workflow, /does not match package\.json version/);
   assert.match(workflow, /runner: windows-latest/);
   assert.match(workflow, /runner: macos-latest/);
+  assert.match(workflow, /platform: macOS Monterey Intel/);
+  assert.match(workflow, /--config\.electronVersion=43\.8\.12/);
+  assert.match(workflow, /--config\.mac\.minimumSystemVersion=12\.0\.0/);
   const releaseJob = workflow.split('publish-release:')[1]?.split('update-site-download:')[0];
   assert.ok(releaseJob, 'publish-release job exists');
   assert.match(releaseJob, /needs: build/);
@@ -59,6 +62,7 @@ test('tagged release publishes both platforms before updating site links', () =>
   assert.match(releaseJob, /release-assets\/\*\.exe/);
   assert.match(releaseJob, /release-assets\/\*\.dmg/);
   assert.match(releaseJob, /release-assets\/\*\.zip/);
+  assert.match(releaseJob, /test -s release-assets\/FaderDeck-Mac-Monterey-Intel\.dmg/);
   const siteJob = workflow.split('update-site-download:')[1];
   assert.ok(siteJob, 'update-site-download job exists');
   assert.match(siteJob, /needs: publish-release/);

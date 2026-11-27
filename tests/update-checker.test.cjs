@@ -12,6 +12,10 @@ const {
 } = require('../bridge/update-checker.cjs');
 
 const RELEASES_API_URL = 'https://api.github.com/repos/Paylo4002ansatsu/FaderDeck/releases/latest';
+const fixtureDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'faderdeck-update-fixture-'));
+const fixturePackage = path.join(fixtureDirectory, 'package.json');
+fs.writeFileSync(fixturePackage, JSON.stringify({ version: '1.0.4' }));
+test.after(() => fs.rmSync(fixtureDirectory, { recursive: true, force: true }));
 
 function response(release) {
   return {
@@ -24,7 +28,7 @@ function response(release) {
 
 function makeChecker({ platform = 'darwin', release, fetchImpl, timeoutMs = 4000 } = {}) {
   return createUpdateChecker({
-    packageJsonPath: path.join(__dirname, '..', 'package.json'),
+    packageJsonPath: fixturePackage,
     platform,
     timeoutMs,
     cacheTtlMs: 0,
@@ -174,7 +178,12 @@ test('fails safely and silently when GitHub is offline or the request times out'
         signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
       }),
   });
-  const timeoutResult = await timeoutChecker.checkForUpdate();
-  assert.equal(timeoutResult.updateAvailable, false);
-  assert.equal(timeoutResult.downloadUrl, null);
+  const keepAlive = setTimeout(() => {}, 1000);
+  try {
+    const timeoutResult = await timeoutChecker.checkForUpdate();
+    assert.equal(timeoutResult.updateAvailable, false);
+    assert.equal(timeoutResult.downloadUrl, null);
+  } finally {
+    clearTimeout(keepAlive);
+  }
 });
