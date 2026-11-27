@@ -6,9 +6,12 @@ const path = require('node:path');
 
 const EDGE_FUNCTIONS = new Set(['trial-start', 'trial-status', 'license-validate']);
 const PUBLIC_ENV_KEYS = ['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY'];
+const AUTH_REDIRECT_URL = 'https://fader-deck.vercel.app';
 let client;
 let clientUrl;
 let clientKey;
+let recoveryClient;
+let recoveryVerified = false;
 
 function parseEnvValue(rawValue) {
   const value = rawValue.trim();
@@ -118,17 +121,56 @@ async function signUpWithEmailAndPassword(email, password) {
   const { data, error } = await requireSupabaseClient().auth.signUp({
     email,
     password,
+    options: { emailRedirectTo: AUTH_REDIRECT_URL },
   });
   if (error) throw error;
   return data;
 }
 
 async function resetPasswordForEmail(email) {
-  const { data, error } = await requireSupabaseClient().auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://fader-deck.vercel.app/',
-  });
+  const { data, error } = await requireSupabaseClient().auth.resetPasswordForEmail(email);
   if (error) throw error;
   return data;
+}
+
+async function verifyOtp({ email, token, type = 'recovery' }) {
+  const configuredClient = requireSupabaseClient();
+  recoveryVerified = false;
+  recoveryClient = createClient(configuredClient.supabaseUrl, configuredClient.supabaseKey, {
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: true,
+      storage: createMemoryStorage(),
+    },
+  });
+  const { data, error } = await recoveryClient.auth.verifyOtp({
+    email,
+    token,
+    type,
+  });
+  if (error) throw error;
+  if (!data.session) throw new Error('A verificação não retornou uma sessão de recuperação.');
+  recoveryVerified = true;
+  return data;
+}
+
+async function updateUser({ password }) {
+  if (!recoveryVerified || !recoveryClient) {
+    throw new Error('Valide um código de recuperação antes de alterar a senha.');
+  }
+  const { data, error } = await recoveryClient.auth.updateUser({ password });
+  if (error) throw error;
+  return data;
+}
+
+async function signOutRecovery() {
+  if (!recoveryClient) return;
+  const currentClient = recoveryClient;
+  recoveryVerified = false;
+  recoveryClient = null;
+  const { error } = await currentClient.auth.signOut({ scope: 'local' });
+  if (error) throw error;
 }
 
 async function signOut() {
@@ -162,4 +204,7 @@ module.exports = {
   signInWithEmailAndPassword,
   signUpWithEmailAndPassword,
   signOut,
+  signOutRecovery,
+  updateUser,
+  verifyOtp,
 };

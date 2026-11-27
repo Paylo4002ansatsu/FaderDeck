@@ -7,10 +7,59 @@ const path = require('node:path');
 const test = require('node:test');
 const {
   getSupabaseClient,
+  getCurrentSession,
   loadPublicSupabaseEnv,
   resetPasswordForEmail,
   signUpWithEmailAndPassword,
+  signOutRecovery,
+  updateUser,
+  verifyOtp,
 } = require('../bridge/supabase-client.cjs');
+
+test('recovery session is isolated from the account session and required for password updates', async () => {
+  const originalUrl = process.env.SUPABASE_URL;
+  const originalKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+  const originalFetch = global.fetch;
+  process.env.SUPABASE_URL = 'https://recovery.example';
+  process.env.SUPABASE_PUBLISHABLE_KEY = 'publishable-key';
+  const calls = [];
+  global.fetch = async (input, options) => {
+    const url = new URL(input);
+    calls.push({ path: url.pathname, method: options.method });
+    const payload = url.pathname.endsWith('/verify')
+      ? {
+          access_token: 'recovery-token',
+          refresh_token: 'recovery-refresh',
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: { id: 'recovery-user', email: 'person@example.com' },
+        }
+      : { id: 'recovery-user', email: 'person@example.com' };
+    return new Response(JSON.stringify(payload), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+  try {
+    await assert.rejects(updateUser({ password: 'password123' }), /Valide um código/);
+    await verifyOtp({ email: 'person@example.com', token: '123456' });
+    assert.equal(await getCurrentSession(), null);
+    await updateUser({ password: 'password123' });
+    await signOutRecovery();
+    await assert.rejects(updateUser({ password: 'password123' }), /Valide um código/);
+    assert.deepEqual(calls, [
+      { path: '/auth/v1/verify', method: 'POST' },
+      { path: '/auth/v1/user', method: 'PUT' },
+      { path: '/auth/v1/logout', method: 'POST' },
+    ]);
+  } finally {
+    global.fetch = originalFetch;
+    if (originalUrl === undefined) delete process.env.SUPABASE_URL;
+    else process.env.SUPABASE_URL = originalUrl;
+    if (originalKey === undefined) delete process.env.SUPABASE_PUBLISHABLE_KEY;
+    else process.env.SUPABASE_PUBLISHABLE_KEY = originalKey;
+  }
+});
 
 test('signup and password reset call Supabase with the expected options', async () => {
   const originalUrl = process.env.SUPABASE_URL;
@@ -39,12 +88,10 @@ test('signup and password reset call Supabase with the expected options', async 
     assert.deepEqual(signupCredentials, {
       email: 'new@example.com',
       password: 'secure-password',
+      options: { emailRedirectTo: 'https://fader-deck.vercel.app' },
     });
     assert.equal(signup.session, null);
-    assert.deepEqual(resetArguments, [
-      'new@example.com',
-      { redirectTo: 'https://fader-deck.vercel.app/' },
-    ]);
+    assert.deepEqual(resetArguments, ['new@example.com']);
   } finally {
     auth.signUp = originalSignUp;
     auth.resetPasswordForEmail = originalResetPasswordForEmail;

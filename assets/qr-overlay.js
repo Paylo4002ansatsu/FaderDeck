@@ -153,6 +153,20 @@
     return data;
   }
 
+  function translateAccountError(message, isReset) {
+    if (!isReset) return message;
+    if (/rate limit|for security purposes/i.test(message)) {
+      return 'Aguarde 60 segundos antes de solicitar um novo código de recuperação.';
+    }
+    if (/error sending recovery email/i.test(message)) {
+      return 'Não foi possível enviar o e-mail de recuperação. Tente novamente mais tarde.';
+    }
+    if (/invalid email|email address.*invalid/i.test(message)) {
+      return 'O endereço de e-mail informado é inválido.';
+    }
+    return message;
+  }
+
   function accountStatusText(status) {
     if (!status?.session?.authenticated) return 'Não autenticado';
     const entitlement = status.entitlement || {};
@@ -291,6 +305,8 @@
 
     if (!status?.session?.authenticated) {
       let authMode = 'login';
+      let resetStep = 1;
+      let resetEmail = '';
       const authSwitch = document.createElement('div');
       authSwitch.className = 'fdqr-auth-switch';
       authSwitch.setAttribute('role', 'tablist');
@@ -361,6 +377,63 @@
       confirmPassword.autocomplete = 'new-password';
       confirmLabel.append(confirmPassword);
 
+      const codeLabel = document.createElement('label');
+      codeLabel.htmlFor = 'fdqr-reset-code';
+      codeLabel.textContent = 'CÓDIGO DE VERIFICAÇÃO';
+      const code = document.createElement('input');
+      code.id = 'fdqr-reset-code';
+      code.type = 'text';
+      code.inputMode = 'numeric';
+      code.autocomplete = 'one-time-code';
+      code.maxLength = 8;
+      code.pattern = '[0-9]{6,8}';
+      codeLabel.append(code);
+
+      function createResetPasswordField(id, labelText) {
+        const label = document.createElement('label');
+        label.htmlFor = id;
+        label.textContent = labelText;
+        const wrap = document.createElement('div');
+        wrap.className = 'fdqr-password-wrap';
+        const input = document.createElement('input');
+        input.id = id;
+        input.type = 'password';
+        input.autocomplete = 'new-password';
+        input.minLength = 8;
+        const toggle = document.createElement('button');
+        toggle.className = 'fdqr-password-toggle';
+        toggle.type = 'button';
+        toggle.textContent = 'Mostrar';
+        toggle.setAttribute('aria-controls', id);
+        toggle.setAttribute('aria-pressed', 'false');
+        toggle.setAttribute('aria-label', 'Mostrar senha');
+        toggle.addEventListener('click', () => {
+          const visible = input.type === 'password';
+          input.type = visible ? 'text' : 'password';
+          toggle.textContent = visible ? 'Ocultar' : 'Mostrar';
+          toggle.setAttribute('aria-pressed', String(visible));
+          toggle.setAttribute('aria-label', visible ? 'Ocultar senha' : 'Mostrar senha');
+        });
+        wrap.append(input, toggle);
+        label.append(wrap);
+        return { label, input };
+      }
+
+      const newPassword = createResetPasswordField('fdqr-reset-password', 'NOVA SENHA');
+      const newPasswordConfirm = createResetPasswordField(
+        'fdqr-reset-password-confirm',
+        'CONFIRMAR NOVA SENHA',
+      );
+      const resetActions = document.createElement('div');
+      resetActions.className = 'fdqr-access-footer';
+      const resend = document.createElement('button');
+      resend.type = 'button';
+      resend.textContent = 'Reenviar código';
+      const changeEmail = document.createElement('button');
+      changeEmail.type = 'button';
+      changeEmail.textContent = 'Alterar e-mail';
+      resetActions.append(resend, changeEmail);
+
       const rememberLabel = document.createElement('label');
       rememberLabel.className = 'fdqr-remember';
       const remember = document.createElement('input');
@@ -386,6 +459,13 @@
       resetFooter.type = 'button';
       resetFooter.textContent = 'Voltar para o login';
 
+      function setResetBusy(busy) {
+        login.disabled = busy;
+        resend.disabled = busy;
+        changeEmail.disabled = busy;
+        resetFooter.disabled = busy;
+      }
+
       function updateAuthMode({ clearMessage = true } = {}) {
         const signingUp = authMode === 'signup';
         const resetting = authMode === 'reset';
@@ -402,8 +482,15 @@
         accountMessage.textContent = signingUp
           ? 'Cadastre-se para liberar seu teste grátis de 7 dias.'
           : resetting
-            ? 'Informe o e-mail da sua conta para receber o link de redefinição.'
+            ? resetStep === 1
+              ? 'Informe o e-mail da sua conta.'
+              : resetStep === 2
+                ? 'Digite o código enviado para o seu e-mail.'
+                : 'Defina uma nova senha para sua conta.'
             : 'Entre com o e-mail da sua conta para ativar o FaderDeck.';
+        emailLabel.hidden = resetting && resetStep !== 1;
+        email.disabled = emailLabel.hidden;
+        email.required = !resetting || resetStep === 1;
         passwordLabel.hidden = resetting;
         password.required = !resetting;
         password.minLength = signingUp ? 8 : 0;
@@ -414,10 +501,24 @@
         resetLink.hidden = !(!signingUp && !resetting);
         signupFooter.hidden = !signingUp;
         resetFooter.hidden = !resetting;
+        codeLabel.hidden = !resetting || resetStep !== 2;
+        code.disabled = codeLabel.hidden;
+        code.required = resetting && resetStep === 2;
+        newPassword.label.hidden = !resetting || resetStep !== 3;
+        newPassword.input.disabled = newPassword.label.hidden;
+        newPassword.input.required = resetting && resetStep === 3;
+        newPasswordConfirm.label.hidden = !resetting || resetStep !== 3;
+        newPasswordConfirm.input.disabled = newPasswordConfirm.label.hidden;
+        newPasswordConfirm.input.required = resetting && resetStep === 3;
+        resetActions.hidden = !resetting || resetStep !== 2;
         login.textContent = signingUp
           ? 'Criar conta e testar grátis'
           : resetting
-            ? 'Enviar link de redefinição'
+            ? resetStep === 1
+              ? 'Enviar código de recuperação'
+              : resetStep === 2
+                ? 'Validar código'
+                : 'Salvar nova senha'
             : 'Entrar no FaderDeck';
         login.disabled = false;
         if (clearMessage) {
@@ -444,6 +545,11 @@
       });
       resetLink.addEventListener('click', () => {
         authMode = 'reset';
+        resetStep = 1;
+        resetEmail = '';
+        code.value = '';
+        newPassword.input.value = '';
+        newPasswordConfirm.input.value = '';
         updateAuthMode();
         email.focus();
       });
@@ -453,10 +559,50 @@
       });
       resetFooter.addEventListener('click', () => {
         authMode = 'login';
+        code.value = '';
+        newPassword.input.value = '';
+        newPasswordConfirm.input.value = '';
         updateAuthMode();
       });
+      changeEmail.addEventListener('click', () => {
+        resetStep = 1;
+        code.value = '';
+        updateAuthMode();
+        email.focus();
+      });
+      resend.addEventListener('click', async () => {
+        setResetBusy(true);
+        try {
+          await requestJson('/api/account/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: resetEmail }),
+          });
+          code.value = '';
+          message.textContent = `Código enviado para ${resetEmail}. Verifique sua caixa de entrada.`;
+          message.classList.remove('fdqr-access-error');
+          message.hidden = false;
+          code.focus();
+        } catch (error) {
+          message.textContent = translateAccountError(error.message, true);
+          message.classList.add('fdqr-access-error');
+          message.hidden = false;
+        } finally {
+          setResetBusy(false);
+        }
+      });
       updateAuthMode({ clearMessage: false });
-      form.append(emailLabel, passwordLabel, confirmLabel, rememberLabel, login);
+      form.append(
+        emailLabel,
+        passwordLabel,
+        confirmLabel,
+        rememberLabel,
+        codeLabel,
+        newPassword.label,
+        newPasswordConfirm.label,
+        login,
+        resetActions,
+      );
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         const signingUp = authMode === 'signup';
@@ -475,18 +621,72 @@
           return;
         }
         confirmPassword.setCustomValidity('');
+        if (resetting && resetStep === 2 && !/^\d{6,8}$/.test(code.value)) {
+          message.textContent = 'O código deve conter de 6 a 8 dígitos numéricos.';
+          message.classList.add('fdqr-access-error');
+          message.hidden = false;
+          return;
+        }
+        if (
+          resetting &&
+          resetStep === 3 &&
+          newPassword.input.value !== newPasswordConfirm.input.value
+        ) {
+          message.textContent = 'As senhas não coincidem.';
+          message.classList.add('fdqr-access-error');
+          message.hidden = false;
+          return;
+        }
         login.disabled = true;
-        message.textContent = resetting ? 'Enviando…' : signingUp ? 'Criando conta…' : 'Entrando…';
+        if (resetting) setResetBusy(true);
+        message.textContent = resetting
+          ? resetStep === 1
+            ? 'Enviando…'
+            : resetStep === 2
+              ? 'Validando…'
+              : 'Salvando…'
+          : signingUp
+            ? 'Criando conta…'
+            : 'Entrando…';
         try {
           if (resetting) {
-            await requestJson('/api/account/reset-password', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: email.value.trim() }),
-            });
-            message.textContent =
-              'Enviamos um link para o seu e-mail. Verifique sua caixa de entrada (e spam) para continuar.';
-            login.disabled = false;
+            if (resetStep === 1) {
+              const sentEmail = email.value.trim();
+              await requestJson('/api/account/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: sentEmail }),
+              });
+              resetEmail = sentEmail;
+              resetStep = 2;
+              updateAuthMode();
+              message.textContent = `Código enviado para ${resetEmail}. Verifique sua caixa de entrada.`;
+              message.hidden = false;
+              code.focus();
+            } else if (resetStep === 2) {
+              await requestJson('/api/account/reset-password/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: resetEmail, code: code.value }),
+              });
+              resetStep = 3;
+              code.value = '';
+              updateAuthMode();
+              newPassword.input.focus();
+            } else {
+              await requestJson('/api/account/reset-password/confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: newPassword.input.value }),
+              });
+              newPassword.input.value = '';
+              newPasswordConfirm.input.value = '';
+              authMode = 'login';
+              updateAuthMode();
+              message.textContent = 'Senha alterada com sucesso! Entre com sua nova senha.';
+              message.hidden = false;
+              password.focus();
+            }
             return;
           }
 
@@ -523,11 +723,13 @@
               return;
             }
           }
-          message.textContent = error.message;
+          message.textContent = translateAccountError(error.message, resetting);
           message.classList.add('fdqr-access-error');
           message.classList.remove('fdqr-access-success');
           message.hidden = false;
           login.disabled = false;
+        } finally {
+          if (resetting) setResetBusy(false);
         }
       });
       const footer = document.createElement('div');

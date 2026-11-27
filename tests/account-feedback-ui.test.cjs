@@ -18,7 +18,14 @@ test('account feedback banner displays the confirmation guidance prominently', (
   );
   assert.match(
     script,
-    /Enviamos um link para o seu e-mail\. Verifique sua caixa de entrada \(e spam\) para continuar\./,
+    /Enviamos um link de confirmação para o seu e-mail\. Verifique sua caixa de entrada e spam\./,
+  );
+  assert.match(script, /Aguarde 60 segundos antes de solicitar um novo código de recuperação\./);
+  assert.match(script, /\/rate limit\|for security purposes\/i\.test\(message\)/);
+  assert.match(script, /\/error sending recovery email\/i\.test\(message\)/);
+  assert.match(
+    script,
+    /Não foi possível enviar o e-mail de recuperação\. Tente novamente mais tarde\./,
   );
   assert.match(
     styles,
@@ -38,7 +45,7 @@ test('account feedback clears only on retries or a user-selected tab change', ()
   );
   assert.match(
     script,
-    /document\.querySelector\('#account-forgot-password'\)\.addEventListener\('click', async \(\) => {\s+setAccountMode\('reset', { clearFeedback: true }\)/,
+    /document\.querySelector\('#account-forgot-password'\)\.addEventListener\('click', async \(\) => {\s+resetFlowState\.step = 1;[\s\S]*?setAccountMode\('reset', { clearFeedback: true }\)/,
   );
   assert.match(
     script,
@@ -46,7 +53,7 @@ test('account feedback clears only on retries or a user-selected tab change', ()
   );
   assert.match(
     script,
-    /await requestJson\('\/api\/account\/reset-password'[\s\S]*?showAccountFeedbackBanner\(ACCOUNT_EMAIL_SENT_MESSAGE\)/,
+    /await requestJson\('\/api\/account\/reset-password'[\s\S]*?showAccountFeedbackBanner\(/,
   );
 });
 
@@ -82,8 +89,15 @@ test('Electron main-window access modal renders the redesigned account flows', (
   assert.match(desktopOverlay, /\/api\/account\/login/);
   assert.match(desktopOverlay, /\/api\/account\/signup/);
   assert.match(desktopOverlay, /\/api\/account\/reset-password/);
+  assert.match(desktopOverlay, /\/api\/account\/reset-password\/verify/);
+  assert.match(desktopOverlay, /\/api\/account\/reset-password\/confirm/);
   assert.match(desktopOverlay, /\/api\/account\/trial\/start/);
   assert.match(desktopOverlay, /Verifique sua caixa de entrada \(e spam\) para continuar\./);
+  assert.match(desktopOverlay, /\/error sending recovery email\/i\.test\(message\)/);
+  assert.match(
+    desktopOverlay,
+    /Não foi possível enviar o e-mail de recuperação\. Tente novamente mais tarde\./,
+  );
 });
 
 test('QR modal explains how to continue past the local HTTPS certificate warning', () => {

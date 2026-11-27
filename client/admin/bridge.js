@@ -8,10 +8,33 @@ const accountFeedbackBannerElement = document.querySelector('#account-feedback-b
 const accountTitleElement = document.querySelector('#account-title');
 const accountDescriptionElement = document.querySelector('#account-description');
 const ACCOUNT_EMAIL_SENT_MESSAGE =
-  'Enviamos um link para o seu e-mail. Verifique sua caixa de entrada (e spam) para continuar.';
+  'Enviamos um link de confirmação para o seu e-mail. Verifique sua caixa de entrada e spam.';
+const ACCOUNT_RESET_RATE_LIMIT_MESSAGE =
+  'Aguarde 60 segundos antes de solicitar um novo código de recuperação.';
+const ACCOUNT_RESET_SEND_ERROR_MESSAGE =
+  'Não foi possível enviar o e-mail de recuperação. Tente novamente mais tarde.';
 let token = '';
 let mobileUrl = '';
 let accountMode = 'login';
+let resetFlowState = {
+  step: null,
+  email: null,
+  code: null,
+};
+
+function translateAccountError(message, mode) {
+  if (mode !== 'reset') return message;
+  if (/rate limit|for security purposes/i.test(message)) {
+    return ACCOUNT_RESET_RATE_LIMIT_MESSAGE;
+  }
+  if (/error sending recovery email/i.test(message)) {
+    return ACCOUNT_RESET_SEND_ERROR_MESSAGE;
+  }
+  if (/invalid email|email address.*invalid/i.test(message)) {
+    return 'O endereço de e-mail informado é inválido.';
+  }
+  return message;
+}
 
 async function requestJson(url, options) {
   const response = await fetch(url, { cache: 'no-store', ...options });
@@ -167,6 +190,7 @@ function setAccountMode(mode, { clearFeedback = false } = {}) {
   const isLogin = mode === 'login';
   const isSignup = mode === 'signup';
   const isReset = mode === 'reset';
+
   document.querySelector('#account-password-wrap').hidden = isReset;
   document.querySelector('#account-login-password').required = !isReset;
   document.querySelector('#account-login-password').autocomplete = isLogin
@@ -178,6 +202,41 @@ function setAccountMode(mode, { clearFeedback = false } = {}) {
   document.querySelector('#account-login-footer').hidden = !isLogin;
   document.querySelector('#account-signup-footer').hidden = !isSignup;
   document.querySelector('#account-reset-footer').hidden = !isReset;
+
+  document.querySelector('#account-email-wrap').hidden = isReset && resetFlowState.step !== 1;
+  document.querySelector('#account-login-email').disabled = isReset && resetFlowState.step !== 1;
+  document.querySelector('#account-login-email').required = !isReset || resetFlowState.step === 1;
+  document.querySelector('#account-reset-verify-code').disabled =
+    !isReset || resetFlowState.step !== 2;
+  document.querySelector('#account-reset-verify-code').required =
+    isReset && resetFlowState.step === 2;
+  document.querySelector('#account-reset-new-password').disabled =
+    !isReset || resetFlowState.step !== 3;
+  document.querySelector('#account-reset-new-password').required =
+    isReset && resetFlowState.step === 3;
+  document.querySelector('#account-reset-confirm-password').disabled =
+    !isReset || resetFlowState.step !== 3;
+  document.querySelector('#account-reset-confirm-password').required =
+    isReset && resetFlowState.step === 3;
+  if (isReset) {
+    const step = resetFlowState.step || 1;
+    document.querySelector('#account-reset-verify-code-wrap').hidden = step !== 2;
+    document.querySelector('#account-reset-new-password-wrap').hidden = step !== 3;
+    document.querySelector('#account-reset-confirm-password-wrap').hidden = step !== 3;
+
+    document.querySelector('#account-reset-step-links').hidden = step === 1;
+    document.querySelector('#account-reset-verify-email-display').hidden = step !== 2;
+    document.querySelector('#account-reset-step2-resend').hidden = step !== 2;
+    document.querySelector('#account-reset-step2-change-email').hidden = step !== 2;
+    document.querySelector('#account-reset-step2-back').hidden = step !== 2;
+    document.querySelector('#account-reset-step3-back').hidden = step !== 3;
+  } else {
+    document.querySelector('#account-reset-verify-code-wrap').hidden = true;
+    document.querySelector('#account-reset-new-password-wrap').hidden = true;
+    document.querySelector('#account-reset-confirm-password-wrap').hidden = true;
+    document.querySelector('#account-reset-step-links').hidden = true;
+  }
+
   accountTitleElement.textContent = isSignup
     ? 'Criar sua conta'
     : isReset
@@ -186,12 +245,20 @@ function setAccountMode(mode, { clearFeedback = false } = {}) {
   accountDescriptionElement.textContent = isSignup
     ? 'Cadastre-se para liberar seu teste grátis de 7 dias.'
     : isReset
-      ? 'Informe o e-mail da sua conta para receber o link de redefinição.'
+      ? resetFlowState.step === 1
+        ? 'Informe o e-mail da sua conta.'
+        : resetFlowState.step === 2
+          ? 'Digite o código enviado para o seu e-mail.'
+          : 'Defina uma nova senha para sua conta.'
       : 'Entre com o e-mail da sua conta para ativar o FaderDeck.';
   document.querySelector('#account-login-submit').textContent = isSignup
     ? 'Criar conta e testar grátis'
     : isReset
-      ? 'Enviar link de redefinição'
+      ? resetFlowState.step === 1
+        ? 'Enviar código de recuperação'
+        : resetFlowState.step === 2
+          ? 'Validar código'
+          : 'Salvar nova senha'
       : 'Entrar no FaderDeck';
 }
 
@@ -219,7 +286,115 @@ document.querySelector('#account-login').addEventListener('submit', async (event
   const submitButton = document.querySelector('#account-login-submit');
   const isSignup = accountMode === 'signup';
   const isReset = accountMode === 'reset';
-  const loadingText = isSignup ? 'Criando conta…' : isReset ? 'Enviando…' : 'Entrando…';
+
+  if (isReset) {
+    if (resetFlowState.step === 1) {
+      const loadingText = 'Enviando…';
+      submitButton.disabled = true;
+      submitButton.textContent = loadingText;
+      accountMessageElement.textContent = loadingText;
+
+      try {
+        await requestJson('/api/account/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        resetFlowState.email = email;
+        resetFlowState.step = 2;
+        setAccountMode('reset', { clearFeedback: false });
+        document.querySelector('#reset-verify-email').textContent = email;
+        document.querySelector('#account-reset-verify-code').focus();
+        accountMessageElement.textContent = '';
+        showAccountFeedbackBanner(`Código enviado para ${email}. Verifique sua caixa de entrada.`);
+      } catch (error) {
+        accountMessageElement.textContent = '';
+        showAccountFeedbackBanner(translateAccountError(error.message, accountMode), 'error');
+      } finally {
+        submitButton.disabled = false;
+        setAccountMode(accountMode);
+      }
+      return;
+    }
+
+    if (resetFlowState.step === 2) {
+      const code = document.querySelector('#account-reset-verify-code').value.trim();
+      if (!/^\d{6,8}$/.test(code)) {
+        showAccountFeedbackBanner('O código deve conter de 6 a 8 dígitos numéricos.', 'error');
+        return;
+      }
+
+      const loadingText = 'Validando…';
+      submitButton.disabled = true;
+      submitButton.textContent = loadingText;
+      accountMessageElement.textContent = loadingText;
+
+      try {
+        await requestJson('/api/account/reset-password/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: resetFlowState.email, code }),
+        });
+        resetFlowState.code = code;
+        resetFlowState.step = 3;
+        setAccountMode('reset', { clearFeedback: false });
+        document.querySelector('#account-reset-new-password').focus();
+        accountMessageElement.textContent = '';
+        showAccountFeedbackBanner('Código verificado. Agora defina sua nova senha.');
+      } catch (error) {
+        accountMessageElement.textContent = '';
+        showAccountFeedbackBanner(error.message, 'error');
+      } finally {
+        submitButton.disabled = false;
+        setAccountMode(accountMode);
+      }
+      return;
+    }
+
+    if (resetFlowState.step === 3) {
+      const newPassword = document.querySelector('#account-reset-new-password').value;
+      const confirmPassword = document.querySelector('#account-reset-confirm-password').value;
+
+      if (newPassword !== confirmPassword) {
+        showAccountFeedbackBanner('As senhas não coincidem.', 'error');
+        return;
+      }
+
+      if (newPassword.length < 8) {
+        showAccountFeedbackBanner('A senha deve ter no mínimo 8 caracteres.', 'error');
+        return;
+      }
+
+      const loadingText = 'Salvando…';
+      submitButton.disabled = true;
+      submitButton.textContent = loadingText;
+      accountMessageElement.textContent = loadingText;
+
+      try {
+        await requestJson('/api/account/reset-password/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: newPassword }),
+        });
+        resetFlowState = { step: null, email: null, code: null };
+        setAccountMode('login', { clearFeedback: true });
+        document.querySelector('#account-login-password').value = '';
+        document.querySelector('#account-reset-new-password').value = '';
+        document.querySelector('#account-reset-confirm-password').value = '';
+        accountMessageElement.textContent = '';
+        showAccountFeedbackBanner('Senha alterada com sucesso! Entre com sua nova senha.');
+      } catch (error) {
+        accountMessageElement.textContent = '';
+        showAccountFeedbackBanner(error.message, 'error');
+      } finally {
+        submitButton.disabled = false;
+        setAccountMode(accountMode);
+      }
+      return;
+    }
+  }
+
+  const loadingText = isSignup ? 'Criando conta…' : 'Entrando…';
 
   if (isSignup && passwordInput.value !== confirmPasswordInput.value) {
     confirmPasswordInput.setCustomValidity('As senhas não coincidem.');
@@ -233,17 +408,6 @@ document.querySelector('#account-login').addEventListener('submit', async (event
   accountMessageElement.textContent = loadingText;
 
   try {
-    if (isReset) {
-      await requestJson('/api/account/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      accountMessageElement.textContent = '';
-      showAccountFeedbackBanner(ACCOUNT_EMAIL_SENT_MESSAGE);
-      return;
-    }
-
     const status = await requestJson(isSignup ? '/api/account/signup' : '/api/account/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -262,14 +426,14 @@ document.querySelector('#account-login').addEventListener('submit', async (event
     }
   } catch (error) {
     accountMessageElement.textContent = '';
-    showAccountFeedbackBanner(error.message, 'error');
+    showAccountFeedbackBanner(translateAccountError(error.message, accountMode), 'error');
   } finally {
     submitButton.disabled = document.querySelector('#account-login').hidden;
     submitButton.textContent =
       accountMode === 'signup'
         ? 'Criar conta e testar grátis'
         : accountMode === 'reset'
-          ? 'Enviar link de redefinição'
+          ? 'Enviar código de recuperação'
           : 'Entrar no FaderDeck';
   }
 });
@@ -283,12 +447,54 @@ document.querySelector('#account-mode-signup').addEventListener('click', () => {
 });
 
 document.querySelector('#account-forgot-password').addEventListener('click', async () => {
+  resetFlowState.step = 1;
   setAccountMode('reset', { clearFeedback: true });
   document.querySelector('#account-login-email').focus();
 });
 
 document.querySelector('#account-reset-back').addEventListener('click', () => {
+  resetFlowState = { step: null, email: null, code: null };
   setAccountMode('login', { clearFeedback: true });
+});
+
+document.querySelector('#account-reset-step2-back').addEventListener('click', () => {
+  resetFlowState.step = 1;
+  setAccountMode('reset', { clearFeedback: true });
+  document.querySelector('#account-login-email').focus();
+});
+
+document.querySelector('#account-reset-step2-change-email').addEventListener('click', () => {
+  resetFlowState.step = 1;
+  setAccountMode('reset', { clearFeedback: true });
+  document.querySelector('#account-login-email').value = resetFlowState.email || '';
+  document.querySelector('#account-login-email').focus();
+});
+
+document.querySelector('#account-reset-step2-resend').addEventListener('click', async () => {
+  const button = document.querySelector('#account-reset-step2-resend');
+  button.disabled = true;
+  const originalText = button.textContent;
+  button.textContent = 'Reenviando…';
+
+  try {
+    await requestJson('/api/account/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: resetFlowState.email }),
+    });
+    showAccountFeedbackBanner('Código reenviado. Verifique seu e-mail.');
+  } catch (error) {
+    showAccountFeedbackBanner(error.message, 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+});
+
+document.querySelector('#account-reset-step3-back').addEventListener('click', () => {
+  resetFlowState.step = 2;
+  setAccountMode('reset', { clearFeedback: true });
+  document.querySelector('#account-reset-verify-code').focus();
 });
 
 document.querySelectorAll('[data-password-toggle]').forEach((button) => {

@@ -286,6 +286,8 @@ function createHttpHandler({
         pathname === '/api/account/signup' ||
         pathname === '/api/account/reset-password' ||
         pathname === '/api/account/password-reset' ||
+        pathname === '/api/account/reset-password/verify' ||
+        pathname === '/api/account/reset-password/confirm' ||
         pathname === '/api/account/trial/start' ||
         pathname === '/api/account/logout'
       ) {
@@ -402,17 +404,82 @@ function createHttpHandler({
           try {
             await supabaseClient.resetPasswordForEmail(body.email.trim());
           } catch (error) {
-            return sendJson(response, error.status === 429 ? 429 : 502, {
-              code: 'PASSWORD_RESET_FAILED',
+            const upstreamStatus =
+              Number.isInteger(error?.status) && error.status >= 400 && error.status <= 599
+                ? error.status
+                : 502;
+            return sendJson(response, upstreamStatus, {
+              code: error?.code || 'PASSWORD_RESET_FAILED',
               error:
-                error.status === 429
-                  ? 'Muitas tentativas. Aguarde antes de solicitar outro link.'
-                  : 'Não foi possível solicitar a recuperação de senha. Tente novamente.',
+                error?.message ||
+                'Não foi possível solicitar a recuperação de senha. Tente novamente.',
+              status: error?.status ?? null,
             });
           }
           return sendJson(response, 200, {
             sent: true,
-            message: 'Se o e-mail estiver cadastrado, enviaremos um link para redefinir a senha.',
+            message: 'Se o e-mail estiver cadastrado, enviaremos um código de recuperação.',
+          });
+        }
+
+        if (pathname === '/api/account/reset-password/verify') {
+          const body = await readBody(request);
+          if (!body || typeof body !== 'object' || Array.isArray(body)) {
+            return sendJson(response, 400, { error: 'O corpo deve ser um objeto JSON.' });
+          }
+          if (typeof body.email !== 'string' || !body.email.trim()) {
+            return sendJson(response, 400, { error: 'Informe um e-mail válido.' });
+          }
+          if (typeof body.code !== 'string' || !/^\d{6,8}$/.test(body.code)) {
+            return sendJson(response, 400, {
+              error: 'O código de verificação deve conter de 6 a 8 dígitos numéricos.',
+            });
+          }
+          try {
+            await supabaseClient.verifyOtp({
+              email: body.email.trim(),
+              token: body.code,
+              type: 'recovery',
+            });
+          } catch (error) {
+            const invalid = error.status === 400 || error.status === 401 || error.status === 403;
+            return sendJson(response, invalid ? 401 : error.status === 429 ? 429 : 502, {
+              code: invalid ? 'INVALID_CODE' : 'PASSWORD_VERIFY_FAILED',
+              error: invalid
+                ? 'Código inválido ou expirado. Verifique o e-mail e tente novamente.'
+                : error.status === 429
+                  ? 'Muitas tentativas. Aguarde antes de tentar novamente.'
+                  : 'Não foi possível validar o código. Tente novamente.',
+            });
+          }
+          return sendJson(response, 200, {
+            verified: true,
+            message: 'Código verificado com sucesso. Você pode agora definir uma nova senha.',
+          });
+        }
+
+        if (pathname === '/api/account/reset-password/confirm') {
+          const body = await readBody(request);
+          if (!body || typeof body !== 'object' || Array.isArray(body)) {
+            return sendJson(response, 400, { error: 'O corpo deve ser um objeto JSON.' });
+          }
+          if (typeof body.password !== 'string' || body.password.length < 8) {
+            return sendJson(response, 400, {
+              error: 'A senha deve ter no mínimo 8 caracteres.',
+            });
+          }
+          try {
+            await supabaseClient.updateUser({ password: body.password });
+            await supabaseClient.signOutRecovery();
+          } catch (error) {
+            return sendJson(response, error.status === 429 ? 429 : 400, {
+              code: 'PASSWORD_UPDATE_FAILED',
+              error: error?.message || 'Não foi possível atualizar a senha. Tente novamente.',
+            });
+          }
+          return sendJson(response, 200, {
+            updated: true,
+            message: 'Senha alterada com sucesso! Entre com sua nova senha.',
           });
         }
 

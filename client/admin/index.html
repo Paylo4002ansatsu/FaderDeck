@@ -52,7 +52,7 @@
           hidden
         ></p>
         <form id="account-login" class="account-login">
-          <div class="account-field">
+          <div id="account-email-wrap" class="account-field">
             <label for="account-login-email">E-MAIL</label>
             <input
               id="account-login-email"
@@ -99,9 +99,81 @@
             <span class="remember-track" aria-hidden="true"></span>
             <span>Manter conectado neste computador</span>
           </label>
+          <div id="account-reset-verify-code-wrap" class="account-field" hidden>
+            <label for="account-reset-verify-code">CÓDIGO DE VERIFICAÇÃO</label>
+            <input
+              id="account-reset-verify-code"
+              name="code"
+              type="text"
+              inputmode="numeric"
+              maxlength="8"
+              placeholder="00000000"
+              autocomplete="one-time-code"
+              pattern="[0-9]{6,8}"
+            />
+          </div>
+          <div id="account-reset-new-password-wrap" class="account-field" hidden>
+            <label for="account-reset-new-password">NOVA SENHA</label>
+            <div class="password-input-wrap">
+              <input
+                id="account-reset-new-password"
+                name="new-password"
+                type="password"
+                autocomplete="new-password"
+              />
+              <button
+                class="password-visibility"
+                type="button"
+                data-password-toggle="account-reset-new-password"
+                aria-controls="account-reset-new-password"
+                aria-pressed="false"
+                aria-label="Mostrar senha"
+              >
+                Mostrar
+              </button>
+            </div>
+          </div>
+          <div id="account-reset-confirm-password-wrap" class="account-field" hidden>
+            <label for="account-reset-confirm-password">CONFIRMAR NOVA SENHA</label>
+            <div class="password-input-wrap">
+              <input
+                id="account-reset-confirm-password"
+                name="confirm-password"
+                type="password"
+                autocomplete="new-password"
+              />
+              <button
+                class="password-visibility"
+                type="button"
+                data-password-toggle="account-reset-confirm-password"
+                aria-controls="account-reset-confirm-password"
+                aria-pressed="false"
+                aria-label="Mostrar senha"
+              >
+                Mostrar
+              </button>
+            </div>
+          </div>
           <button id="account-login-submit" class="account-submit" type="submit">
             Entrar no FaderDeck
           </button>
+          <div id="account-reset-step-links" class="account-reset-step-links" hidden>
+            <p id="account-reset-verify-email-display" class="account-reset-step-email" hidden>
+              Código enviado para: <span id="reset-verify-email"></span>
+            </p>
+            <button id="account-reset-step2-resend" class="account-link" type="button" hidden>
+              Reenviar código
+            </button>
+            <button id="account-reset-step2-change-email" class="account-link" type="button" hidden>
+              Alterar e-mail
+            </button>
+            <button id="account-reset-step2-back" class="account-link" type="button" hidden>
+              Voltar
+            </button>
+            <button id="account-reset-step3-back" class="account-link" type="button" hidden>
+              Voltar
+            </button>
+          </div>
         </form>
 
         <nav id="account-auth-footer" class="account-auth-footer" aria-label="Opções de conta">

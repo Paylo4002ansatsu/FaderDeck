@@ -101,4 +101,6 @@ Se o módulo nativo `@julusian/midi` precisar ser compilado e a instalação fal
 
 ## Desenvolvimento
 
-Somente para quem vai executar ou empacotar o código-fonte: o projeto requer Node.js 22 ou mais recente; Python 3 é necessário para reconstruir o ZIP da ponte. Instale dependências com `npm install`, valide com `npm run check` e gere o ZIP atualizado com `npm run package:bridge`. Os instaladores Electron são gerados pelo workflow de release do GitHub Actions.
+Somente para quem vai executar ou empacotar o código-fonte: o projeto requer Node.js 22 ou mais recente; Python 3 é necessário para reconstruir o ZIP da ponte. Instale dependências com `npm install`, execute o desktop com `npm start`, valide com `npm run check` e gere o ZIP atualizado com `npm run package:bridge`. O desktop usa os arquivos de `client/` e `assets/` diretamente; não é necessário compilar o frontend antes de iniciá-lo. `npm run build:site` compila apenas o site. Os instaladores Electron são gerados pelo workflow de release do GitHub Actions.
+
+Para a recuperação de senha no desktop funcionar, configure o template de e-mail de recuperação do Supabase para exibir `{{ .Token }}` (código numérico de 6 a 8 dígitos), em vez de depender apenas de `{{ .ConfirmationURL }}`. Essa configuração também deve ser aplicada ao projeto Supabase implantado.

@@ -317,6 +317,169 @@ test('password reset delegates to Supabase without revealing account existence',
   assert.match(response.body.message, /se o e-mail estiver cadastrado/i);
 });
 
+test('password reset relays Supabase error details and status', async (t) => {
+  const fixture = await createFixture({
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+      async resetPasswordForEmail() {
+        throw Object.assign(
+          new Error('For security purposes, you can only request this after 60 seconds.'),
+          { status: 429, code: 'over_email_send_rate_limit' },
+        );
+      },
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+
+  const response = await request(
+    fixture,
+    '/api/account/reset-password',
+    { email: 'person@example.com' },
+    'POST',
+  );
+
+  assert.equal(response.status, 429);
+  assert.equal(
+    response.body.error,
+    'For security purposes, you can only request this after 60 seconds.',
+  );
+  assert.equal(response.body.status, 429);
+  assert.equal(response.body.code, 'over_email_send_rate_limit');
+});
+
+test('verify OTP endpoint validates recovery code', async (t) => {
+  const verifiedTokens = [];
+  const fixture = await createFixture({
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+      async verifyOtp({ email, token }) {
+        if (token === '000000') {
+          throw Object.assign(new Error('Invalid OTP'), { status: 403 });
+        }
+        verifiedTokens.push(token);
+        return { user: { id: 'user-id', email } };
+      },
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+
+  for (const code of ['123456', '0123456', '01234567']) {
+    const validResponse = await request(
+      fixture,
+      '/api/account/reset-password/verify',
+      { email: 'person@example.com', code },
+      'POST',
+    );
+    assert.equal(validResponse.status, 200);
+    assert.equal(validResponse.body.verified, true);
+  }
+  assert.deepEqual(verifiedTokens, ['123456', '0123456', '01234567']);
+
+  const invalidResponse = await request(
+    fixture,
+    '/api/account/reset-password/verify',
+    { email: 'person@example.com', code: '000000' },
+    'POST',
+  );
+
+  assert.equal(invalidResponse.status, 401);
+  assert.equal(invalidResponse.body.code, 'INVALID_CODE');
+  assert.match(invalidResponse.body.error, /inválido ou expirado/i);
+});
+
+test('verify OTP rejects codes outside the 6-to-8-digit numeric range', async (t) => {
+  const fixture = await createFixture({
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+
+  for (const code of ['12345', '123456789', '12345a', '１２３４５６', 12345678]) {
+    const response = await request(
+      fixture,
+      '/api/account/reset-password/verify',
+      { email: 'person@example.com', code },
+      'POST',
+    );
+    assert.equal(response.status, 400);
+    assert.match(response.body.error, /6 a 8 dígitos numéricos/);
+  }
+});
+
+test('verify OTP distinguishes rate limiting and service failures from invalid codes', async (t) => {
+  let status = 429;
+  const fixture = await createFixture({
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+      async verifyOtp() {
+        throw Object.assign(new Error('upstream failure'), { status });
+      },
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+
+  const body = { email: 'person@example.com', code: '123456' };
+  const limited = await request(fixture, '/api/account/reset-password/verify', body, 'POST');
+  assert.equal(limited.status, 429);
+  assert.equal(limited.body.code, 'PASSWORD_VERIFY_FAILED');
+  status = 503;
+  const unavailable = await request(fixture, '/api/account/reset-password/verify', body, 'POST');
+  assert.equal(unavailable.status, 502);
+  assert.equal(unavailable.body.code, 'PASSWORD_VERIFY_FAILED');
+});
+
+test('password confirm endpoint updates password and signs out', async (t) => {
+  const calls = [];
+  const fixture = await createFixture({
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+      async updateUser({ password }) {
+        calls.push({ action: 'updateUser', password });
+        return { user: { id: 'user-id' } };
+      },
+      async signOutRecovery() {
+        calls.push({ action: 'signOutRecovery' });
+      },
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+
+  const response = await request(
+    fixture,
+    '/api/account/reset-password/confirm',
+    { password: 'NewPassword123' },
+    'POST',
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.updated, true);
+  assert.match(response.body.message, /sucesso/i);
+  assert.deepEqual(calls, [
+    { action: 'updateUser', password: 'NewPassword123' },
+    { action: 'signOutRecovery' },
+  ]);
+});
+
+test('password confirm rejects passwords shorter than 8 characters', async (t) => {
+  const fixture = await createFixture({
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+
+  const response = await request(
+    fixture,
+    '/api/account/reset-password/confirm',
+    { password: 'short' },
+    'POST',
+  );
+
+  assert.equal(response.status, 400);
+  assert.match(response.body.error, /8 caracteres/);
+});
+
 test('update status route returns the injected release-check result', async (t) => {
   const fixture = await createFixture({
     updateChecker: {
