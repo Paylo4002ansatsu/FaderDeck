@@ -1,8 +1,9 @@
 # Supabase — preparação técnica
 
-Este diretório prepara a integração comercial futura. A migration SQL inicial foi
-criada após aprovação do modelo e aplicada ao banco local e ao projeto Supabase
-remoto. Nenhuma Edge Function executável, pagamento ou ativação foi implementada.
+Este diretório contém o esquema comercial e as Edge Functions de autenticação,
+teste e validação de licenças. As migrations iniciais foram aplicadas ao banco
+local e ao projeto Supabase remoto. A migration de licenciamento por dispositivo
+e as funções correspondentes também foram implantadas no projeto vinculado.
 
 ## Auditoria e estado atual
 
@@ -37,6 +38,14 @@ remoto. Nenhuma Edge Function executável, pagamento ou ativação foi implement
 - `.temp/` contém metadados locais de vínculo e permanece ignorado pelo Git.
 
 ## Variáveis de ambiente
+
+Para gerar instaladores, configure `SUPABASE_URL` e `SUPABASE_ANON_KEY` no
+ambiente de build (ou use `SUPABASE_PUBLISHABLE_KEY` como alias da chave
+pública). O build gera uma configuração pública ignorada pelo Git e falha
+quando os valores estão ausentes. Configure os mesmos nomes como secrets do
+GitHub Actions antes de gerar releases; nunca forneça uma chave service-role.
+O empacotamento Electron aplica fuses e ofusca módulos críticos, mas isso não
+impede adulteração nem falsificação dos identificadores pelo cliente.
 
 `.env.example` lista `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` e
 `SUPABASE_SECRET_KEY` sem valores para o backend local. Também documenta
@@ -149,8 +158,10 @@ Nenhuma conta ou dado de cliente foi criado nesta preparação.
 - A migration foi aplicada e validada no banco local com `npx supabase db lint
 --schema public --fail-on error`, e aplicada ao remoto após autorização. O
   histórico remoto confirma a migration; não há seed nem funções para publicar.
-- `functions/` contém apenas notas de planejamento. Não há stubs nem endpoints
-  fictícios. Os nomes candidatos, ainda sem implementação, estão em
+- `migrations/20261127000000_device_licensing.sql` adiciona planos e testes por
+  computador, e serializa a ativação e remoção de dispositivos. Foi aplicada ao
+  projeto remoto após revisão de compatibilidade e autorização.
+- `functions/` contém as Edge Functions comerciais descritas em
   [`functions/README.md`](./functions/README.md).
 - Separar regras do domínio (pedido, trial, licença, dispositivo) dos adaptadores
   Auth, pagamentos e provedores. Pagamento e liberação de licenças estão fora

@@ -128,6 +128,83 @@ test('allows MIDI port selection when the entitlement is valid', async (t) => {
   assert.equal(fixture.selectedPortCalls, 1);
 });
 
+test('removes a device for the authenticated account and refreshes the status', async (t) => {
+  const calls = [];
+  const machineId = 'a'.repeat(64);
+  const fixture = await createFixture({
+    entitlementService: {
+      getEntitlement: async () => ({ allowed: true, kind: 'license' }),
+      clearCache: () => calls.push('clear'),
+    },
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+      getCurrentSession: async () => ({ user: { id: 'user', email: 'a@example.com' } }),
+      invokeEdgeFunction: async (name, body) => {
+        calls.push([name, body]);
+        return { trial: null };
+      },
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+  const response = await request(fixture, '/api/account/devices/remove', { machineId }, 'POST');
+  assert.equal(response.status, 200);
+  assert.deepEqual(calls[0], ['device-remove', { machineId }]);
+  assert.equal(calls[1], 'clear');
+  assert.equal(response.body.entitlement.allowed, true);
+});
+
+test('rejects invalid device identifiers before invoking the backend', async (t) => {
+  const fixture = await createFixture({
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+      getCurrentSession: async () => ({ user: { id: 'user' } }),
+      invokeEdgeFunction: async () => assert.fail('should not invoke backend'),
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+  const response = await request(
+    fixture,
+    '/api/account/devices/remove',
+    { machineId: 'bad' },
+    'POST',
+  );
+  assert.equal(response.status, 400);
+});
+
+test('exposes device limit details and blocks MIDI while the Individual plan is full', async (t) => {
+  const machineId = 'c'.repeat(64);
+  const entitlement = {
+    allowed: false,
+    kind: 'license',
+    code: 'DEVICE_LIMIT_REACHED',
+    message: 'Limite de dispositivos atingido.',
+    plan_code: 'solo_30',
+    max_devices: 1,
+    devices: [{ machineId, name: 'Computador', last_seen_at: null }],
+  };
+  const fixture = await createFixture({
+    entitlementService: { getEntitlement: async () => entitlement },
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+      getCurrentSession: async () => ({ user: { id: 'user' } }),
+      invokeEdgeFunction: async () => ({ trial: null }),
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+  const status = await request(fixture, '/api/account/status');
+  assert.equal(status.body.entitlement.code, 'DEVICE_LIMIT_REACHED');
+  assert.deepEqual(status.body.entitlement.devices, entitlement.devices);
+  const select = await request(
+    fixture,
+    '/api/ports/select',
+    { token: 'bridge-token', outputIndex: 0, inputIndex: -1 },
+    'POST',
+  );
+  assert.equal(select.status, 403);
+  assert.equal(select.body.code, 'DEVICE_LIMIT_REACHED');
+  assert.equal(fixture.selectedPortCalls, 0);
+});
+
 test('account routes mask the email and never return session tokens', async (t) => {
   let session = null;
   let entitlementAllowed = false;

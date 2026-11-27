@@ -46,6 +46,9 @@ jobs:
             artifact: FaderDeck-macOS-Monterey-Intel
             kind: monterey
     runs-on: ${{ matrix.runner }}
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

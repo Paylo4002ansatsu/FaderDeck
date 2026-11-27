@@ -4,8 +4,13 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const EDGE_FUNCTIONS = new Set(['trial-start', 'trial-status', 'license-validate']);
-const PUBLIC_ENV_KEYS = ['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY'];
+const EDGE_FUNCTIONS = new Set([
+  'trial-start',
+  'trial-status',
+  'license-validate',
+  'device-remove',
+]);
+const PUBLIC_ENV_KEYS = ['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_ANON_KEY'];
 const AUTH_REDIRECT_URL = 'https://fader-deck.vercel.app';
 let client;
 let clientUrl;
@@ -41,7 +46,7 @@ function loadPublicSupabaseEnv({
   const values = new Map();
   for (const line of contents.split(/\r?\n/)) {
     const match = line.match(
-      /^\s*(?:export\s+)?(SUPABASE_URL|SUPABASE_PUBLISHABLE_KEY)\s*=\s*(.*)$/,
+      /^\s*(?:export\s+)?(SUPABASE_URL|SUPABASE_PUBLISHABLE_KEY|SUPABASE_ANON_KEY)\s*=\s*(.*)$/,
     );
     if (match) values.set(match[1], parseEnvValue(match[2]));
   }
@@ -59,8 +64,16 @@ function loadPublicSupabaseEnv({
 
 loadPublicSupabaseEnv();
 
+const generatedConfigPath = path.join(__dirname, 'runtime-config.generated.cjs');
+const generatedConfig = fs.existsSync(generatedConfigPath) ? require(generatedConfigPath) : {};
+
 function isSupabaseConfigured(env = process.env) {
-  return Boolean(env.SUPABASE_URL?.trim() && env.SUPABASE_PUBLISHABLE_KEY?.trim());
+  const url = env.SUPABASE_URL || (env === process.env ? generatedConfig.url : '');
+  const key =
+    env.SUPABASE_ANON_KEY ||
+    env.SUPABASE_PUBLISHABLE_KEY ||
+    (env === process.env ? generatedConfig.anonKey : '');
+  return Boolean(url?.trim() && key?.trim());
 }
 
 function createMemoryStorage() {
@@ -79,8 +92,12 @@ function createMemoryStorage() {
 }
 
 function getSupabaseClient() {
-  const url = process.env.SUPABASE_URL?.trim();
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY?.trim();
+  const url = (process.env.SUPABASE_URL || generatedConfig.url)?.trim();
+  const key = (
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    generatedConfig.anonKey
+  )?.trim();
 
   if (!url || !key) return null;
 
@@ -103,7 +120,7 @@ function getSupabaseClient() {
 function requireSupabaseClient() {
   const configuredClient = getSupabaseClient();
   if (!configuredClient) {
-    throw new Error('Supabase is not configured. Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY.');
+    throw new Error('Supabase is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.');
   }
   return configuredClient;
 }

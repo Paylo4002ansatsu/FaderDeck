@@ -170,13 +170,19 @@
   function accountStatusText(status) {
     if (!status?.session?.authenticated) return 'Não autenticado';
     const entitlement = status.entitlement || {};
-    if (entitlement.allowed === true && entitlement.kind === 'license') return 'Licença ativa';
+    if (entitlement.kind === 'license') {
+      return entitlement.plan_code === 'solo_30'
+        ? 'Plano Individual — R$ 30 (1 dispositivo)'
+        : entitlement.plan_code === 'multi_50'
+          ? 'Plano Multi — R$ 50'
+          : 'Licença ativa';
+    }
     if (entitlement.allowed === true && entitlement.kind === 'trial') {
       const remaining = Date.parse(entitlement.expires_at) - Date.parse(entitlement.server_time);
       const days = Number.isFinite(remaining) ? Math.max(1, Math.ceil(remaining / 86400000)) : null;
       return days
-        ? `Teste · ${days} ${days === 1 ? 'dia restante' : 'dias restantes'}`
-        : 'Teste ativo';
+        ? `Teste Grátis · ${days} ${days === 1 ? 'dia restante' : 'dias restantes'}`
+        : 'Teste Grátis';
     }
     return 'Expirado';
   }
@@ -289,6 +295,7 @@
     message.setAttribute('aria-live', 'polite');
     message.textContent =
       errorMessage ||
+      status?.entitlement?.message ||
       (status?.supabase_configured === false
         ? 'A autenticação ainda não está configurada neste ambiente.'
         : status?.entitlement?.allowed === true && status.entitlement.kind === 'trial'
@@ -302,6 +309,43 @@
               : '');
     message.hidden = !message.textContent;
     accountPanel.appendChild(message);
+
+    if (authenticated && status?.entitlement?.code === 'DEVICE_LIMIT_REACHED') {
+      const devices = document.createElement('div');
+      for (const device of status.entitlement.devices || []) {
+        const row = document.createElement('div');
+        const name = document.createElement('span');
+        name.textContent = device.name || 'Computador';
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.textContent = 'Remover dispositivo';
+        remove.addEventListener('click', async () => {
+          remove.disabled = true;
+          try {
+            const nextStatus = await requestJson('/api/account/devices/remove', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ machineId: device.machineId }),
+            });
+            setAccountStatus(nextStatus);
+            showAccess(nextStatus);
+          } catch (error) {
+            message.textContent = error.message;
+            message.hidden = false;
+            remove.disabled = false;
+          }
+        });
+        row.append(name, remove);
+        devices.appendChild(row);
+      }
+      const upgrade = document.createElement('a');
+      upgrade.href = 'https://fader-deck.vercel.app';
+      upgrade.target = '_blank';
+      upgrade.rel = 'noopener noreferrer';
+      upgrade.textContent = 'Fazer upgrade (R$ 50)';
+      devices.appendChild(upgrade);
+      accountPanel.appendChild(devices);
+    }
 
     if (!status?.session?.authenticated) {
       let authMode = 'login';

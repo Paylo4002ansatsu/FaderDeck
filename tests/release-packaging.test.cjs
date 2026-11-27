@@ -3,12 +3,53 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
+const { spawnSync } = require('node:child_process');
 const test = require('node:test');
+const { FuseV1Options } = require('@electron/fuses');
+const afterPack = require('../scripts/after-pack.cjs');
 
 const root = path.join(__dirname, '..');
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/build-windows.yml'), 'utf8');
 const bridgePackager = fs.readFileSync(path.join(root, 'scripts/package-bridge.py'), 'utf8');
+
+test('build configuration requires public Supabase credentials and rejects secret keys', (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'faderdeck-build-config-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(directory, 'scripts'));
+  fs.mkdirSync(path.join(directory, 'bridge'));
+  fs.copyFileSync(
+    path.join(root, 'scripts/prepare-build.cjs'),
+    path.join(directory, 'scripts/prepare-build.cjs'),
+  );
+  fs.writeFileSync(
+    path.join(directory, 'bridge/supabase-client.cjs'),
+    'exports.loadPublicSupabaseEnv = () => [];\n',
+  );
+  const env = { ...process.env };
+  delete env.SUPABASE_URL;
+  delete env.SUPABASE_ANON_KEY;
+  delete env.SUPABASE_PUBLISHABLE_KEY;
+  const run = (extraEnv) =>
+    spawnSync(process.execPath, [path.join(directory, 'scripts/prepare-build.cjs')], {
+      env: { ...env, ...extraEnv },
+      encoding: 'utf8',
+    });
+  assert.notEqual(run({}).status, 0);
+  assert.notEqual(
+    run({ SUPABASE_URL: 'https://example.invalid', SUPABASE_ANON_KEY: 'sb_secret_forbidden' })
+      .status,
+    0,
+  );
+  assert.equal(
+    run({ SUPABASE_URL: 'https://example.invalid', SUPABASE_ANON_KEY: 'sb_publishable_test' })
+      .status,
+    0,
+  );
+  const config = require(path.join(directory, 'bridge/runtime-config.generated.cjs'));
+  assert.deepEqual(config, { url: 'https://example.invalid', anonKey: 'sb_publishable_test' });
+});
 
 test('Electron and standalone bridge packages include extracted server modules', () => {
   assert.ok(packageJson.build.files.includes('bridge/**/*'));
@@ -34,6 +75,24 @@ test('universal macOS merge recognizes shared x64 and ARM64 MIDI prebuilds', () 
     packageJson.build.mac.x64ArchFiles,
     'Contents/Resources/app.asar.unpacked/node_modules/@julusian/midi/prebuilds/midi-darwin-*/**',
   );
+});
+
+test('fuses are applied after universal slices have been merged', async () => {
+  const calls = [];
+  const packager = { addElectronFuses: async (context, config) => calls.push({ context, config }) };
+  await afterPack({
+    packager,
+    electronPlatformName: 'darwin',
+    appOutDir: '/output/mac-universal-arm64-temp',
+  });
+  assert.equal(calls.length, 0);
+  await afterPack({ packager, electronPlatformName: 'darwin', appOutDir: '/output/mac-universal' });
+  assert.equal(calls.length, 1);
+  const config = calls[0].config;
+  assert.equal(config[FuseV1Options.OnlyLoadAppFromAsar], true);
+  assert.equal(config[FuseV1Options.EnableEmbeddedAsarIntegrityValidation], true);
+  assert.equal(config[FuseV1Options.RunAsNode], false);
+  assert.equal(config[FuseV1Options.EnableNodeCliInspectArguments], false);
 });
 
 test('Windows and macOS artifacts use distinct names suitable for one release', () => {

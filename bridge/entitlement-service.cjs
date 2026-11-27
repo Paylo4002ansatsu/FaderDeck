@@ -1,87 +1,9 @@
 'use strict';
 
-const crypto = require('node:crypto');
-const fs = require('node:fs');
-const { execFileSync } = require('node:child_process');
+const { generateDeviceHash, getDeviceHash, getMachineName } = require('./machine-id.cjs');
 const { getCurrentSession, invokeEdgeFunction } = require('./supabase-client.cjs');
 
-const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
-
-function readSystemIdentifier(platform) {
-  if (platform === 'darwin') {
-    try {
-      const output = execFileSync('ioreg', ['-rd1', '-c', 'IOPlatformExpertDevice'], {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-        timeout: 5000,
-      });
-      const identifier = output.match(/"IOPlatformUUID"\s*=\s*"([^"]+)"/)?.[1];
-      if (identifier) return identifier;
-    } catch (error) {
-      throw new Error('Unable to read the macOS machine identifier.', { cause: error });
-    }
-    throw new Error('The macOS machine identifier was not found.');
-  }
-
-  if (platform === 'win32') {
-    try {
-      const output = execFileSync(
-        'reg.exe',
-        ['query', 'HKLM\\SOFTWARE\\Microsoft\\Cryptography', '/v', 'MachineGuid'],
-        {
-          encoding: 'utf8',
-          stdio: ['ignore', 'pipe', 'ignore'],
-          timeout: 5000,
-          windowsHide: true,
-        },
-      );
-      const identifier = output.match(/MachineGuid\s+REG_SZ\s+(.+)/i)?.[1]?.trim();
-      if (identifier) return identifier;
-    } catch (error) {
-      throw new Error('Unable to read the Windows machine identifier.', { cause: error });
-    }
-    throw new Error('The Windows machine identifier was not found.');
-  }
-
-  if (platform === 'linux') {
-    for (const filePath of ['/etc/machine-id', '/var/lib/dbus/machine-id']) {
-      try {
-        const identifier = fs.readFileSync(filePath, 'utf8').trim();
-        if (identifier) return identifier;
-      } catch (error) {
-        if (error.code !== 'ENOENT') {
-          throw new Error('Unable to read the Linux machine identifier.', { cause: error });
-        }
-      }
-    }
-    throw new Error('The Linux machine identifier was not found.');
-  }
-
-  throw new Error(`Unsupported operating system for device identification: ${platform}`);
-}
-
-function generateDeviceHash({ platform = process.platform, machineIdentifier } = {}) {
-  const identifier =
-    typeof machineIdentifier === 'string' ? machineIdentifier.trim() : machineIdentifier;
-  if (typeof identifier !== 'string' || !identifier) {
-    throw new TypeError('A non-empty operating system identifier is required.');
-  }
-
-  return crypto
-    .createHash('sha256')
-    .update(`faderdeck-device-v1:${platform}:${identifier}`, 'utf8')
-    .digest('hex');
-}
-
-function getDeviceHash({
-  platform = process.platform,
-  identifierProvider = readSystemIdentifier,
-} = {}) {
-  return generateDeviceHash({
-    platform,
-    machineIdentifier: identifierProvider(platform),
-  });
-}
+const GRACE_IN_MILLISECONDS = 72 * 60 * 60 * 1000;
 
 function deniedEntitlement(reason) {
   return {
@@ -123,7 +45,7 @@ function normalizeEntitlement(value) {
     (value.kind === 'none' ||
       graceUntil === null ||
       graceUntil <= serverTime ||
-      graceUntil > serverTime + DAY_IN_MILLISECONDS)
+      graceUntil > serverTime + GRACE_IN_MILLISECONDS)
   ) {
     return null;
   }
@@ -134,6 +56,22 @@ function normalizeEntitlement(value) {
     expires_at: value.expires_at,
     server_time: value.server_time,
     offline_grace_until: value.offline_grace_until,
+    ...(typeof value.plan_code === 'string' ? { plan_code: value.plan_code } : {}),
+    ...(Number.isInteger(value.max_devices) ? { max_devices: value.max_devices } : {}),
+    ...(typeof value.code === 'string' ? { code: value.code } : {}),
+    ...(typeof value.message === 'string' ? { message: value.message } : {}),
+    ...(Array.isArray(value.devices)
+      ? {
+          devices: value.devices.filter(
+            (device) =>
+              device &&
+              typeof device === 'object' &&
+              typeof device.machineId === 'string' &&
+              /^[0-9a-f]{64}$/.test(device.machineId) &&
+              (device.name === null || typeof device.name === 'string'),
+          ),
+        }
+      : {}),
   };
 }
 
@@ -164,10 +102,13 @@ function createEntitlementService({
   getSession = getCurrentSession,
   validateLicense = (body) => invokeEdgeFunction('license-validate', body),
   getDeviceHash: resolveDeviceHash = getDeviceHash,
+  getMachineName: resolveMachineName = getMachineName,
   monotonicNow = () => Number(process.hrtime.bigint()) / 1e6,
 } = {}) {
   let cached = null;
   let deviceHash;
+  let deviceLabel;
+  let validationSequence = 0;
 
   function resolveOfflineEntitlement(userId) {
     if (!cached || cached.userId !== userId) return deniedEntitlement('offline_unavailable');
@@ -192,13 +133,15 @@ function createEntitlementService({
   }
 
   async function getEntitlement() {
+    const sequence = ++validationSequence;
     let session;
     try {
       session = await getSession();
     } catch {
-      cached = null;
+      if (sequence === validationSequence) cached = null;
       return deniedEntitlement('session_unavailable');
     }
+    if (sequence !== validationSequence) return deniedEntitlement('validation_superseded');
 
     const userId = session?.user?.id;
     if (!session?.access_token || typeof userId !== 'string' || !userId) {
@@ -210,19 +153,27 @@ function createEntitlementService({
     try {
       requestStartedAt = monotonicNow();
       deviceHash ??= resolveDeviceHash();
+      deviceLabel ??= resolveMachineName();
     } catch {
+      cached = null;
       return deniedEntitlement('device_identity_unavailable');
     }
 
     let response;
     try {
-      response = await validateLicense({ device_hash: deviceHash });
+      response = await validateLicense({
+        device_hash: deviceHash,
+        ...(deviceLabel ? { device_label: deviceLabel } : {}),
+        offline_grace_hours: 72,
+      });
     } catch (error) {
-      return isNetworkFailure(error)
-        ? resolveOfflineEntitlement(userId)
-        : deniedEntitlement('server_validation_failed');
+      if (sequence !== validationSequence) return deniedEntitlement('validation_superseded');
+      if (isNetworkFailure(error)) return resolveOfflineEntitlement(userId);
+      cached = null;
+      return deniedEntitlement('server_validation_failed');
     }
 
+    if (sequence !== validationSequence) return deniedEntitlement('validation_superseded');
     const entitlement = normalizeEntitlement(response);
     if (!entitlement) {
       cached = null;
@@ -245,6 +196,7 @@ function createEntitlementService({
   }
 
   function clearCache() {
+    validationSequence += 1;
     cached = null;
   }
 

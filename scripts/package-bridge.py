@@ -23,6 +23,7 @@ REQUIRED_FILES = (
     ROOT / "bridge" / "tls-identity.cjs",
     ROOT / "bridge" / "supabase-client.cjs",
     ROOT / "bridge" / "entitlement-service.cjs",
+    ROOT / "bridge" / "machine-id.cjs",
     ROOT / "bridge" / "update-checker.cjs",
     ROOT / "fader-bridge" / "package.json",
     ROOT / "fader-bridge" / "package-lock.json",
@@ -60,9 +61,12 @@ def build_archive() -> None:
                 "midi-manager.cjs", "auth.cjs", "websocket-handler.cjs", "layout-persistence.cjs",
                 "websocket-gateway.cjs", "http-router.cjs", "token-store.cjs", "network-addresses.cjs",
                 "tls-identity.cjs", "supabase-client.cjs", "entitlement-service.cjs",
-                "update-checker.cjs",
+                "machine-id.cjs", "update-checker.cjs",
             ):
                 add_file(archive, ROOT / "bridge" / module_name, Path("bridge") / module_name)
+            runtime_config = ROOT / "bridge" / "runtime-config.generated.cjs"
+            if runtime_config.is_file():
+                add_file(archive, runtime_config, Path("bridge") / runtime_config.name)
             add_file(archive, ROOT / "fader-bridge" / "package.json", "package.json")
             add_file(archive, ROOT / "fader-bridge" / "package-lock.json", "package-lock.json")
             add_file(archive, ROOT / "README.md", "README.md")
@@ -92,7 +96,7 @@ def build_archive() -> None:
                 "bridge/websocket-handler.cjs", "bridge/layout-persistence.cjs", "bridge/websocket-gateway.cjs",
                 "bridge/http-router.cjs", "bridge/token-store.cjs", "bridge/network-addresses.cjs",
                 "bridge/tls-identity.cjs",
-                "bridge/supabase-client.cjs", "bridge/entitlement-service.cjs",
+                "bridge/supabase-client.cjs", "bridge/entitlement-service.cjs", "bridge/machine-id.cjs",
                 "bridge/update-checker.cjs", "client/update-modal.js", "client/update-modal.css",
                 "package.json", "package-lock.json", "README.md",
             }

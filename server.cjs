@@ -49,6 +49,7 @@ let layoutInitialized = layout.pages.length > 0;
 let layoutSeedOwner = null;
 let initialized = false;
 let shutdownPromise = null;
+let entitlementRefreshTimer = null;
 const entitlementService = createEntitlementService();
 const updateChecker = createUpdateChecker();
 
@@ -255,6 +256,16 @@ async function start(startPort = BASE_PORT) {
     throw error;
   }
 
+  entitlementRefreshTimer = setInterval(
+    () => {
+      if (entitlementService.getCachedEntitlement().reason === 'offline_unavailable') return;
+      entitlementService.getEntitlement().catch((error) => {
+        console.error('Não foi possível revalidar a licença:', error);
+      });
+    },
+    60 * 60 * 1000,
+  );
+  entitlementRefreshTimer.unref();
   console.log(`FaderDeck · ponte local ativa na porta ${PORT}; HTTPS LAN na ${SECURE_PORT}.`);
   if (require.main === module) {
     const ip = networkAddress();
@@ -269,6 +280,8 @@ async function start(startPort = BASE_PORT) {
 async function shutdown() {
   if (shutdownPromise) return shutdownPromise;
   shutdownPromise = (async () => {
+    clearInterval(entitlementRefreshTimer);
+    entitlementRefreshTimer = null;
     if (initialized && layoutPersistence) {
       try {
         await layoutPersistence.flush(() => layout);

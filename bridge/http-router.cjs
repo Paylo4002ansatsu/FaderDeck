@@ -113,6 +113,19 @@ function safeEntitlement(entitlement) {
     server_time: typeof entitlement?.server_time === 'string' ? entitlement.server_time : null,
     offline_grace_until:
       typeof entitlement?.offline_grace_until === 'string' ? entitlement.offline_grace_until : null,
+    ...(typeof entitlement?.plan_code === 'string' ? { plan_code: entitlement.plan_code } : {}),
+    ...(Number.isInteger(entitlement?.max_devices) ? { max_devices: entitlement.max_devices } : {}),
+    ...(typeof entitlement?.code === 'string' ? { code: entitlement.code } : {}),
+    ...(typeof entitlement?.message === 'string' ? { message: entitlement.message } : {}),
+    ...(Array.isArray(entitlement?.devices)
+      ? {
+          devices: entitlement.devices.map((device) => ({
+            machineId: device.machineId,
+            name: device.name,
+            last_seen_at: device.last_seen_at,
+          })),
+        }
+      : {}),
   };
 }
 
@@ -202,8 +215,10 @@ function createHttpHandler({
     if (entitlement?.allowed === true) return true;
 
     sendJson(response, 403, {
-      code: ENTITLEMENT_REQUIRED,
-      error: 'É necessária uma licença ativa ou um teste gratuito válido para usar MIDI.',
+      code: entitlement?.code === 'DEVICE_LIMIT_REACHED' ? entitlement.code : ENTITLEMENT_REQUIRED,
+      error:
+        entitlement?.message ||
+        'É necessária uma licença ativa ou um teste gratuito válido para usar MIDI.',
     });
     return false;
   }
@@ -288,6 +303,7 @@ function createHttpHandler({
         pathname === '/api/account/password-reset' ||
         pathname === '/api/account/reset-password/verify' ||
         pathname === '/api/account/reset-password/confirm' ||
+        pathname === '/api/account/devices/remove' ||
         pathname === '/api/account/trial/start' ||
         pathname === '/api/account/logout'
       ) {
@@ -304,6 +320,27 @@ function createHttpHandler({
             code: 'SUPABASE_NOT_CONFIGURED',
             error: 'A autenticação comercial ainda não está configurada neste ambiente.',
           });
+        }
+
+        if (pathname === '/api/account/devices/remove') {
+          const session = await supabaseClient.getCurrentSession();
+          if (!session) {
+            return sendJson(response, 401, {
+              code: 'AUTHENTICATION_REQUIRED',
+              error: 'Entre na sua conta antes de remover um dispositivo.',
+            });
+          }
+          const body = await readBody(request);
+          if (
+            !body ||
+            typeof body.machineId !== 'string' ||
+            !/^[0-9a-f]{64}$/.test(body.machineId)
+          ) {
+            return sendJson(response, 400, { error: 'Identificador de dispositivo inválido.' });
+          }
+          await supabaseClient.invokeEdgeFunction('device-remove', { machineId: body.machineId });
+          activeEntitlementService.clearCache?.();
+          return sendJson(response, 200, await getAccountStatus());
         }
 
         if (pathname === '/api/account/login') {

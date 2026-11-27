@@ -54,11 +54,14 @@ test('Supabase setup documents secure configuration and the approved schema migr
   assert.match(seedConfig, /"sql_paths": \[\]/);
   assert.match(setup, /modelo de dados aprovado/i);
   assert.match(setup, /RLS/i);
-  assert.match(setup, /aplicada ao banco local e ao projeto Supabase\s+remoto/i);
+  assert.match(
+    setup,
+    /migrations iniciais foram aplicadas ao banco\s+local e ao projeto Supabase remoto/i,
+  );
   assert.match(migrationNotes, /aplicada ao projeto remoto após autorização/i);
   assert.match(functionNotes, /trial-start/);
   assert.match(functionNotes, /license-validate/);
-  assert.equal(migrationFiles.length, 2);
+  assert.ok(migrationFiles.includes('20261127000000_device_licensing.sql'));
   assert.ok(migrationFiles.includes(initialMigrationFile));
   assert.match(initialMigrationFile, /^\d{14}_initial_commercial_schema\.sql$/);
   assert.match(privilegeMigrationFile, /^\d{14}_restrict_is_admin_anon_execution\.sql$/);
@@ -77,6 +80,7 @@ test('Supabase setup documents secure configuration and the approved schema migr
   assert.doesNotMatch(migration, /GRANT (?:INSERT|UPDATE|DELETE|ALL)[^;]* TO authenticated;/);
   assert.deepEqual(functionFiles.sort(), [
     '_shared',
+    'device-remove',
     'license-validate',
     'trial-start',
     'trial-status',

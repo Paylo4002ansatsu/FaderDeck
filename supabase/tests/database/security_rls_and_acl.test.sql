@@ -83,17 +83,17 @@ VALUES
     'USD'
   );
 
-INSERT INTO public.licenses (id, customer_id, product_code)
+INSERT INTO public.licenses (id, customer_id, product_code, plan_code, max_devices)
 VALUES
   (
     '30000000-0000-4000-8000-000000000101',
     '10000000-0000-4000-8000-000000000101',
-    'pgtap-customer'
+    'pgtap-customer', 'solo_30', 1
   ),
   (
     '30000000-0000-4000-8000-000000000102',
     '10000000-0000-4000-8000-000000000102',
-    'pgtap-other'
+    'pgtap-other', 'multi_50', 2
   );
 
 INSERT INTO public.devices (id, license_id, device_hash)

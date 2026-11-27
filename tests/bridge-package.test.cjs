@@ -24,4 +24,13 @@ test('standalone bridge ZIP contains modular server, admin assets and Windows vi
 
   const verify = `import zipfile,sys; z=zipfile.ZipFile(sys.argv[1]); names=set(z.namelist()); required={"server.cjs","server-utils.cjs","bridge/midi-manager.cjs","bridge/auth.cjs","bridge/websocket-handler.cjs","bridge/layout-persistence.cjs","bridge/websocket-gateway.cjs","bridge/http-router.cjs","bridge/token-store.cjs","bridge/network-addresses.cjs","bridge/supabase-client.cjs","bridge/entitlement-service.cjs","bridge/update-checker.cjs","client/update-modal.js","client/update-modal.css","client/index.html","client/stage-mode-enhancements.css","client/stage-mode-enhancements.js","client/admin/index.html","client/admin/bridge.css","client/admin/bridge.js","client/guia-midi-windows.html","client/guia-midi-windows.css","client/guia-assets/loopmidi-window.png","client/guia-assets/ableton-midi-ports.png","client/guia-assets/fl-studio-midi-input.png"}; missing=required-names; assert not missing, missing; assert z.testzip() is None`;
   execFileSync('python3', ['-c', verify, archivePath], { cwd: root, stdio: 'pipe' });
+  execFileSync(
+    'python3',
+    [
+      '-c',
+      'import zipfile,sys; assert "bridge/machine-id.cjs" in zipfile.ZipFile(sys.argv[1]).namelist()',
+      archivePath,
+    ],
+    { cwd: root, stdio: 'pipe' },
+  );
 });

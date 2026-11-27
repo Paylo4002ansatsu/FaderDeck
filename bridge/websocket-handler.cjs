@@ -80,8 +80,13 @@ function attachWebSocketHandlers(
         socket.send(
           JSON.stringify({
             type: 'error',
-            code: 'ENTITLEMENT_REQUIRED',
-            message: 'É necessária uma licença ativa ou um teste gratuito válido para usar MIDI.',
+            code:
+              entitlement?.code === 'DEVICE_LIMIT_REACHED'
+                ? entitlement.code
+                : 'ENTITLEMENT_REQUIRED',
+            message:
+              entitlement?.message ||
+              'É necessária uma licença ativa ou um teste gratuito válido para usar MIDI.',
           }),
         );
         return;

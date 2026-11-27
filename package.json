@@ -21,6 +21,9 @@
     "check": "npm run lint && npm run format:check && npm test",
     "package:bridge": "node scripts/package-bridge.cjs",
     "update:site-download-version": "node scripts/update-site-download-version.cjs",
+    "predist": "node scripts/prepare-build.cjs",
+    "predist:universal": "node scripts/prepare-build.cjs",
+    "predist:win": "node scripts/prepare-build.cjs",
     "dist": "electron-builder --mac dmg zip",
     "dist:universal": "electron-builder --mac dmg zip --universal",
     "dist:win": "electron-builder --win nsis",
@@ -35,12 +38,14 @@
     "ws": "^8.18.3"
   },
   "devDependencies": {
+    "@electron/fuses": "^2.1.3",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.65.1",
     "electron": "^45.3.2",
     "electron-builder": "^26.18.0",
     "eslint": "^10.15.0",
     "globals": "^17.14.0",
+    "javascript-obfuscator": "^5.11.0",
     "prettier": "^3.10.1",
     "supabase": "^3.4.0",
     "vite": "^8.4.0"
@@ -49,6 +54,8 @@
     "appId": "app.faderdeck",
     "productName": "FaderDeck",
     "asar": true,
+    "beforePack": "scripts/before-pack.cjs",
+    "afterPack": "scripts/after-pack.cjs",
     "asarUnpack": [
       "node_modules/@julusian/midi/**/*"
     ],
@@ -62,6 +69,13 @@
       "server.cjs",
       "server-utils.cjs",
       "bridge/**/*",
+      "!bridge/supabase-client.cjs",
+      "!bridge/http-router.cjs",
+      "!bridge/machine-id.cjs",
+      {
+        "from": ".faderdeck-build/bridge",
+        "to": "bridge"
+      },
       "client/**/*",
       "assets/**/*",
       "package.json"

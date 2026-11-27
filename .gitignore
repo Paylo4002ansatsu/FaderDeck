@@ -4,6 +4,8 @@ release/
 dist/
 playwright-report/
 test-results/
+bridge/runtime-config.generated.cjs
+.faderdeck-build/
 
 # Local environment and secrets
 .env

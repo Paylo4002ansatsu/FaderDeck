@@ -109,6 +109,45 @@ function renderAccountStatus(status) {
   const gateMessage = document.querySelector('#account-gate-message');
   const authFooter = document.querySelector('#account-auth-footer');
   const loginButton = document.querySelector('#account-login-submit');
+  let deviceList = document.querySelector('#account-devices');
+  if (!deviceList) {
+    deviceList = document.createElement('div');
+    deviceList.id = 'account-devices';
+    gateMessage.after(deviceList);
+  }
+  deviceList.replaceChildren();
+  if (authenticated && entitlement.code === 'DEVICE_LIMIT_REACHED') {
+    for (const device of entitlement.devices || []) {
+      const row = document.createElement('div');
+      const name = document.createElement('span');
+      name.textContent = device.name || 'Computador';
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.textContent = 'Remover dispositivo';
+      remove.addEventListener('click', async () => {
+        remove.disabled = true;
+        try {
+          const nextStatus = await requestJson('/api/account/devices/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ machineId: device.machineId }),
+          });
+          renderAccountStatus(nextStatus);
+        } catch (error) {
+          gateMessage.textContent = error.message;
+          remove.disabled = false;
+        }
+      });
+      row.append(name, remove);
+      deviceList.appendChild(row);
+    }
+    const upgrade = document.createElement('a');
+    upgrade.href = 'https://fader-deck.vercel.app';
+    upgrade.target = '_blank';
+    upgrade.rel = 'noopener noreferrer';
+    upgrade.textContent = 'Fazer upgrade (R$ 50)';
+    deviceList.appendChild(upgrade);
+  }
 
   accountEmailElement.hidden = !authenticated || !status.session.email;
   accountEmailElement.textContent = authenticated ? status.session.email || '' : '';
@@ -139,14 +178,19 @@ function renderAccountStatus(status) {
   }
 
   if (authenticated && allowed && entitlement.kind === 'trial') {
-    accountStateElement.textContent = 'Teste de 7 dias ativo';
+    accountStateElement.textContent = 'Teste Grátis';
     accountStateElement.dataset.state = 'active';
     const endDate = formatAccountDate(entitlement.expires_at);
     gateMessage.textContent = endDate
       ? `Seu teste termina em ${endDate}.`
       : 'Seu teste está ativo.';
   } else if (authenticated && allowed && entitlement.kind === 'license') {
-    accountStateElement.textContent = 'Licença ativa';
+    accountStateElement.textContent =
+      entitlement.plan_code === 'solo_30'
+        ? 'Plano Individual — R$ 30 (1 dispositivo)'
+        : entitlement.plan_code === 'multi_50'
+          ? 'Plano Multi — R$ 50'
+          : 'Licença ativa';
     accountStateElement.dataset.state = 'active';
     const endDate = formatAccountDate(entitlement.expires_at);
     gateMessage.textContent = endDate
@@ -157,9 +201,15 @@ function renderAccountStatus(status) {
     accountStateElement.dataset.state = 'pending';
     gateMessage.textContent = 'Seu teste grátis de 7 dias está disponível para esta conta.';
   } else if (authenticated) {
-    accountStateElement.textContent = 'Sem licença ativa';
+    accountStateElement.textContent =
+      entitlement.plan_code === 'solo_30'
+        ? 'Plano Individual — R$ 30 (1 dispositivo)'
+        : entitlement.plan_code === 'multi_50'
+          ? 'Plano Multi — R$ 50'
+          : 'Sem licença ativa';
     accountStateElement.dataset.state = 'expired';
     gateMessage.textContent =
+      entitlement.message ||
       'Seu teste expirou ou não há uma licença ativa. Adquira uma licença para continuar.';
   }
 

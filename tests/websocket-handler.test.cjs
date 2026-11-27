@@ -18,7 +18,12 @@ class FakeSocket extends EventEmitter {
   }
 }
 
-function createFixture({ initialized = false, hasOutput = true, entitlementAllowed = true } = {}) {
+function createFixture({
+  initialized = false,
+  hasOutput = true,
+  entitlementAllowed = true,
+  entitlement,
+} = {}) {
   const wss = new EventEmitter();
   let layout = { version: 0, pages: [], activePageId: '' };
   let ready = initialized;
@@ -53,7 +58,7 @@ function createFixture({ initialized = false, hasOutput = true, entitlementAllow
       },
     },
     entitlementService: {
-      getCachedEntitlement: () => ({ allowed: entitlementAllowed }),
+      getCachedEntitlement: () => entitlement || { allowed: entitlementAllowed },
     },
   });
   return {
@@ -147,6 +152,19 @@ test('blocks MIDI with a structured error when entitlement is not allowed', asyn
     code: 'ENTITLEMENT_REQUIRED',
     message: 'É necessária uma licença ativa ou um teste gratuito válido para usar MIDI.',
   });
+
+  assert.deepEqual(fixture.midiMessages, []);
+});
+
+test('reports the device limit when MIDI is blocked by the plan', async () => {
+  const fixture = createFixture({
+    entitlement: { allowed: false, code: 'DEVICE_LIMIT_REACHED', message: 'Limite atingido.' },
+  });
+  const socket = fixture.connect();
+  socket.message({ type: 'midi', data: [0x90, 60, 100] });
+  await new Promise(setImmediate);
+  assert.equal(socket.sent.at(-1).code, 'DEVICE_LIMIT_REACHED');
+  assert.equal(socket.sent.at(-1).message, 'Limite atingido.');
   assert.deepEqual(fixture.midiMessages, []);
 });
 
