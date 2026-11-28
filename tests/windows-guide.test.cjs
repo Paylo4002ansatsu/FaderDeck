@@ -57,7 +57,7 @@ test('published and installed guides link home and include their Windows guide a
   assert.match(docsGuideCss, /\.footer\s*\{[^}]*font-size: 14px/s);
   assert.deepEqual(
     fs.readFileSync(path.join(root, 'client', 'faderdeck-icon.png')),
-    fs.readFileSync(path.join(root, 'docs', 'faderdeck-icon.png')),
+    fs.readFileSync(path.join(root, 'docs', 'public', 'faderdeck-icon.png')),
   );
 
   const imageSources = [...docsGuide.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map(

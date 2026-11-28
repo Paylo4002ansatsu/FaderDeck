@@ -262,3 +262,18 @@ html.fd-mobile-surface,
     width: clamp(84px, 23vw, 96px);
   }
 }
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .fd-mobile-surface .stage-mode .stage-fader-rail {
+    gap: 10px;
+  }
+
+  .fd-mobile-surface .stage-mode .stage-lane-fader {
+    flex-basis: clamp(120px, 16vw, 148px);
+    width: clamp(120px, 16vw, 148px);
+  }
+
+  .fd-mobile-surface .stage-mode .stage-lane-fader .fader-card .fader-body.vertical .fader-thumb {
+    width: min(64px, 85%);
+  }
+}

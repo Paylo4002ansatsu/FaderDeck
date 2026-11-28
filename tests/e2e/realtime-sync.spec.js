@@ -256,10 +256,24 @@ test('desktop, phone and DAW synchronize controls and QR connection feedback', a
     await expect(mobile.getByRole('button', { name: 'Abrir Modo Palco' })).toBeVisible();
     await mobile.setViewportSize({ width: 844, height: 390 });
     await mobile.getByRole('button', { name: 'Abrir Modo Palco' }).click();
-    await expect(mobile.locator('.stage-fader-rail')).toHaveCSS('gap', '4px');
+    await expect(mobile.locator('.stage-fader-rail')).toHaveCSS('gap', '10px');
     const landscapeLane = await mobile.locator('.stage-lane-fader').first().boundingBox();
-    expect(landscapeLane.width).toBeGreaterThanOrEqual(76);
-    expect(landscapeLane.width).toBeLessThanOrEqual(110);
+    expect(landscapeLane.width).toBeGreaterThanOrEqual(120);
+    expect(landscapeLane.width).toBeLessThanOrEqual(148);
+    const landscapeThumb = await mobile
+      .locator('.stage-lane-fader .fader-thumb')
+      .first()
+      .boundingBox();
+    expect(landscapeThumb.width).toBe(64);
+    await expect(mobile.locator('.stage-lane-fader')).toHaveCount(8);
+    const landscapeScroll = mobile.locator('.stage-fader-scroll');
+    expect(
+      await landscapeScroll.evaluate((element) => element.scrollWidth > element.clientWidth),
+    ).toBe(true);
+    await mobile.locator('.stage-lane-fader').last().scrollIntoViewIfNeeded();
+    await expect
+      .poll(() => landscapeScroll.evaluate((element) => element.scrollLeft))
+      .toBeGreaterThan(0);
     await mobile.setViewportSize({ width: 390, height: 844 });
     await expect(mobile.locator('.stage-fader-rail')).toHaveCSS('gap', '12px');
     const scroll = mobile.locator('.stage-fader-scroll');

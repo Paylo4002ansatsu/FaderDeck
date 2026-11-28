@@ -18,7 +18,7 @@ O teste gratuito de sete dias e a versão completa por R$ 30,00 são apresentado
 - `platform-detection.js`: detecção de plataforma e arquitetura, preservada.
 - `assets/product/`: captura real desktop do painel; estado sem ponte indicado no texto alternativo e na legenda. Capturas pendentes estão marcadas por placeholders com proporções indicadas.
 - `guia-midi-windows.html`, `guia-midi-windows.css` e `guia-assets/`: tutorial visual de Windows, folha de estilo externa e capturas associadas.
-- `faderdeck-icon.png`: ícone de marca usado na página.
+- `public/faderdeck-icon.png`: ícone de marca publicado também em URL estável para compartilhamento.
 
 ## Downloads e compatibilidade
 
@@ -35,7 +35,7 @@ no `.env` local (veja `.env.example`). A chave publishable/anon é pública e fi
 no bundle do navegador; nunca configure uma chave `secret` ou `service_role`
 com o prefixo `VITE_`.
 
-O `vercel.json` constrói o site a partir de `docs/` e publica `dist/`. No projeto
+O `vercel.json` constrói a página inicial e o guia do Windows a partir de `docs/` e publica `dist/`. No projeto
 Vercel, use a raiz do repositório como diretório do projeto para aplicar essa
 configuração.
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'faderdeck-shell-v12';
+const CACHE_NAME = 'faderdeck-shell-v13';
 const CORE_ASSETS = [
   '/',
   '/assets/ibm-plex-mono-latin-400-normal-CvHOgSBP.woff',
@@ -23,7 +23,7 @@ const CORE_ASSETS = [
   '/connection-indicator.js?v=2',
   '/connection-indicator.css',
   '/mobile-surface.js?v=2',
-  '/mobile-surface.css?v=2',
+  '/mobile-surface.css?v=3',
   '/keepalive.mp4',
   '/manifest.webmanifest',
   '/manus-routes.json',

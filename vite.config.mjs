@@ -10,5 +10,11 @@ export default defineConfig({
   build: {
     outDir: path.join(repositoryRoot, 'dist'),
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: path.join(repositoryRoot, 'docs/index.html'),
+        windowsGuide: path.join(repositoryRoot, 'docs/guia-midi-windows.html'),
+      },
+    },
   },
 });

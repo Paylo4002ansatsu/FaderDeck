@@ -393,7 +393,7 @@ test('arrastar uma área não interativa rola os canais; arrastar o trilho do fa
 
 test('landing identifica a ilustração e inclui as capturas reais', () => {
   const desktopIcon = fs.readFileSync(path.join(root, 'build/icon.png'));
-  const siteIcon = fs.readFileSync(path.join(root, 'docs/faderdeck-icon.png'));
+  const siteIcon = fs.readFileSync(path.join(root, 'docs/public/faderdeck-icon.png'));
   const html = fs.readFileSync(path.join(root, 'docs/index.html'), 'utf8');
   const styles = fs.readFileSync(path.join(root, 'docs/styles.css'), 'utf8');
 
@@ -446,9 +446,9 @@ test('o app carrega e armazena em cache os assets auxiliares do palco', () => {
   assert.match(html, /viewport-fit=cover/);
   assert.match(html, /stage-mode-enhancements\.css/);
   assert.match(html, /stage-mode-enhancements\.js/);
-  assert.match(serviceWorker, /faderdeck-shell-v12/);
+  assert.match(serviceWorker, /faderdeck-shell-v13/);
   assert.match(serviceWorker, /'\/mobile-surface\.js\?v=2'/);
-  assert.match(serviceWorker, /'\/mobile-surface\.css\?v=2'/);
+  assert.match(serviceWorker, /'\/mobile-surface\.css\?v=3'/);
   assert.match(serviceWorker, /'\/stage-mode-enhancements\.css\?v=3'/);
   assert.match(serviceWorker, /'\/stage-mode-enhancements\.js\?v=2'/);
   assert.match(styles, /min-height:\s*48px/);
