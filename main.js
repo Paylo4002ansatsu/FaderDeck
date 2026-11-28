@@ -15,6 +15,7 @@ const {
 const fs = require('node:fs');
 const path = require('node:path');
 const { isTrustedPanelUrl, safeExternalUrl } = require('./electron-utils.cjs');
+const { advertiseLanService } = require('./bridge/bonjour-advertisement.cjs');
 
 const BASE_PORT = 8787;
 const AUTO_QR_DELAY_MS = 5000; // se nenhum celular conectar nesse tempo, mostra o QR sozinho
@@ -29,6 +30,7 @@ let lastMenuKey = '';
 let autoQrDone = false;
 let statusTimer = null;
 let autoQrTimer = null;
+let stopBonjour = null;
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -57,6 +59,7 @@ app.on('before-quit', (event) => {
   quitting = true;
   if (statusTimer) clearInterval(statusTimer);
   if (autoQrTimer) clearTimeout(autoQrTimer);
+  stopBonjour?.();
   Promise.resolve(bridge.shutdown())
     .catch(() => {})
     .finally(() => app.exit(0));
@@ -71,7 +74,8 @@ async function boot() {
   process.env.FADERDECK_DATA_DIR = dataDir;
   try {
     bridge = require('./server.cjs');
-    port = await bridge.start(BASE_PORT);
+    port = await bridge.start(BASE_PORT, { currentVersion: app.getVersion() });
+    if (process.platform === 'darwin') stopBonjour = advertiseLanService(bridge.getLanPort());
   } catch (error) {
     dialog.showErrorBox('FaderDeck', `Não foi possível iniciar a ponte MIDI.\n\n${error.message}`);
     if (bridge) await bridge.shutdown().catch(() => {});
@@ -172,6 +176,17 @@ function openPanel() {
         try {
           await contents.executeJavaScript(overlay);
         } catch {}
+      }
+      if (!window.isDestroyed()) {
+        try {
+          const updateModal = fs.readFileSync(
+            path.join(__dirname, 'client', 'update-modal.js'),
+            'utf8',
+          );
+          await contents.executeJavaScript(updateModal);
+        } catch (error) {
+          console.error('Não foi possível verificar atualizações no painel:', error);
+        }
       }
       if (!window.isDestroyed()) {
         window.show();

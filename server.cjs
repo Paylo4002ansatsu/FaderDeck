@@ -1,7 +1,6 @@
 'use strict';
 
 const http = require('node:http');
-const https = require('node:https');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createMidiManager } = require('./bridge/midi-manager.cjs');
@@ -10,28 +9,26 @@ const { createHttpHandler } = require('./bridge/http-router.cjs');
 const { createWebSocketGateway } = require('./bridge/websocket-gateway.cjs');
 const { createTokenStore } = require('./bridge/token-store.cjs');
 const { networkAddresses, networkAddress } = require('./bridge/network-addresses.cjs');
-const { createTlsIdentity } = require('./bridge/tls-identity.cjs');
 const { createEntitlementService } = require('./bridge/entitlement-service.cjs');
 const { createSecureStorage } = require('./bridge/secure-storage.cjs');
 const supabaseClient = require('./bridge/supabase-client.cjs');
 const { createUpdateChecker } = require('./bridge/update-checker.cjs');
+const { updatesFromMidi } = require('./bridge/control-state.cjs');
 
 const configuredPort = Number(process.env.FADER_BRIDGE_PORT);
 const BASE_PORT =
   Number.isInteger(configuredPort) && configuredPort >= 1 && configuredPort <= 65535
     ? configuredPort
     : 8787;
-const configuredSecurePort = Number(process.env.FADER_BRIDGE_HTTPS_PORT);
-const BASE_SECURE_PORT =
-  Number.isInteger(configuredSecurePort) &&
-  configuredSecurePort >= 0 &&
-  configuredSecurePort <= 65535
-    ? configuredSecurePort
+const configuredLanPort = Number(process.env.FADER_BRIDGE_LAN_PORT);
+const BASE_LAN_PORT =
+  Number.isInteger(configuredLanPort) && configuredLanPort >= 0 && configuredLanPort <= 65535
+    ? configuredLanPort
     : 8788;
 let PORT = BASE_PORT;
-let SECURE_PORT = BASE_SECURE_PORT;
+let LAN_PORT = BASE_LAN_PORT;
 const HOST = '127.0.0.1';
-const SECURE_HOST = '0.0.0.0';
+const LAN_HOST = '0.0.0.0';
 const DATA_DIR = process.env.FADERDECK_DATA_DIR || __dirname;
 const CLIENT_DIR = path.join(__dirname, 'client');
 if (!fs.existsSync(path.join(CLIENT_DIR, 'index.html')))
@@ -43,8 +40,6 @@ let layoutPersistence = null;
 let midi;
 let midiManager = null;
 let connectionManager = null;
-let secureServer = null;
-let tlsIdentity = null;
 let layout = { version: 0, pages: [], activePageId: '' };
 let layoutInitialized = layout.pages.length > 0;
 let layoutSeedOwner = null;
@@ -64,7 +59,7 @@ if (process.versions.electron) {
   }
 }
 const entitlementService = createEntitlementService({ storage: secureStorage });
-const updateChecker = createUpdateChecker();
+let updateChecker = createUpdateChecker();
 
 function initialize() {
   if (initialized) return;
@@ -88,7 +83,7 @@ function initialize() {
 
   try {
     midi = require('@julusian/midi');
-    midiManager = createMidiManager({ midi, platform: process.platform, broadcast });
+    midiManager = createMidiManager({ midi, platform: process.platform, broadcast: onMidiInput });
     if (process.platform === 'darwin') {
       try {
         if (midiManager.initializeVirtualOutput())
@@ -104,14 +99,8 @@ function initialize() {
     );
     throw error;
   }
-  tlsIdentity = createTlsIdentity(
-    DATA_DIR,
-    networkAddresses().map((entry) => entry.address),
-  );
-  secureServer = https.createServer({ key: tlsIdentity.key, cert: tlsIdentity.cert }, httpHandler);
-  secureServer.on('error', logServerError);
   connectionManager = createWebSocketGateway({
-    servers: [server, secureServer],
+    servers: [server, lanServer],
     getToken: () => TOKEN,
     getLocalPort: () => PORT,
     layout: {
@@ -143,6 +132,16 @@ function broadcast(payload) {
   connectionManager?.broadcast(payload);
 }
 
+function onMidiInput(payload) {
+  const result = updatesFromMidi(layout, payload.data);
+  if (result.updates.length) {
+    layout = result.layout;
+    scheduleLayoutSave();
+    broadcast({ type: 'controls', controls: result.updates, sourceId: '' });
+  }
+  broadcast(payload);
+}
+
 function layoutPayload() {
   return { type: 'layout', layout };
 }
@@ -165,7 +164,7 @@ function rotateToken() {
 }
 
 function mobileUrl() {
-  return `https://${networkAddress()}:${SECURE_PORT}/#bridgeToken=${encodeURIComponent(TOKEN)}`;
+  return `http://${networkAddress()}:${LAN_PORT}/#bridgeToken=${encodeURIComponent(TOKEN)}`;
 }
 
 function logServerError(error) {
@@ -175,10 +174,8 @@ function logServerError(error) {
 const httpHandler = createHttpHandler({
   clientDir: CLIENT_DIR,
   getPort: () => PORT,
-  getSecurePort: () => SECURE_PORT,
+  getLanPort: () => LAN_PORT,
   getToken: () => TOKEN,
-  getCaCertificate: () => tlsIdentity?.caCertificate || '',
-  getCaFingerprint: () => tlsIdentity?.fingerprint || '',
   getLayout: () => layout,
   setLayout: (nextLayout) => {
     layout = nextLayout;
@@ -195,10 +192,12 @@ const httpHandler = createHttpHandler({
   broadcast,
   entitlementService,
   supabaseClient,
-  updateChecker,
+  updateChecker: { checkForUpdate: () => updateChecker.checkForUpdate() },
 });
 const server = http.createServer(httpHandler);
 server.on('error', logServerError);
+const lanServer = http.createServer(httpHandler);
+lanServer.on('error', logServerError);
 
 function listenWithFallback(listener, firstPort, host) {
   const lastPort = firstPort === 0 ? 0 : Math.min(firstPort + 20, 65535);
@@ -253,16 +252,16 @@ function closeServer(listener) {
   });
 }
 
-async function start(startPort = BASE_PORT) {
-  if (server.listening && secureServer?.listening) return PORT;
+async function start(startPort = BASE_PORT, { currentVersion } = {}) {
+  if (server.listening && lanServer.listening) return PORT;
+  if (currentVersion !== undefined) updateChecker = createUpdateChecker({ currentVersion });
   initialize();
   const firstPort =
     Number.isInteger(startPort) && startPort >= 0 && startPort <= 65535 ? startPort : BASE_PORT;
   PORT = await listenWithFallback(server, firstPort, HOST);
   try {
-    const firstSecurePort =
-      BASE_SECURE_PORT === BASE_PORT && PORT < 65535 ? PORT + 1 : BASE_SECURE_PORT;
-    SECURE_PORT = await listenWithFallback(secureServer, firstSecurePort, SECURE_HOST);
+    const firstLanPort = BASE_LAN_PORT === BASE_PORT && PORT < 65535 ? PORT + 1 : BASE_LAN_PORT;
+    LAN_PORT = await listenWithFallback(lanServer, firstLanPort, LAN_HOST);
   } catch (error) {
     await closeServer(server);
     PORT = BASE_PORT;
@@ -270,17 +269,17 @@ async function start(startPort = BASE_PORT) {
   }
 
   entitlementRefreshTimer = setInterval(() => {
-    entitlementService.getEntitlement().catch((error) => {
-      console.error('Não foi possível revalidar a licença:', error);
+    entitlementService.getEntitlement().catch(() => {
+      console.error('Não foi possível revalidar a licença.');
     });
   }, 30 * 1000);
   entitlementRefreshTimer.unref();
-  console.log(`FaderDeck · ponte local ativa na porta ${PORT}; HTTPS LAN na ${SECURE_PORT}.`);
+  console.log(`FaderDeck · ponte local ativa na porta ${PORT}; HTTP LAN na ${LAN_PORT}.`);
   if (require.main === module) {
     const ip = networkAddress();
-    console.log(`Painel HTTPS na rede: https://${ip}:${SECURE_PORT}/`);
+    console.log(`Painel HTTP na rede: http://${ip}:${LAN_PORT}/`);
     console.log(`Admin / QR:        http://127.0.0.1:${PORT}/bridge`);
-    console.log(`Endereço de rede: ${ip}. Instale o certificado CA antes de conectar.`);
+    console.log('Use somente uma rede local confiável; a conexão HTTP não é criptografada.');
     console.log('Pressione Ctrl+C para encerrar.\n');
   }
   return PORT;
@@ -300,7 +299,7 @@ async function shutdown() {
     }
     midiManager?.shutdown();
     connectionManager?.terminateAll();
-    await Promise.all([closeServer(server), closeServer(secureServer)]);
+    await Promise.all([closeServer(server), closeServer(lanServer)]);
   })();
   try {
     await shutdownPromise;
@@ -333,14 +332,14 @@ if (require.main === module) {
 
 module.exports = {
   server,
-  getHttpsServer: () => secureServer,
+  lanServer,
   start,
   stop: shutdown,
   shutdown,
   rotateToken,
   getToken: () => TOKEN,
   getPort: () => PORT,
-  getSecurePort: () => SECURE_PORT,
+  getLanPort: () => LAN_PORT,
   dataDir: DATA_DIR,
   networkAddress,
   networkAddresses,

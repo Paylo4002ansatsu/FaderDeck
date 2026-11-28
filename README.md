@@ -48,15 +48,16 @@ Fonte da captura: [tutorial Silence & Sound sobre loopMIDI](https://www.silencea
 
 O endereço local padrão da administração é `http://127.0.0.1:8787/bridge`. Se a porta 8787 estiver ocupada, o app seleciona outra porta livre; abra a administração pelo menu do FaderDeck, que usa o endereço correto.
 
-**Entrada MIDI para MIDI Learn** é opcional e serve para receber um controlador MIDI externo. Para enviar os controles do FaderDeck à DAW, configure a saída.
+**Entrada MIDI para MIDI Learn** é opcional e recebe mensagens de controladores ou da DAW. Para refletir movimentos da DAW nos faders e pads, selecione nessa entrada a porta pela qual a DAW envia o retorno MIDI e habilite o envio correspondente na DAW. Evite criar um loop de MIDI entre as portas.
 
 ### 4. Conecte o celular
 
 1. Deixe o computador e o celular na mesma rede Wi‑Fi.
-2. Na primeira conexão, abra **Portas MIDI e administração…** no FaderDeck e baixe o certificado CA exibido na tela. Transfira o arquivo ao celular por um meio confiável e compare a impressão digital SHA-256 com a mostrada no computador antes de confiar nele.
-3. Instale e confie no certificado CA nas configurações de segurança do celular. No iPhone, instale o perfil em **Ajustes → Geral → VPN e Gerenciamento de Dispositivo** e habilite confiança total em **Ajustes → Geral → Sobre → Ajustes de Confiança de Certificados**. No Android, use a opção do sistema para instalar um certificado CA; os nomes variam por fabricante.
-4. Depois da instalação, escaneie o QR exibido na tela. O controle remoto usa HTTPS/WSS; o código de pareamento fica no fragmento do link e não é enviado na requisição inicial.
-5. Se o Firewall do Windows perguntar, permita conexões do FaderDeck em redes privadas. Redes Wi‑Fi de convidados podem bloquear a comunicação entre aparelhos.
+2. Escaneie o QR exibido no FaderDeck; não é necessário instalar certificado.
+3. Use uma rede confiável: o controle remoto usa HTTP/WS sem criptografia. O código de pareamento e as mensagens podem ser interceptados na rede; não compartilhe o QR e não exponha a porta à internet.
+4. No macOS, permita o acesso à rede local quando solicitado. Redes Wi‑Fi de convidados podem bloquear a comunicação entre aparelhos.
+
+Após o pareamento, o indicador no topo mostra o estado da conexão. Faders e pads compartilham seus movimentos entre o computador e os dispositivos conectados; o retorno da DAW depende da entrada MIDI configurada acima.
 
 ### 5. Habilite a entrada na sua DAW
 
@@ -76,13 +77,19 @@ Por enquanto, o FaderDeck anuncia suporte documentado somente para **ChurchDAW**
 5. O FaderDeck cria automaticamente a porta MIDI virtual **FaderDeck**. Não é necessário ativar o IAC Driver. Se já existir uma porta IAC com o mesmo nome, use apenas uma das duas.
 6. Para usar o iPhone, mantenha-o na mesma rede Wi‑Fi do Mac e escaneie o QR exibido pelo FaderDeck.
 
-No macOS, layouts, token de pareamento, identidade da autoridade certificadora local e dados do painel são guardados fora do app em `~/Library/Application Support/FaderDeck` e preservados nas atualizações. Não compartilhe o arquivo privado da autoridade certificadora; somente o certificado público `faderdeck-local-ca.crt` deve ser instalado no celular. A administração local usa HTTP em loopback; a porta HTTPS da rede começa em `8788` e pode avançar se estiver ocupada.
+No macOS, layouts, token de pareamento e dados do painel são guardados fora do app em `~/Library/Application Support/FaderDeck` e preservados nas atualizações. A administração usa HTTP em loopback; a porta HTTP da rede começa em `8788` e pode avançar se estiver ocupada. O instalador Windows solicita autorização administrativa para configurar o firewall para redes privadas.
+
+O controlador aberto pelo QR conecta o WebSocket ao mesmo endereço e porta da página. Se o código de pareamento for renovado, escaneie o novo QR.
+
+No modo **Editar**, arraste a alça de um fader sobre outro para mudar sua posição na grade. A ordem é salva no painel e usada também no **Palco**; coordenadas livres de layouts antigos não determinam mais a posição dos controles.
+
+O aviso de rede local depende do macOS e da assinatura do aplicativo. A configuração atual não usa uma identidade de assinatura emitida pela Apple; para comportamento confiável em distribuição, é necessário assinar o app e validar a permissão em um Mac real.
 
 ## Solução de problemas
 
 - **A porta não aparece:** confirme que o loopMIDI está aberto, que `FaderDeck` aparece na lista do loopMIDI e que a DAW foi reiniciada depois de criar a porta.
 - **A DAW não responde:** confirme a saída selecionada no FaderDeck, clique **Aplicar portas MIDI**, habilite a entrada correta na DAW e repita o fluxo MIDI Learn.
-- **O celular não conecta:** confira se os aparelhos estão na mesma rede Wi‑Fi, se o certificado CA do FaderDeck está instalado e confiável, e se o Firewall permite conexões locais em rede privada. Redes de convidados podem bloquear dispositivos entre si.
+- **O celular não conecta:** confira se os aparelhos estão na mesma rede Wi‑Fi e se o Firewall permite conexões locais em rede privada. Redes de convidados podem bloquear dispositivos entre si.
 - **A porta some ao reiniciar o Windows:** reabra o loopMIDI, recrie `FaderDeck` se necessário e procure no menu do ícone da bandeja a opção de inicialização automática.
 - **MIDI Learn não funciona:** confira o canal e o número CC/nota, e confirme que o tipo de mensagem enviado pelo controle é compatível com o que a DAW espera.
 
@@ -94,13 +101,16 @@ O instalador desktop é o caminho recomendado e não requer Node.js. Estas etapa
 2. No Windows, instale e abra loopMIDI e crie a porta `FaderDeck`; no macOS, a ponte cria a porta automaticamente.
 3. Extraia o ZIP, abra o PowerShell/Terminal nessa pasta e rode `npm install` na primeira vez; depois rode `npm start`.
 4. Abra `http://127.0.0.1:8787/bridge` no computador. Se 8787 estiver ocupada, use o endereço informado pelo servidor.
-5. Na primeira conexão, baixe o certificado CA na tela, transfira-o ao celular por um meio confiável, confira a impressão digital e instale/confie no certificado.
-6. Na tela da ponte, selecione a saída MIDI e clique **Aplicar portas MIDI**. Use o QR para conectar o celular na mesma rede local por HTTPS.
+5. Na tela da ponte, selecione a saída MIDI e clique **Aplicar portas MIDI**. Use o QR para conectar o celular na mesma rede local por HTTP.
 
-Se o módulo nativo `@julusian/midi` precisar ser compilado e a instalação falhar, no Windows instale Python 3 e Visual Studio Build Tools com a carga de trabalho C++ Desktop. No macOS, instale as ferramentas de linha de comando do Xcode com `xcode-select --install`. Não exponha a ponte à internet nem encaminhe a porta HTTPS LAN no roteador.
+Se o módulo nativo `@julusian/midi` precisar ser compilado e a instalação falhar, no Windows instale Python 3 e Visual Studio Build Tools com a carga de trabalho C++ Desktop. No macOS, instale as ferramentas de linha de comando do Xcode com `xcode-select --install`. Não exponha a ponte à internet nem encaminhe a porta HTTP LAN no roteador.
 
 ## Desenvolvimento
 
 Somente para quem vai executar ou empacotar o código-fonte: o projeto requer Node.js 22 ou mais recente; Python 3 é necessário para reconstruir o ZIP da ponte. Instale dependências com `npm install`, execute o desktop com `npm start`, valide com `npm run check` e gere o ZIP atualizado com `npm run package:bridge`. O desktop usa os arquivos de `client/` e `assets/` diretamente; não é necessário compilar o frontend antes de iniciá-lo. `npm run build:site` compila apenas o site. Os instaladores Electron são gerados pelo workflow de release do GitHub Actions.
+
+Para mostrar novidades no aviso de atualização desktop, inclua tópicos curtos e amigáveis sob `### Destaques para você` na seção da versão em [CHANGELOG.md](CHANGELOG.md). Detalhes técnicos ficam em `### Correções & Arquitetura`. O workflow inclui a seção da versão marcada nas notas da release; publicações manuais devem copiar essa seção para o corpo da release. O modal reúne os destaques das releases publicadas posteriores à versão instalada, sem repetições; se nenhuma tiver destaques, não mostra descrição.
+
+O aviso de atualização aguarda a validação da conta: se o acesso estiver bloqueado ou não puder ser verificado, a tela de acesso tem prioridade. Atualizar o aplicativo não reinicia o período de avaliação.
 
 Para a recuperação de senha no desktop funcionar, configure o template de e-mail de recuperação do Supabase para exibir `{{ .Token }}` (código numérico de 6 a 8 dígitos), em vez de depender apenas de `{{ .ConfirmationURL }}`. Essa configuração também deve ser aplicada ao projeto Supabase implantado.

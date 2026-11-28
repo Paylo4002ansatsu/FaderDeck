@@ -1,4 +1,4 @@
-const CACHE_NAME = 'faderdeck-shell-v4';
+const CACHE_NAME = 'faderdeck-shell-v10';
 const CORE_ASSETS = [
   '/',
   '/assets/ibm-plex-mono-latin-400-normal-CvHOgSBP.woff',
@@ -6,7 +6,7 @@ const CORE_ASSETS = [
   '/assets/ibm-plex-mono-latin-500-normal-CB9ihrfo.woff',
   '/assets/ibm-plex-mono-latin-500-normal-DSY6xOcd.woff2',
   '/assets/index-DJXyPAik.css',
-  '/assets/index-RrCrAh5A.js',
+  '/assets/index-RrCrAh5A.js?v=6',
   '/assets/inter-latin-400-normal-C38fXH4l.woff2',
   '/assets/inter-latin-400-normal-CyCys3Eg.woff',
   '/assets/inter-latin-500-normal-BL9OpVg8.woff',
@@ -19,10 +19,13 @@ const CORE_ASSETS = [
   '/icons/faderdeck-192.png',
   '/icons/faderdeck-512.png',
   '/icons/faderdeck.svg',
+  '/grid-reorder.js',
+  '/connection-indicator.js',
+  '/connection-indicator.css',
   '/keepalive.mp4',
   '/manifest.webmanifest',
   '/manus-routes.json',
-  '/stage-mode-enhancements.css',
+  '/stage-mode-enhancements.css?v=3',
   '/stage-mode-enhancements.js',
 ];
 

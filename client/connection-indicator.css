@@ -1,0 +1,58 @@
+.fd-connection-indicator {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid #73592c;
+  border-radius: 999px;
+  background: #282219;
+  color: #f8d592;
+  font:
+    600 10px/1.2 system-ui,
+    sans-serif;
+  white-space: nowrap;
+}
+
+button.fd-connection-indicator {
+  cursor: pointer;
+}
+
+.fd-connection-indicator::before {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: #e7aa4a;
+  content: '';
+}
+
+.fd-connection-indicator.connected {
+  border-color: #285d48;
+  background: #142a21;
+  color: #9de8be;
+}
+
+.fd-connection-indicator.connected::before {
+  background: #38d681;
+}
+
+.stage-mode > .fd-connection-indicator {
+  align-self: flex-end;
+  margin: 4px 10px;
+}
+
+.stage-mode > .workspace-layout {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+}
+
+@media (max-width: 700px) {
+  .fd-connection-indicator {
+    gap: 4px;
+    padding: 4px 6px;
+    font-size: 8px;
+  }
+}

@@ -15,6 +15,9 @@
   #fdqr-btn.fdqr-float{position:fixed;left:max(14px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));z-index:2147482000;display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 12px;
     font:600 12px -apple-system,sans-serif;color:var(--brand,#2fe0c0);background:#13201f;border:1px solid var(--brand,#2fe0c0);border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.45)}
   #fdqr-btn.fdqr-float kbd{display:none}
+  .fdqr-connected-toast{position:fixed;top:max(18px,env(safe-area-inset-top));left:50%;z-index:2147483100;display:flex;align-items:center;gap:10px;padding:13px 18px;border:1px solid #285d48;border-radius:12px;background:#142a21;color:#e5fff0;box-shadow:0 12px 35px rgba(0,0,0,.4);font:600 13px -apple-system,sans-serif;transform:translateX(-50%);transition:opacity .3s ease}
+  .fdqr-connected-toast span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#32c875;color:#06251b;font-weight:800}
+  .fdqr-connected-toast.fdqr-fading{opacity:0}
   .fdqr-backdrop{position:fixed;inset:0;z-index:2147483000;background:rgba(5,12,11,.72);display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
   .fdqr-card{position:relative;width:min(420px,92vw);max-height:92vh;overflow:auto;background:#13201f;color:#eef8f6;border:1px solid #2a3d3b;border-radius:18px;padding:26px 24px 22px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6)}
   .fdqr-card h2{margin:0 0 4px;font-size:20px}
@@ -28,7 +31,6 @@
   .fdqr-act{cursor:pointer;border-radius:9px;border:1px solid #2fe0c0;background:#2fe0c0;color:#0c1716;font:700 13px -apple-system,sans-serif;padding:9px 14px}
   .fdqr-act.sec{background:transparent;color:#2fe0c0}
   .fdqr-note{margin:6px 0 0;font-size:12px;line-height:1.5;color:#a9c4c0;text-align:left}
-  .fdqr-cert-hint{display:block;margin-top:7px;color:#a9c4c0;font-size:inherit;line-height:inherit}
   .fdqr-status{min-height:18px;margin:8px 0 0;font-size:13px;color:#a9c4c0}
   .fdqr-status.ok{color:#2fe0c0;font-weight:700}
   #fd-account-status{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));z-index:2147482000;display:flex;align-items:center;gap:8px;max-width:calc(100vw - 28px);padding:7px 10px;border:1px solid #2a3d3b;border-radius:10px;background:#13201f;color:#a9c4c0;box-shadow:0 4px 18px rgba(0,0,0,.4);font:11px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -114,16 +116,26 @@
       (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c],
     );
   let modal = null;
-  let pollTimer = null;
   let opening = false;
   let accountStatusPromise = null;
   let accountStatusPending = false;
+  let accountStatusGeneration = 0;
+
+  function publishAccountStatus(status) {
+    renderAccountIndicator(status);
+    window.dispatchEvent(new CustomEvent('faderdeck:account-status', { detail: status }));
+    if (
+      status?.entitlement?.allowed !== true &&
+      (!modal?.querySelector('.fdqr-access') || modal.dataset.accessBlocked !== 'true')
+    ) {
+      showAccess(
+        status,
+        status ? '' : 'Não foi possível consultar a conta. Verifique a conexão e tente novamente.',
+      );
+    }
+  }
 
   function close() {
-    if (pollTimer) {
-      clearInterval(pollTimer);
-      pollTimer = null;
-    }
     document.removeEventListener('keydown', onKey, true);
     if (modal) {
       modal.remove();
@@ -133,16 +145,11 @@
   function onKey(event) {
     if (event.key === 'Escape') {
       event.stopPropagation();
+      if (modal?.dataset.accessBlocked === 'true') {
+        event.preventDefault();
+        return;
+      }
       close();
-    }
-  }
-
-  async function remoteCount() {
-    try {
-      const r = await fetch('/api/status', { cache: 'no-store' });
-      return Number((await r.json()).remoteClients) || 0;
-    } catch {
-      return 0;
     }
   }
 
@@ -237,6 +244,7 @@
     if (modal) close();
     modal = document.createElement('div');
     modal.className = 'fdqr-backdrop';
+    modal.dataset.accessBlocked = String(status?.entitlement?.allowed !== true);
     const card = document.createElement('div');
     card.className = 'fdqr-card fdqr-access';
     card.setAttribute('role', 'dialog');
@@ -284,7 +292,16 @@
     const accountMessage = document.createElement('p');
     accountMessage.className = 'fdqr-sub';
     const authenticated = status?.session?.authenticated === true;
-    title.textContent = authenticated ? 'Sua conta FaderDeck' : '';
+    const trialExpired =
+      authenticated &&
+      status.trial_expired === true &&
+      status.entitlement?.allowed !== true &&
+      status.entitlement?.kind !== 'license';
+    title.textContent = authenticated
+      ? trialExpired
+        ? 'Período de Avaliação Encerrado'
+        : 'Sua conta FaderDeck'
+      : '';
     accountMessage.textContent = authenticated ? `Conta: ${status.session.email || ''}` : '';
     heading.append(title, accountMessage);
     accountPanel.appendChild(heading);
@@ -907,22 +924,30 @@
     }
 
     accountStatusPending = true;
+    const generation = accountStatusGeneration;
     accountStatusPromise = requestJson('/api/account/status')
       .then((status) => {
-        renderAccountIndicator(status);
+        if (generation !== accountStatusGeneration) return accountStatusPromise;
+        publishAccountStatus(status);
         return status;
       })
-      .catch(() => null)
+      .catch((error) => {
+        if (generation !== accountStatusGeneration) return accountStatusPromise;
+        console.warn('Não foi possível consultar o estado da conta:', error);
+        publishAccountStatus(null);
+        return null;
+      })
       .finally(() => {
-        accountStatusPending = false;
+        if (generation === accountStatusGeneration) accountStatusPending = false;
       });
     return accountStatusPromise;
   }
 
   function setAccountStatus(status) {
+    accountStatusGeneration += 1;
     accountStatusPending = false;
     accountStatusPromise = Promise.resolve(status);
-    renderAccountIndicator(status);
+    publishAccountStatus(status);
   }
 
   async function open() {
@@ -945,6 +970,7 @@
 
       modal = document.createElement('div');
       modal.className = 'fdqr-backdrop';
+      const qrModal = modal;
       modal.innerHTML =
         '<div class="fdqr-card" role="dialog" aria-modal="true" aria-label="Conectar celular">' +
         '<button class="fdqr-x" type="button" aria-label="Fechar">×</button>' +
@@ -978,7 +1004,7 @@
         const response = await fetch('/api/pairing', { cache: 'no-store' });
         if (!response.ok) throw new Error('HTTP ' + response.status);
         pairing = await response.json();
-        if (!modal) return;
+        if (modal !== qrModal) return;
         modal.querySelector('.fdqr-qr').innerHTML =
           '<img alt="QR para conectar o celular" src="' + esc(pairing.qr) + '">';
         modal.querySelector('.fdqr-url').textContent = pairing.url;
@@ -988,29 +1014,36 @@
         modal.querySelector('.fdqr-note').innerHTML =
           '<strong>IPs deste computador:</strong> ' +
           esc(ips) +
-          '<br><strong>Não abre no celular?</strong> Confira o mesmo Wi-Fi e permita conexões de entrada para o FaderDeck em Ajustes do Sistema → Rede → Firewall.' +
-          '<span class="fdqr-cert-hint">Aviso no navegador (&#39;Conexão não é privada&#39;)? Toque em Mostrar Detalhes → Visitar este site (iPhone/Safari) ou Avançado → Ir para o endereço (Android/Chrome).</span>';
+          '<br>Use uma rede confiável: a conexão local não é criptografada. Se não conectar, confira o mesmo Wi-Fi.';
       } catch {
-        modal.querySelector('.fdqr-qr').textContent =
+        if (modal !== qrModal) return;
+        qrModal.querySelector('.fdqr-qr').textContent =
           'Não foi possível carregar o QR. Verifique a conexão com a ponte e tente novamente.';
         return;
       }
-
-      const initial = await remoteCount();
-      pollTimer = setInterval(async () => {
-        if (!modal) return;
-        if ((await remoteCount()) > initial) {
-          statusEl.textContent = '✓ Celular conectado!';
-          statusEl.className = 'fdqr-status ok';
-          clearInterval(pollTimer);
-          pollTimer = null;
-          setTimeout(close, 1400);
-        }
-      }, 1500);
     } finally {
       opening = false;
     }
   }
+
+  let toastTimer;
+  window.addEventListener('faderdeck:mobile-connected', () => {
+    if (modal && !modal.querySelector('.fdqr-access')) close();
+    let toast = document.querySelector('.fdqr-connected-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'fdqr-connected-toast';
+      toast.setAttribute('role', 'status');
+      toast.innerHTML = '<span aria-hidden="true">✓</span>Dispositivo conectado';
+      document.body.appendChild(toast);
+    }
+    toast.classList.remove('fdqr-fading');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.add('fdqr-fading');
+      toastTimer = setTimeout(() => toast.remove(), 300);
+    }, 2500);
+  });
 
   function railUsable(rail) {
     if (!rail) return false;
@@ -1067,6 +1100,8 @@
   ensureButton();
 
   window.__fdShowQr = open;
+  window.__fdGetAccountStatus = getAccountStatus;
+  window.__fdAccountOverlayBusy = () => opening || !!modal;
   getAccountStatus().then((status) => {
     if (!modal && status?.entitlement?.allowed !== true) {
       showAccess(

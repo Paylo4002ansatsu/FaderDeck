@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const RELEASES_API_URL = 'https://api.github.com/repos/Paylo4002ansatsu/FaderDeck/releases/latest';
+const RELEASES_API_URL = 'https://api.github.com/repos/Paylo4002ansatsu/FaderDeck/releases';
 const RELEASE_PAGE_URL = 'https://github.com/Paylo4002ansatsu/FaderDeck/releases/latest';
 const DEFAULT_TIMEOUT_MS = 4000;
 const DEFAULT_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -109,8 +109,57 @@ function offlineStatus(currentVersion) {
   };
 }
 
+function versionSection(changelog, version) {
+  const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const heading = new RegExp(
+    `^##\\s+(?:\\[v?${escapedVersion}\\]|v?${escapedVersion})(?:\\s|$)`,
+    'i',
+  );
+  const lines = changelog.split(/\r?\n/);
+  const start = lines.findIndex((line) => heading.test(line));
+  if (start < 0) return '';
+  let end = start + 1;
+  while (end < lines.length && !/^##\s/.test(lines[end])) end += 1;
+  return lines.slice(start, end).join('\n').trim();
+}
+
+function userFacingNotes(body, version) {
+  if (typeof body !== 'string') return '';
+  if (/^##\s+(?:\[v?\d+\.\d+\.\d+[^]]*\]|v?\d+\.\d+\.\d+(?:[-+][\w.-]+)?)(?:\s|$)/im.test(body)) {
+    body = versionSection(body, version);
+  }
+  const lines = body.split(/\r?\n/);
+  let inFence = false;
+  let inHighlights = false;
+  const items = [];
+  for (const line of lines) {
+    if (/^ {0,3}(?:`{3,}|~{3,})/.test(line)) {
+      if (inHighlights) break;
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    if (!inHighlights) {
+      inHighlights = /^ {0,3}###\s+Destaques para você\s*#*\s*$/i.test(line);
+      continue;
+    }
+    if (!line.trim()) continue;
+    const match = line.match(/^ {0,3}(?:[-+*]|\d+[.)])\s+(.+)$/);
+    if (!match) break;
+    const item = match[1]
+      .replace(/!?\[([^\]]*)\]\([^)]+\)/g, '$1')
+      .replace(/<[^>]*>/g, '')
+      .replace(/[*_`~]/g, '')
+      .trim();
+    if (!item || /https?:\/\/|www\.|full changelog/i.test(item)) continue;
+    items.push(item);
+  }
+  return items.join('\n');
+}
+
 function createUpdateChecker({
   packageJsonPath = path.join(__dirname, '..', 'package.json'),
+  currentVersion: installedVersion,
   platform = process.platform,
   fetchImpl = globalThis.fetch,
   timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -123,6 +172,10 @@ function createUpdateChecker({
     if (!parseVersion(currentVersion)) currentVersion = '0.0.0';
   } catch {
     currentVersion = '0.0.0';
+  }
+  if (installedVersion !== undefined) {
+    if (!parseVersion(installedVersion)) throw new TypeError('Versão instalada inválida.');
+    currentVersion = installedVersion;
   }
 
   let cachedStatus = null;
@@ -140,33 +193,59 @@ function createUpdateChecker({
       timeout.unref?.();
 
       try {
-        const response = await fetchImpl(RELEASES_API_URL, {
-          headers: {
-            Accept: 'application/vnd.github+json',
-            'User-Agent': 'FaderDeck-Update-Checker',
-            'X-GitHub-Api-Version': '2022-11-28',
-          },
-          signal: controller.signal,
-        });
-        if (!response.ok) return offlineStatus(currentVersion);
+        const releases = [];
+        let page = 1;
+        let hasNext;
+        do {
+          const response = await fetchImpl(`${RELEASES_API_URL}?per_page=100&page=${page}`, {
+            headers: {
+              Accept: 'application/vnd.github+json',
+              'User-Agent': 'FaderDeck-Update-Checker',
+              'X-GitHub-Api-Version': '2022-11-28',
+            },
+            signal: controller.signal,
+          });
+          if (!response.ok) throw new Error(`GitHub respondeu HTTP ${response.status}.`);
+          const results = await response.json();
+          if (!Array.isArray(results)) throw new TypeError('Lista de releases inválida.');
+          releases.push(...results);
+          const link = response.headers?.get('link');
+          hasNext = link ? /\brel\s*=\s*"next"/i.test(link) : results.length === 100;
+          page += 1;
+        } while (hasNext);
 
-        const release = await response.json();
-        const latestVersion =
-          typeof release?.tag_name === 'string' ? release.tag_name.replace(/^v/i, '') : null;
-        const comparison = compareVersions(latestVersion, currentVersion);
-        if (comparison === null) return offlineStatus(currentVersion);
+        const published = releases
+          .filter((release) => {
+            const version = parseVersion(release?.tag_name);
+            return (
+              release?.draft !== true &&
+              release?.prerelease !== true &&
+              version?.prerelease.length === 0
+            );
+          })
+          .sort((a, b) => compareVersions(b.tag_name, a.tag_name));
+        if (published.length === 0) return offlineStatus(currentVersion);
+
+        const release = published[0];
+        const latestVersion = release.tag_name.replace(/^v/i, '');
+        const pending = published.filter(
+          (item) => compareVersions(item.tag_name, currentVersion) > 0,
+        );
+        const releaseNotes = [
+          ...new Set(
+            pending.flatMap((item) =>
+              userFacingNotes(item.body, item.tag_name.replace(/^v/i, ''))
+                .split('\n')
+                .filter(Boolean),
+            ),
+          ),
+        ].join('\n');
 
         const releaseUrl = safeHttpsUrl(release.html_url, RELEASE_PAGE_URL);
-        const releaseNotes = [release.name, release.body]
-          .filter((part) => typeof part === 'string' && part.trim())
-          .join('\n\n')
-          .replace(/\[(?:REQUIRED|OBRIGATORIA)\]/gi, '')
-          .trim()
-          .slice(0, 8000);
         const mandatory = /\[(?:REQUIRED|OBRIGATORIA)\]/i.test(
           `${release.name || ''}\n${release.body || ''}`,
         );
-        const updateAvailable = comparison > 0;
+        const updateAvailable = pending.length > 0;
 
         return {
           currentVersion,
@@ -179,7 +258,8 @@ function createUpdateChecker({
             : null,
           releaseUrl,
         };
-      } catch {
+      } catch (error) {
+        console.warn('Não foi possível consultar as releases:', error);
         return offlineStatus(currentVersion);
       } finally {
         clearTimeout(timeout);
@@ -201,4 +281,5 @@ module.exports = {
   createUpdateChecker,
   parseVersion,
   selectDownloadUrl,
+  versionSection,
 };

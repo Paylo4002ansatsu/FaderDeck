@@ -100,9 +100,18 @@ test('Electron main-window access modal renders the redesigned account flows', (
   );
 });
 
-test('QR modal explains how to continue past the local HTTPS certificate warning', () => {
-  assert.match(desktopOverlay, /Aviso no navegador \(&#39;Conexão não é privada&#39;\)\?/);
-  assert.match(desktopOverlay, /Mostrar Detalhes → Visitar este site \(iPhone\/Safari\)/);
-  assert.match(desktopOverlay, /Avançado → Ir para o endereço \(Android\/Chrome\)/);
-  assert.match(desktopOverlay, /\.fdqr-cert-hint\{display:block;margin-top:7px/);
+test('QR modal warns that the local connection is not encrypted', () => {
+  assert.match(desktopOverlay, /Use uma rede confiável: a conexão local não é criptografada/);
+  assert.doesNotMatch(desktopOverlay, /Conexão não é privada/);
+});
+
+test('only the Electron window injects the update modal', () => {
+  const root = path.join(__dirname, '..');
+  const client = fs.readFileSync(path.join(root, 'client/index.html'), 'utf8');
+  const admin = fs.readFileSync(path.join(root, 'client/admin/index.html'), 'utf8');
+  const main = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
+  assert.doesNotMatch(client, /<script[^>]+update-modal\.js/);
+  assert.doesNotMatch(admin, /<script[^>]+update-modal\.js/);
+  assert.match(main, /client', 'update-modal\.js'/);
+  assert.match(main, /executeJavaScript\(updateModal\)/);
 });

@@ -19,15 +19,22 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="FaderDeck" />
     <title>FaderDeck — Controlador MIDI</title>
-    <script src="/bridge-bootstrap.js"></script>
-    <script type="module" crossorigin src="/assets/index-RrCrAh5A.js"></script>
+    <script src="/api/bridge-config.js"></script>
+    <script src="/bridge-bootstrap.js?v=3"></script>
+    <script src="/grid-reorder.js"></script>
+    <script defer src="/connection-indicator.js"></script>
+    <script type="module" crossorigin src="/assets/index-RrCrAh5A.js?v=6"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-DJXyPAik.css" />
-    <link rel="stylesheet" href="/stage-mode-enhancements.css" />
-    <link rel="stylesheet" href="/update-modal.css?v=1" />
-    <script defer src="/update-modal.js?v=1"></script>
+    <link rel="stylesheet" href="/stage-mode-enhancements.css?v=3" />
+    <link rel="stylesheet" href="/connection-indicator.css" />
+    <link rel="stylesheet" href="/update-modal.css?v=3" />
     <script defer src="/stage-mode-enhancements.js"></script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <p class="fd-loading" role="status">
+        Carregando o controlador. Se o painel não abrir, atualize a página e confira a conexão.
+      </p>
+    </div>
   </body>
 </html>

@@ -1,7 +1,7 @@
 {
   "name": "faderdeck",
   "productName": "FaderDeck",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "FaderDeck: controlador MIDI customizável com ponte local para a sua DAW",
   "author": "FaderDeck",
   "main": "main.js",
@@ -33,7 +33,6 @@
   "dependencies": {
     "@julusian/midi": "^3.5.0",
     "@supabase/supabase-js": "^2.119.2",
-    "node-forge": "^1.4.4",
     "qrcode": "^1.5.4",
     "ws": "^8.18.3"
   },
@@ -92,7 +91,10 @@
       ],
       "x64ArchFiles": "Contents/Resources/app.asar.unpacked/node_modules/@julusian/midi/prebuilds/midi-darwin-*/**",
       "extendInfo": {
-        "NSLocalNetworkUsageDescription": "O FaderDeck usa a rede local para receber os controles do seu celular.",
+        "NSLocalNetworkUsageDescription": "O FaderDeck precisa acessar a rede local para conectar seu celular ou tablet como controlador MIDI sem fio.",
+        "NSBonjourServices": [
+          "_faderdeck._tcp"
+        ],
         "LSUIElement": false
       }
     },
@@ -110,7 +112,9 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true,
+      "include": "build/installer.nsh"
     },
     "dmg": {
       "title": "FaderDeck",

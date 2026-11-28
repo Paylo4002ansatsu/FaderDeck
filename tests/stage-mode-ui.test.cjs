@@ -445,8 +445,8 @@ test('o app carrega e armazena em cache os assets auxiliares do palco', () => {
   assert.match(html, /viewport-fit=cover/);
   assert.match(html, /stage-mode-enhancements\.css/);
   assert.match(html, /stage-mode-enhancements\.js/);
-  assert.match(serviceWorker, /faderdeck-shell-v4/);
-  assert.match(serviceWorker, /'\/stage-mode-enhancements\.css'/);
+  assert.match(serviceWorker, /faderdeck-shell-v10/);
+  assert.match(serviceWorker, /'\/stage-mode-enhancements\.css\?v=3'/);
   assert.match(serviceWorker, /'\/stage-mode-enhancements\.js'/);
   assert.match(styles, /min-height:\s*48px/);
   assert.match(styles, /safe-area-inset-top/);

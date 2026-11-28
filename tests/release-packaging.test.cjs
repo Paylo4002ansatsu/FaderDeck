@@ -101,6 +101,19 @@ test('Windows and macOS artifacts use distinct names suitable for one release', 
   assert.notEqual(packageJson.build.win.artifactName, packageJson.build.mac.artifactName);
 });
 
+test('installer config scopes the firewall rule to the app and private local networks', () => {
+  const installer = fs.readFileSync(path.join(root, 'build/installer.nsh'), 'utf8');
+  assert.equal(packageJson.build.nsis.perMachine, true);
+  assert.equal(packageJson.build.nsis.include, 'build/installer.nsh');
+  assert.match(
+    installer,
+    /add rule.*program="\$INSTDIR\\\$\{APP_EXECUTABLE_FILENAME\}".*profile=private remoteip=localsubnet protocol=TCP/,
+  );
+  assert.match(installer, /customUnInstall[\s\S]*delete rule/);
+  assert.ok(packageJson.build.mac.extendInfo.NSLocalNetworkUsageDescription);
+  assert.ok(packageJson.build.mac.extendInfo.NSBonjourServices.includes('_faderdeck._tcp'));
+});
+
 test('tagged release publishes both platforms before updating site links', () => {
   assert.match(workflow, /release_tag:/);
   assert.match(workflow, /artifact_run_id:/);
@@ -113,9 +126,15 @@ test('tagged release publishes both platforms before updating site links', () =>
   assert.match(workflow, /--config\.mac\.minimumSystemVersion=12\.0\.0/);
   const releaseJob = workflow.split('publish-release:')[1]?.split('update-site-download:')[0];
   assert.ok(releaseJob, 'publish-release job exists');
-  assert.match(releaseJob, /needs: build/);
+  assert.match(releaseJob, /needs: \[build, e2e\]/);
   assert.match(releaseJob, /always\(\)/);
   assert.match(releaseJob, /actions: read/);
+  assert.match(releaseJob, /ref: \$\{\{ inputs\.release_tag \|\| github\.ref_name \}\}/);
+  assert.match(releaseJob, /node scripts\/prepare-release-notes\.cjs/);
+  assert.match(releaseJob, /body_path: \$\{\{ steps\.release_notes\.outputs\.body_path \}\}/);
+  assert.match(releaseJob, /generate_release_notes: false/);
+  assert.match(workflow, /Run browser tests[\s\S]*npm run test:e2e/);
+  assert.match(workflow, /build:[\s\S]*needs: e2e/);
   assert.match(releaseJob, /run-id: \$\{\{ inputs\.artifact_run_id \|\| github\.run_id \}\}/);
   assert.match(releaseJob, /find release-assets -mindepth 2/);
   assert.match(releaseJob, /release-assets\/\*\.exe/);

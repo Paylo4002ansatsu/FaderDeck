@@ -1,5 +1,8 @@
 'use strict';
 
+const { updateControls } = require('./control-state.cjs');
+const { validateMidiBytes } = require('./midi-manager.cjs');
+
 function attachWebSocketHandlers(
   wss,
   {
@@ -23,13 +26,15 @@ function attachWebSocketHandlers(
   };
 
   wss.on('connection', (socket) => {
+    let midiQueue = Promise.resolve();
     if (!isLayoutInitialized() && !getLayoutSeedOwner()) setLayoutSeedOwner(socket);
     socket.send(JSON.stringify({ type: 'ready' }));
     socket.send(JSON.stringify(layoutPayload()));
     socket.on('close', () => {
       if (!isLayoutInitialized() && socket === getLayoutSeedOwner()) setLayoutSeedOwner(null);
     });
-    socket.on('message', async (raw) => {
+    socket.on('message', (raw) => {
+      if (!socket.authorized) return;
       let message;
       try {
         message = JSON.parse(raw.toString());
@@ -66,16 +71,26 @@ function attachWebSocketHandlers(
         });
         return;
       }
-      if (message.type !== 'midi' || !Array.isArray(message.data) || message.data.length > 256)
+      if (message.type !== 'midi') return;
+      if (!Array.isArray(message.data) || message.data.length > 256) {
+        socket.send(JSON.stringify({ type: 'error', message: 'Mensagem MIDI inválida.' }));
         return;
+      }
+      midiQueue = midiQueue
+        .then(() => forwardMidi(message))
+        .catch(() => console.error('Não foi possível processar a mensagem MIDI.'));
+    });
+
+    async function forwardMidi(message) {
       const readEntitlement =
         activeEntitlementService.getCachedEntitlement || activeEntitlementService.getEntitlement;
       let entitlement;
       try {
         entitlement = await readEntitlement.call(activeEntitlementService);
-      } catch (error) {
-        console.error('Não foi possível verificar o entitlement antes de encaminhar MIDI:', error);
+      } catch {
+        console.error('Não foi possível verificar o entitlement antes de encaminhar MIDI.');
       }
+      if (!socket.authorized) return;
       if (entitlement?.allowed !== true) {
         socket.send(
           JSON.stringify({
@@ -97,16 +112,34 @@ function attachWebSocketHandlers(
         );
         return;
       }
-      const bytes = message.data.map((value) => Number(value));
-      if (bytes.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) return;
+      const bytes = message.data;
       try {
+        validateMidiBytes(bytes);
         midiManager.send(bytes);
+        const sourceId = typeof message.sourceId === 'string' ? message.sourceId.slice(0, 100) : '';
+        if (message.control && typeof message.control.id === 'string') {
+          const result = updateControls(getLayout(), [message.control]);
+          if (result.updates.length) {
+            setLayout(result.layout);
+            scheduleLayoutSave();
+            broadcast({ type: 'controls', controls: result.updates, sourceId }, socket);
+          } else {
+            socket.send(
+              JSON.stringify({
+                type: 'error',
+                message: 'Controle não encontrado no painel compartilhado.',
+              }),
+            );
+          }
+        } else {
+          broadcast({ type: 'midi', direction: 'out', data: bytes, sourceId }, socket);
+        }
       } catch (error) {
         socket.send(
           JSON.stringify({ type: 'error', message: `Falha ao enviar MIDI: ${error.message}` }),
         );
       }
-    });
+    }
   });
 }
 

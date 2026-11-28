@@ -9,6 +9,7 @@ class FakeSocket extends EventEmitter {
   constructor() {
     super();
     this.sent = [];
+    this.authorized = true;
   }
   send(value) {
     this.sent.push(JSON.parse(value));
@@ -49,7 +50,7 @@ function createFixture({
     scheduleLayoutSave: () => {
       saveCount += 1;
     },
-    broadcast: (message) => broadcasts.push(message),
+    broadcast: (message, excluded) => broadcasts.push({ message, excluded }),
     midiManager: {
       hasOutput: () => outputAvailable,
       send: (bytes) => {
@@ -108,11 +109,35 @@ test('only the first connected client may seed an empty layout; updates broadcas
   assert.equal(fixture.layout.version, 8);
   assert.equal(fixture.layout.activePageId, 'p1');
   assert.equal(fixture.saveCount, 1);
-  assert.equal(fixture.broadcasts.at(-1).sourceId.length, 100);
-  assert.equal(fixture.broadcasts.at(-1).layout.version, 8);
+  assert.equal(fixture.broadcasts.at(-1).message.sourceId.length, 100);
+  assert.equal(fixture.broadcasts.at(-1).message.layout.version, 8);
   owner.message({ type: 'layout', layout: { version: 0, pages: [{ id: 'p2' }] } });
   assert.equal(fixture.layout.version, 9);
   assert.equal(fixture.saveCount, 2);
+});
+
+test('sends MIDI before broadcasting the updated control to other clients and retains its state', async () => {
+  const fixture = createFixture();
+  const sender = fixture.connect();
+  sender.message({
+    type: 'layout',
+    layout: { pages: [{ id: 'page', controls: [{ id: 'fader', kind: 'fader', value: 0 }] }] },
+  });
+  sender.message({
+    type: 'midi',
+    sourceId: 'desktop',
+    data: [0xb0, 7, 64],
+    control: { id: 'fader', value: 0.5 },
+  });
+  await new Promise(setImmediate);
+  assert.deepEqual(fixture.midiMessages, [[0xb0, 7, 64]]);
+  assert.deepEqual(fixture.broadcasts.at(-1), {
+    message: { type: 'controls', controls: [{ id: 'fader', value: 0.5 }], sourceId: 'desktop' },
+    excluded: sender,
+  });
+  assert.equal(fixture.layout.pages[0].controls[0].value, 0.5);
+  const newcomer = fixture.connect();
+  assert.equal(newcomer.sent[1].layout.pages[0].controls[0].value, 0.5);
 });
 
 test('clears the seed owner on disconnect so a reconnect can initialize layout', () => {
@@ -135,9 +160,15 @@ test('rejects MIDI without output, malformed/out-of-range payloads, and preserve
   await new Promise(setImmediate);
   assert.deepEqual(fixture.midiMessages, [[0x90, 60, 100, 0x80, 60, 0]]);
   socket.message({ type: 'midi', data: [0x90, -1, 100] });
-  socket.message({ type: 'midi', data: new Array(257).fill(0) });
+  socket.message({ type: 'midi', data: [0x90, 60, 128] });
+  socket.message({ type: 'midi', data: [0xb0, 128, 0] });
+  socket.message({ type: 'midi', data: [0x90, 60, '100'] });
+  socket.message({ type: 'midi', data: [0x90, 60, 100, 0xb0, 2, 128] });
   await new Promise(setImmediate);
   assert.equal(fixture.midiMessages.length, 1);
+  assert.match(socket.sent.at(-1).message, /Dados MIDI devem estar entre 0 e 127/);
+  socket.message({ type: 'midi', data: new Array(257).fill(0) });
+  assert.match(socket.sent.at(-1).message, /Mensagem MIDI inválida/);
 });
 
 test('blocks MIDI with a structured error when entitlement is not allowed', async () => {
@@ -154,6 +185,69 @@ test('blocks MIDI with a structured error when entitlement is not allowed', asyn
   });
 
   assert.deepEqual(fixture.midiMessages, []);
+  assert.deepEqual(fixture.broadcasts, []);
+});
+
+test('does not send queued MIDI after the socket authorization is revoked', async () => {
+  const wss = new EventEmitter();
+  const socket = new FakeSocket();
+  let release;
+  const pending = new Promise((resolve) => {
+    release = resolve;
+  });
+  let sent = false;
+  attachWebSocketHandlers(wss, {
+    getLayout: () => ({}),
+    setLayout() {},
+    isLayoutInitialized: () => true,
+    setLayoutInitialized() {},
+    getLayoutSeedOwner: () => null,
+    setLayoutSeedOwner() {},
+    layoutPayload: () => ({ type: 'layout' }),
+    scheduleLayoutSave() {},
+    broadcast() {},
+    midiManager: { hasOutput: () => true, send: () => (sent = true) },
+    entitlementService: { getCachedEntitlement: () => pending },
+  });
+  wss.emit('connection', socket);
+  socket.message({ type: 'midi', data: [0x90, 60, 100] });
+  await new Promise(setImmediate);
+  socket.authorized = false;
+  release({ allowed: true });
+  await new Promise(setImmediate);
+  assert.equal(sent, false);
+});
+
+test('does not log credentials contained in entitlement errors', async () => {
+  const socket = new FakeSocket();
+  const originalError = console.error;
+  const logs = [];
+  console.error = (...args) => logs.push(args.join(' '));
+  try {
+    const wss = new EventEmitter();
+    attachWebSocketHandlers(wss, {
+      getLayout: () => ({}),
+      setLayout() {},
+      isLayoutInitialized: () => true,
+      setLayoutInitialized() {},
+      getLayoutSeedOwner: () => null,
+      setLayoutSeedOwner() {},
+      layoutPayload: () => ({ type: 'layout' }),
+      scheduleLayoutSave() {},
+      broadcast() {},
+      midiManager: { hasOutput: () => true, send() {} },
+      entitlementService: {
+        getCachedEntitlement: () => Promise.reject(new Error('secret-test-token')),
+      },
+    });
+    wss.emit('connection', socket);
+    socket.message({ type: 'midi', data: [0x90, 60, 100] });
+    await new Promise(setImmediate);
+    assert.ok(logs.some((line) => line.includes('entitlement')));
+    assert.ok(logs.every((line) => !line.includes('secret-test-token')));
+  } finally {
+    console.error = originalError;
+  }
 });
 
 test('reports the device limit when MIDI is blocked by the plan', async () => {

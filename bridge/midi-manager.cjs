@@ -3,6 +3,25 @@
 const NO_MIDI_PORT = -1;
 const VIRTUAL_OUTPUT_INDEX = -2;
 
+function validateMidiBytes(bytes) {
+  if (!Array.isArray(bytes) || bytes.length === 0 || bytes.length > 256)
+    throw new Error('Mensagem MIDI inválida.');
+  for (let index = 0; index < bytes.length;) {
+    const status = bytes[index];
+    if (!Number.isInteger(status) || status < 0x80 || status > 0xef)
+      throw new Error('Status MIDI inválido.');
+    const kind = status & 0xf0;
+    const length = kind === 0xc0 || kind === 0xd0 ? 2 : 3;
+    if (index + length > bytes.length) throw new Error('Mensagem MIDI incompleta.');
+    for (let offset = 1; offset < length; offset += 1) {
+      const value = bytes[index + offset];
+      if (!Number.isInteger(value) || value < 0 || value > 127)
+        throw new Error('Dados MIDI devem estar entre 0 e 127.');
+    }
+    index += length;
+  }
+}
+
 function splitMessages(bytes) {
   const output = [];
   for (let index = 0; index < bytes.length;) {
@@ -148,6 +167,7 @@ function createMidiManager({ midi, platform = process.platform, broadcast = () =
   function send(bytes) {
     if (!midiOutput || selectedOutputIndex === NO_MIDI_PORT)
       throw new Error('Selecione uma saída MIDI na tela da ponte.');
+    validateMidiBytes(bytes);
     for (const message of splitMessages(bytes)) midiOutput.sendMessage(message);
   }
 
@@ -184,4 +204,10 @@ function createMidiManager({ midi, platform = process.platform, broadcast = () =
   };
 }
 
-module.exports = { NO_MIDI_PORT, VIRTUAL_OUTPUT_INDEX, splitMessages, createMidiManager };
+module.exports = {
+  NO_MIDI_PORT,
+  VIRTUAL_OUTPUT_INDEX,
+  validateMidiBytes,
+  splitMessages,
+  createMidiManager,
+};

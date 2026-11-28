@@ -50,7 +50,6 @@ async function loadPairing() {
   document.querySelector('#pairing-qr').src = pairing.qr;
   document.querySelector('#pairing-code').textContent = token;
   document.querySelector('#mobile-url').textContent = mobileUrl;
-  document.querySelector('#ca-fingerprint').textContent = pairing.caFingerprint;
   document.querySelector('#chosen-address').textContent = `${pairing.ip}:${pairing.port}`;
   document.querySelector('#other-ips').textContent =
     pairing.addresses
@@ -649,7 +648,7 @@ document.querySelector('#test-phone').addEventListener('click', async () => {
     } catch {}
   }
   statusElement.textContent =
-    'Ainda não recebi conexão do celular. Confira o mesmo Wi-Fi, o endereço do QR e o aviso do Firewall acima.';
+    'Ainda não recebi conexão do celular. Confira o mesmo Wi-Fi e o endereço do QR.';
 });
 
 document.querySelector('#renew-token').addEventListener('click', async () => {

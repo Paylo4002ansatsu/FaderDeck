@@ -28,7 +28,7 @@ test('standalone bridge ZIP contains modular server, admin assets and Windows vi
     'python3',
     [
       '-c',
-      'import zipfile,sys; assert "bridge/machine-id.cjs" in zipfile.ZipFile(sys.argv[1]).namelist()',
+      'import zipfile,sys; names=zipfile.ZipFile(sys.argv[1]).namelist(); assert "bridge/machine-id.cjs" in names; assert "bridge/control-state.cjs" in names; assert "client/connection-indicator.js" in names; assert "client/connection-indicator.css" in names',
       archivePath,
     ],
     { cwd: root, stdio: 'pipe' },

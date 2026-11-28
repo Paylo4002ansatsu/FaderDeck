@@ -14,10 +14,8 @@ async function createFixture({ entitlementService, supabaseClient, updateChecker
     createHttpHandler({
       clientDir: path.join(__dirname, '..', 'client'),
       getPort: () => port,
-      getSecurePort: () => 0,
+      getLanPort: () => 0,
       getToken: () => 'bridge-token',
-      getCaCertificate: () => '',
-      getCaFingerprint: () => '',
       getLayout: () => layout,
       setLayout: (next) => {
         layout = next;

@@ -49,16 +49,17 @@
   max-height: 34vh;
   overflow: auto;
   margin: 22px 0;
+  padding-left: 20px;
   color: #c5d0cd;
   font-size: 13px;
   line-height: 1.65;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .fd-update-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  margin-top: 22px;
 }
 .fd-update-primary,
 .fd-update-secondary {

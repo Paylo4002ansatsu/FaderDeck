@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const test = require('node:test');
+const { spawnSync } = require('node:child_process');
 
 const bootstrap = fs.readFileSync(path.join(__dirname, '../client/bridge-bootstrap.js'), 'utf8');
 
@@ -34,18 +35,24 @@ function runBootstrap(address) {
 
 test('moves the pairing code from the URL fragment into app state without retaining the fragment', () => {
   const { location, replacements } = runBootstrap(
-    'https://192.168.10.24:8788/#bridgeToken=demo-code',
+    'http://192.168.10.24:8788/#bridgeToken=demo-code',
   );
   assert.equal(new URLSearchParams(location.search).get('bridgeToken'), 'demo-code');
   assert.equal(location.hash, '');
   assert.equal(replacements.length, 1);
 });
 
-test('removes a duplicate pairing code fragment without replacing an existing query code', () => {
+test('prefers the latest QR fragment over an older query code', () => {
   const { location, replacements } = runBootstrap(
-    'https://192.168.10.24:8788/?bridgeToken=query-code#bridgeToken=fragment-code',
+    'http://192.168.10.24:8788/?bridgeToken=query-code#bridgeToken=fragment-code',
   );
-  assert.equal(new URLSearchParams(location.search).get('bridgeToken'), 'query-code');
+  assert.equal(new URLSearchParams(location.search).get('bridgeToken'), 'fragment-code');
   assert.equal(location.hash, '');
   assert.equal(replacements.length, 1);
+});
+
+test('distributed controller bundle has valid JavaScript syntax', () => {
+  const bundle = path.join(__dirname, '../client/assets/index-RrCrAh5A.js');
+  const result = spawnSync(process.execPath, ['--check', bundle], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
 });

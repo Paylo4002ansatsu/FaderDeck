@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#0b0d10" />
     <title>FaderDeck — Acesso</title>
-    <link rel="stylesheet" href="/update-modal.css?v=1" />
     <link rel="stylesheet" href="/admin/bridge.css?v=commercial-4" />
   </head>
   <body>
@@ -247,10 +246,8 @@
           <button id="save" class="full" type="button" disabled>Aplicar portas MIDI</button>
           <div id="midi-warning" class="note warn" hidden></div>
           <div class="note">
-            <strong>Firewall do Mac:</strong> se o iPhone não abrir o QR, permita conexões de
-            entrada para Node.js em <em>Ajustes do Sistema → Rede → Firewall → Opções</em>. Ambos
-            precisam estar no mesmo Wi-Fi; redes de convidados podem bloquear comunicação entre
-            aparelhos.
+            Computador e celular precisam estar no mesmo Wi-Fi. Redes de convidados podem bloquear a
+            comunicação entre aparelhos.
           </div>
           <div class="note">
             Endereço escolhido: <span id="chosen-address" class="ip">Carregando…</span><br /><span
@@ -272,16 +269,8 @@
         </section>
         <section class="card side">
           <h2>Conectar celular</h2>
-          <p>
-            Na primeira conexão, baixe o certificado, transfira-o ao celular e confie nele nas
-            configurações do dispositivo. Compare a impressão digital antes de instalar.
-          </p>
-          <div class="note">
-            <a href="/bridge-ca.crt" download>Baixar certificado CA</a>
-            <div class="label">Impressão digital SHA-256</div>
-            <code id="ca-fingerprint" class="fingerprint">Carregando…</code>
-          </div>
-          <p>Depois, escaneie o QR com a câmera do iPhone conectado à mesma rede Wi-Fi.</p>
+          <p>Escaneie o QR com a câmera do celular conectado à mesma rede Wi-Fi.</p>
+          <p class="note">Use uma rede confiável: a conexão local não é criptografada.</p>
           <div class="qr"><img id="pairing-qr" alt="QR para abrir FaderDeck nesta rede" /></div>
           <div id="pairing-code" class="code">Carregando…</div>
           <div id="mobile-url" class="url"></div>
@@ -292,7 +281,6 @@
         </section>
       </div>
     </details>
-    <script src="/update-modal.js?v=1" defer></script>
     <script src="/admin/bridge.js?v=commercial-4" defer></script>
   </body>
 </html>

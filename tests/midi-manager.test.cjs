@@ -134,6 +134,26 @@ test('selects physical ports, routes input messages and reopens a different outp
   assert.throws(() => manager.send([0x90, 1, 1]), /Selecione uma saída MIDI/);
 });
 
+test('rejects invalid MIDI data atomically before sending to the driver', () => {
+  const { midi, state } = createFakeMidi();
+  const manager = createMidiManager({ midi, platform: 'linux' });
+  manager.selectPorts(0, NO_MIDI_PORT);
+  for (const bytes of [
+    [0x90, 128, 0],
+    [0xb0, 1, 128],
+    [0xc0, -1],
+    [0xe0, 0, 256],
+    [0xf0, 1, 2],
+    [0x90, 1],
+    [0x90, 1, 2, 0xb0, 1, 128],
+  ]) {
+    assert.throws(() => manager.send(bytes), /MIDI/);
+  }
+  assert.deepEqual(state.sent, []);
+  manager.send([0x8f, 0, 127, 0xcf, 127, 0xef, 127, 127]);
+  assert.equal(state.sent.length, 3);
+});
+
 test('rejects unavailable or invalid negative MIDI port indices', () => {
   const { midi } = createFakeMidi();
   const manager = createMidiManager({ midi, platform: 'win32' });

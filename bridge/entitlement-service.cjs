@@ -154,8 +154,8 @@ function createEntitlementService({
         graceUntil: Date.parse(entitlement.offline_grace_until),
         expiresAt: entitlement.expires_at === null ? null : Date.parse(entitlement.expires_at),
       };
-    } catch (error) {
-      console.error('Não foi possível restaurar o acesso offline:', error.message);
+    } catch {
+      console.error('Não foi possível restaurar o acesso offline.');
     }
   }
 
@@ -290,8 +290,8 @@ function createEntitlementService({
         } else {
           await storage.removeItem(OFFLINE_CACHE_KEY);
         }
-      } catch (error) {
-        console.error('Não foi possível salvar o acesso offline:', error.message);
+      } catch {
+        console.error('Não foi possível salvar o acesso offline.');
         await clearCache();
         return deniedEntitlement('offline_storage_failed');
       }

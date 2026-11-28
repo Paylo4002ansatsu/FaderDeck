@@ -40,7 +40,7 @@ function createWebSocketGateway({
         isSameOriginLocalAdminRequest(request, getLocalPort());
       if (
         requestUrl.pathname !== '/ws' ||
-        (!trustedLocalPanel && !safeEqual(requestUrl.searchParams.get('token') || '', getToken()))
+        !safeEqual(requestUrl.searchParams.get('token') || '', getToken())
       ) {
         socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
         socket.destroy();
@@ -49,6 +49,10 @@ function createWebSocketGateway({
       try {
         wss.handleUpgrade(request, socket, head, (client) => {
           client.authorized = true;
+          client.isMobile =
+            !trustedLocalPanel &&
+            (requestUrl.searchParams.get('device') === 'mobile' ||
+              /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(request.headers['user-agent'] || ''));
           wss.emit('connection', client, request);
         });
       } catch {
@@ -57,10 +61,11 @@ function createWebSocketGateway({
     });
   }
 
-  function broadcast(payload) {
+  function broadcast(payload, excludedClient = null) {
     const frame = JSON.stringify(payload);
     for (const client of wss.clients) {
-      if (client.readyState === WebSocket.OPEN && client.authorized) client.send(frame);
+      if (client !== excludedClient && client.readyState === WebSocket.OPEN && client.authorized)
+        client.send(frame);
     }
   }
 
@@ -87,14 +92,37 @@ function createWebSocketGateway({
     return {
       clients: wss.clients.size,
       remoteClients: remote.length,
+      connectedMobileClients: [...wss.clients].filter(
+        (client) => client.readyState === WebSocket.OPEN && client.authorized && client.isMobile,
+      ).length,
       remoteAddresses: [
         ...new Set(remote.map((client) => client._socket?.remoteAddress).filter(Boolean)),
       ],
     };
   }
 
+  wss.on('connection', (client) => {
+    broadcast({
+      type: 'mobile_status',
+      connectedMobileClients: getStatus().connectedMobileClients,
+    });
+    if (client.isMobile) {
+      broadcast(
+        { type: 'mobile_connected', connectedMobileClients: getStatus().connectedMobileClients },
+        client,
+      );
+      client.on('close', () => {
+        broadcast({
+          type: 'mobile_status',
+          connectedMobileClients: getStatus().connectedMobileClients,
+        });
+      });
+    }
+  });
+
   function closeAll(code, reason) {
     for (const client of wss.clients) {
+      client.authorized = false;
       try {
         client.close(code, reason);
       } catch {}
@@ -103,6 +131,7 @@ function createWebSocketGateway({
 
   function terminateAll() {
     for (const client of wss.clients) {
+      client.authorized = false;
       try {
         client.terminate();
       } catch {}

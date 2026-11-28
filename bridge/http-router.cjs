@@ -133,10 +133,8 @@ function safeEntitlement(entitlement) {
 function createHttpHandler({
   clientDir,
   getPort,
-  getSecurePort,
+  getLanPort,
   getToken,
-  getCaCertificate,
-  getCaFingerprint,
   getLayout,
   setLayout,
   setLayoutInitialized,
@@ -180,8 +178,8 @@ function createHttpHandler({
     if (session && !offlineEntitlement) {
       try {
         trialStatus = await supabaseClient.invokeEdgeFunction('trial-status');
-      } catch (error) {
-        console.warn('Não foi possível atualizar o estado do trial:', error.message);
+      } catch {
+        console.warn('Não foi possível atualizar o estado do trial.');
       }
     }
 
@@ -209,7 +207,7 @@ function createHttpHandler({
       await activeEntitlementService.startTrial();
     } catch (error) {
       await activeEntitlementService.clearCache?.();
-      console.error('Não foi possível iniciar o trial após autenticar:', error);
+      console.error('Não foi possível iniciar o trial após autenticar.');
       throw error;
     }
 
@@ -220,8 +218,8 @@ function createHttpHandler({
     let entitlement;
     try {
       entitlement = await activeEntitlementService.getEntitlement();
-    } catch (error) {
-      console.error('Não foi possível validar o entitlement antes do acesso MIDI:', error);
+    } catch {
+      console.error('Não foi possível validar o entitlement antes do acesso MIDI.');
     }
     if (entitlement?.allowed === true) return true;
 
@@ -247,6 +245,17 @@ function createHttpHandler({
     }
 
     try {
+      if (pathname === '/api/bridge-config.js') {
+        if (request.method !== 'GET')
+          return sendJson(response, 405, { error: 'Método não permitido.' });
+        response.writeHead(200, {
+          'Content-Type': 'text/javascript; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'X-Content-Type-Options': 'nosniff',
+        });
+        response.end(`window.__fdLanBridge = ${request.socket.localPort === getLanPort()};`);
+        return;
+      }
       if (
         (pathname === '/bridge' ||
           pathname === '/bridge/' ||
@@ -263,25 +272,28 @@ function createHttpHandler({
       }
       if (pathname === '/api/auth') {
         response.setHeader('Access-Control-Allow-Origin', '*');
-        response.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         response.setHeader('Access-Control-Allow-Private-Network', 'true');
         if (request.method === 'OPTIONS') {
           response.writeHead(204);
           response.end();
           return;
         }
-        if (request.method !== 'GET')
+        if (request.method !== 'GET' && request.method !== 'POST')
           return sendJson(response, 405, { error: 'Método não permitido.' });
+        const trustedLocalPanel =
+          !request.socket.encrypted &&
+          isLoopbackRequest(request) &&
+          isSameOriginLocalAdminRequest(request, getPort());
         if (
-          !(
-            !request.socket.encrypted &&
-            isLoopbackRequest(request) &&
-            isSameOriginLocalAdminRequest(request, getPort())
-          ) &&
+          !trustedLocalPanel &&
           !safeEqual(requestUrl.searchParams.get('token') || '', getToken())
         )
           return sendJson(response, 401, { error: 'Código de pareamento inválido.' });
-        return sendJson(response, 200, { authorized: true });
+        return sendJson(response, 200, {
+          authorized: true,
+          ...(trustedLocalPanel && request.method === 'POST' ? { token: getToken() } : {}),
+        });
       }
       if (pathname === '/api/account/status') {
         if (request.method !== 'GET')
@@ -435,9 +447,9 @@ function createHttpHandler({
           if (signup?.session) {
             try {
               await activeEntitlementService.startTrial();
-            } catch (error) {
+            } catch {
               await activeEntitlementService.clearCache?.();
-              console.error('Conta criada, mas não foi possível iniciar o trial:', error);
+              console.error('Conta criada, mas não foi possível iniciar o trial.');
               return sendJson(response, 502, {
                 code: 'TRIAL_ACTIVATION_FAILED',
                 error:
@@ -593,8 +605,8 @@ function createHttpHandler({
             error: 'O pareamento só pode ser consultado neste computador.',
           });
         const ip = networkAddress();
-        const port = getSecurePort();
-        const url = `https://${ip}:${port}/#bridgeToken=${encodeURIComponent(getToken())}`;
+        const port = getLanPort();
+        const url = `http://${ip}:${port}/#bridgeToken=${encodeURIComponent(getToken())}`;
         const qr = await QRCode.toDataURL(url, {
           margin: 1,
           width: 280,
@@ -605,26 +617,11 @@ function createHttpHandler({
           qr,
           ip,
           port,
-          caFingerprint: getCaFingerprint(),
           addresses: networkAddresses().map((item) => ({
             address: item.address,
             interface: item.interface,
           })),
         });
-      }
-      if (request.method === 'GET' && pathname === '/bridge-ca.crt') {
-        if (!isLoopbackRequest(request) || !hasLocalHostHeader(request, getPort()))
-          return sendJson(response, 403, {
-            error: 'O certificado CA só pode ser baixado neste computador.',
-          });
-        response.writeHead(200, {
-          'Content-Type': 'application/x-x509-ca-cert',
-          'Content-Disposition': 'attachment; filename="faderdeck-local-ca.crt"',
-          'Cache-Control': 'no-store',
-          'X-Content-Type-Options': 'nosniff',
-        });
-        response.end(getCaCertificate());
-        return;
       }
       if (request.method === 'GET' && pathname === '/api/status') {
         return sendJson(response, 200, getConnectionStatus());
@@ -723,7 +720,7 @@ function createHttpHandler({
       fs.createReadStream(filePath).pipe(response);
     } catch (error) {
       const statusCode = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
-      if (statusCode >= 500) console.error('Falha ao tratar requisição:', error);
+      if (statusCode >= 500) console.error('Falha ao tratar requisição.');
       if (!response.headersSent)
         sendJson(response, statusCode, {
           error: statusCode >= 500 ? 'Erro interno.' : error?.message || 'Requisição inválida.',
