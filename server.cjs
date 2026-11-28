@@ -12,6 +12,7 @@ const { createTokenStore } = require('./bridge/token-store.cjs');
 const { networkAddresses, networkAddress } = require('./bridge/network-addresses.cjs');
 const { createTlsIdentity } = require('./bridge/tls-identity.cjs');
 const { createEntitlementService } = require('./bridge/entitlement-service.cjs');
+const { createSecureStorage } = require('./bridge/secure-storage.cjs');
 const supabaseClient = require('./bridge/supabase-client.cjs');
 const { createUpdateChecker } = require('./bridge/update-checker.cjs');
 
@@ -50,7 +51,19 @@ let layoutSeedOwner = null;
 let initialized = false;
 let shutdownPromise = null;
 let entitlementRefreshTimer = null;
-const entitlementService = createEntitlementService();
+let secureStorage;
+if (process.versions.electron) {
+  try {
+    secureStorage = createSecureStorage(DATA_DIR, require('electron').safeStorage);
+    supabaseClient.configureAuthStorage(secureStorage);
+  } catch (error) {
+    console.warn(
+      'Armazenamento seguro indisponível; acesso offline após reiniciar desativado:',
+      error.message,
+    );
+  }
+}
+const entitlementService = createEntitlementService({ storage: secureStorage });
 const updateChecker = createUpdateChecker();
 
 function initialize() {
@@ -256,15 +269,11 @@ async function start(startPort = BASE_PORT) {
     throw error;
   }
 
-  entitlementRefreshTimer = setInterval(
-    () => {
-      if (entitlementService.getCachedEntitlement().reason === 'offline_unavailable') return;
-      entitlementService.getEntitlement().catch((error) => {
-        console.error('Não foi possível revalidar a licença:', error);
-      });
-    },
-    60 * 60 * 1000,
-  );
+  entitlementRefreshTimer = setInterval(() => {
+    entitlementService.getEntitlement().catch((error) => {
+      console.error('Não foi possível revalidar a licença:', error);
+    });
+  }, 30 * 1000);
   entitlementRefreshTimer.unref();
   console.log(`FaderDeck · ponte local ativa na porta ${PORT}; HTTPS LAN na ${SECURE_PORT}.`);
   if (require.main === module) {

@@ -4,6 +4,7 @@ const { generateDeviceHash, getDeviceHash, getMachineName } = require('./machine
 const { getCurrentSession, invokeEdgeFunction } = require('./supabase-client.cjs');
 
 const GRACE_IN_MILLISECONDS = 72 * 60 * 60 * 1000;
+const OFFLINE_CACHE_KEY = 'faderdeck-offline-entitlement-v1';
 
 function deniedEntitlement(reason) {
   return {
@@ -89,7 +90,11 @@ function isNetworkFailure(error) {
   let current = error;
 
   while (current && typeof current === 'object') {
-    if (current.name === 'FunctionsFetchError' || networkErrorCodes.has(current.code)) {
+    if (
+      current.name === 'FunctionsFetchError' ||
+      current.name === 'AuthRetryableFetchError' ||
+      networkErrorCodes.has(current.code)
+    ) {
       return true;
     }
     current = current.cause;
@@ -101,14 +106,58 @@ function isNetworkFailure(error) {
 function createEntitlementService({
   getSession = getCurrentSession,
   validateLicense = (body) => invokeEdgeFunction('license-validate', body),
+  startTrial = (body) => invokeEdgeFunction('trial-start', body),
   getDeviceHash: resolveDeviceHash = getDeviceHash,
   getMachineName: resolveMachineName = getMachineName,
   monotonicNow = () => Number(process.hrtime.bigint()) / 1e6,
+  wallNow = Date.now,
+  storage,
 } = {}) {
   let cached = null;
   let deviceHash;
   let deviceLabel;
   let validationSequence = 0;
+
+  async function restoreOfflineCache(expectedUserId) {
+    if (cached) return;
+    if (!storage) return;
+    let snapshot;
+    try {
+      const saved = await storage.getItem(OFFLINE_CACHE_KEY);
+      if (!saved) return;
+      snapshot = JSON.parse(saved);
+      if (expectedUserId && snapshot.userId !== expectedUserId) {
+        await storage.removeItem(OFFLINE_CACHE_KEY);
+        return;
+      }
+      const entitlement = normalizeEntitlement(snapshot.entitlement);
+      const now = wallNow();
+      const elapsed = now - snapshot.requestStartedWall;
+      if (
+        !entitlement?.allowed ||
+        typeof snapshot.userId !== 'string' ||
+        !snapshot.userId ||
+        snapshot.deviceHash !== resolveDeviceHash() ||
+        !Number.isFinite(elapsed) ||
+        elapsed < 0 ||
+        elapsed >= GRACE_IN_MILLISECONDS
+      ) {
+        return;
+      }
+      cached = {
+        userId: snapshot.userId,
+        email: typeof snapshot.email === 'string' ? snapshot.email : null,
+        entitlement,
+        requestStartedAt: monotonicNow() - elapsed,
+        requestStartedWall: snapshot.requestStartedWall,
+        serverTime: Date.parse(entitlement.server_time),
+        graceUntil: Date.parse(entitlement.offline_grace_until),
+        expiresAt: entitlement.expires_at === null ? null : Date.parse(entitlement.expires_at),
+      };
+    } catch (error) {
+      console.error('Não foi possível restaurar o acesso offline:', error.message);
+    }
+  }
 
   function resolveOfflineEntitlement(userId) {
     if (!cached || cached.userId !== userId) return deniedEntitlement('offline_unavailable');
@@ -116,7 +165,11 @@ function createEntitlementService({
 
     let elapsed;
     try {
-      elapsed = monotonicNow() - cached.requestStartedAt;
+      const monotonicElapsed = monotonicNow() - cached.requestStartedAt;
+      const wallElapsed = wallNow() - cached.requestStartedWall;
+      if (monotonicElapsed < 0 || wallElapsed < 0)
+        return deniedEntitlement('offline_clock_invalid');
+      elapsed = Math.max(monotonicElapsed, wallElapsed);
     } catch {
       return deniedEntitlement('offline_clock_unavailable');
     }
@@ -132,58 +185,87 @@ function createEntitlementService({
     return expired ? { ...cached.entitlement, allowed: false } : cached.entitlement;
   }
 
-  async function getEntitlement() {
+  function getDeviceDetails() {
+    deviceHash ??= resolveDeviceHash();
+    deviceLabel ??= resolveMachineName();
+    return {
+      device_hash: deviceHash,
+      ...(deviceLabel ? { device_label: deviceLabel } : {}),
+    };
+  }
+
+  async function getEntitlement({ reactivate = false } = {}) {
     const sequence = ++validationSequence;
     let session;
     try {
       session = await getSession();
-    } catch {
-      if (sequence === validationSequence) cached = null;
+    } catch (error) {
+      if (sequence !== validationSequence) return deniedEntitlement('validation_superseded');
+      if (isNetworkFailure(error) && !reactivate) {
+        await restoreOfflineCache();
+        if (sequence !== validationSequence) return deniedEntitlement('validation_superseded');
+        return cached
+          ? resolveOfflineEntitlement(cached.userId)
+          : deniedEntitlement('offline_unavailable');
+      }
+      await clearCache();
       return deniedEntitlement('session_unavailable');
     }
     if (sequence !== validationSequence) return deniedEntitlement('validation_superseded');
 
     const userId = session?.user?.id;
     if (!session?.access_token || typeof userId !== 'string' || !userId) {
-      cached = null;
+      await clearCache();
       return deniedEntitlement('not_authenticated');
+    }
+    if (cached && cached.userId !== userId) {
+      cached = null;
+      if (storage) await storage.removeItem(OFFLINE_CACHE_KEY);
+      if (sequence !== validationSequence) return deniedEntitlement('validation_superseded');
     }
 
     let requestStartedAt;
+    let requestStartedWall;
     try {
       requestStartedAt = monotonicNow();
-      deviceHash ??= resolveDeviceHash();
-      deviceLabel ??= resolveMachineName();
+      requestStartedWall = wallNow();
+      getDeviceDetails();
     } catch {
-      cached = null;
+      await clearCache();
       return deniedEntitlement('device_identity_unavailable');
     }
 
     let response;
     try {
       response = await validateLicense({
-        device_hash: deviceHash,
-        ...(deviceLabel ? { device_label: deviceLabel } : {}),
+        ...getDeviceDetails(),
         offline_grace_hours: 72,
+        ...(reactivate ? { reactivate: true } : {}),
       });
     } catch (error) {
       if (sequence !== validationSequence) return deniedEntitlement('validation_superseded');
-      if (isNetworkFailure(error)) return resolveOfflineEntitlement(userId);
-      cached = null;
+      if (isNetworkFailure(error) && !reactivate) {
+        await restoreOfflineCache(userId);
+        if (sequence !== validationSequence) return deniedEntitlement('validation_superseded');
+        return resolveOfflineEntitlement(userId);
+      }
+      await clearCache();
       return deniedEntitlement('server_validation_failed');
     }
 
     if (sequence !== validationSequence) return deniedEntitlement('validation_superseded');
     const entitlement = normalizeEntitlement(response);
     if (!entitlement) {
-      cached = null;
+      await clearCache();
       return deniedEntitlement('invalid_server_response');
     }
 
     cached = {
       userId,
+      email: typeof session.user.email === 'string' ? session.user.email : null,
       entitlement,
       requestStartedAt,
+      requestStartedWall,
       serverTime: Date.parse(entitlement.server_time),
       graceUntil:
         entitlement.offline_grace_until === null
@@ -192,12 +274,36 @@ function createEntitlementService({
       expiresAt: entitlement.expires_at === null ? null : Date.parse(entitlement.expires_at),
     };
 
+    if (storage) {
+      try {
+        if (entitlement.allowed) {
+          await storage.setItem(
+            OFFLINE_CACHE_KEY,
+            JSON.stringify({
+              userId,
+              email: cached.email,
+              deviceHash,
+              requestStartedWall,
+              entitlement,
+            }),
+          );
+        } else {
+          await storage.removeItem(OFFLINE_CACHE_KEY);
+        }
+      } catch (error) {
+        console.error('Não foi possível salvar o acesso offline:', error.message);
+        await clearCache();
+        return deniedEntitlement('offline_storage_failed');
+      }
+      if (sequence !== validationSequence) return deniedEntitlement('validation_superseded');
+    }
     return resolveOfflineEntitlement(userId);
   }
 
-  function clearCache() {
+  async function clearCache() {
     validationSequence += 1;
     cached = null;
+    if (storage) await storage.removeItem(OFFLINE_CACHE_KEY);
   }
 
   function getCachedEntitlement() {
@@ -205,11 +311,22 @@ function createEntitlementService({
     return resolveOfflineEntitlement(cached.userId);
   }
 
-  return { clearCache, getCachedEntitlement, getEntitlement };
+  return {
+    clearCache,
+    getCachedEntitlement,
+    getOfflineSession: () => {
+      if (!cached || !resolveOfflineEntitlement(cached.userId).allowed) return null;
+      return { user: { id: cached.userId, email: cached.email } };
+    },
+    getEntitlement,
+    startTrial: () => startTrial(getDeviceDetails()),
+    reactivateDevice: () => getEntitlement({ reactivate: true }),
+  };
 }
 
 module.exports = {
   createEntitlementService,
   generateDeviceHash,
   getDeviceHash,
+  isNetworkFailure,
 };

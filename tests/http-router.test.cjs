@@ -171,6 +171,52 @@ test('rejects invalid device identifiers before invoking the backend', async (t)
   assert.equal(response.status, 400);
 });
 
+test('reactivates only the current authenticated device on explicit request', async (t) => {
+  let reactivated = 0;
+  const fixture = await createFixture({
+    entitlementService: {
+      reactivateDevice: async () => {
+        reactivated += 1;
+      },
+      getEntitlement: async () => ({ allowed: true, kind: 'license' }),
+    },
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+      getCurrentSession: async () => ({ user: { id: 'user' } }),
+      invokeEdgeFunction: async () => ({ trial: null }),
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+  const response = await request(fixture, '/api/account/devices/activate', {}, 'POST');
+  assert.equal(response.status, 200);
+  assert.equal(reactivated, 1);
+  assert.equal(response.body.entitlement.allowed, true);
+});
+
+test('account status uses the offline session when token refresh cannot reach Supabase', async (t) => {
+  const fixture = await createFixture({
+    entitlementService: {
+      getEntitlement: async () => ({ allowed: true, kind: 'license' }),
+      getOfflineSession: () => ({ user: { id: 'user', email: 'alex@example.com' } }),
+    },
+    supabaseClient: {
+      isSupabaseConfigured: () => true,
+      getCurrentSession: async () => {
+        const error = new Error('offline');
+        error.name = 'AuthRetryableFetchError';
+        throw error;
+      },
+      invokeEdgeFunction: async () => assert.fail('offline status must not query trial status'),
+    },
+  });
+  t.after(() => new Promise((resolve) => fixture.server.close(resolve)));
+  const response = await request(fixture, '/api/account/status');
+  assert.equal(response.status, 200);
+  assert.equal(response.body.session.authenticated, true);
+  assert.equal(response.body.session.email, 'a***@e***.com');
+  assert.equal(response.body.entitlement.allowed, true);
+});
+
 test('exposes device limit details and blocks MIDI while the Individual plan is full', async (t) => {
   const machineId = 'c'.repeat(64);
   const entitlement = {
@@ -211,6 +257,10 @@ test('account routes mask the email and never return session tokens', async (t) 
   const calls = [];
   const fixture = await createFixture({
     entitlementService: {
+      async startTrial() {
+        calls.push('trial-start');
+        entitlementAllowed = true;
+      },
       async getEntitlement() {
         return {
           allowed: entitlementAllowed,
@@ -238,7 +288,6 @@ test('account routes mask the email and never return session tokens', async (t) 
       },
       async invokeEdgeFunction(name) {
         calls.push(name);
-        if (name === 'trial-start') entitlementAllowed = true;
         return { trial: null, expired: false };
       },
       async signOut() {
@@ -278,6 +327,11 @@ test('signup starts a trial immediately when Supabase returns a session', async 
   const calls = [];
   const fixture = await createFixture({
     entitlementService: {
+      async startTrial() {
+        assert.ok(session, 'signup session is available before starting the trial');
+        calls.push('trial-start');
+        entitlementAllowed = true;
+      },
       async getEntitlement() {
         return {
           allowed: entitlementAllowed,
@@ -305,11 +359,6 @@ test('signup starts a trial immediately when Supabase returns a session', async 
       },
       async invokeEdgeFunction(name) {
         calls.push(name);
-        if (name === 'trial-start') {
-          assert.ok(session, 'signup session is available before starting the trial');
-          entitlementAllowed = true;
-          return { trial: { status: 'active' } };
-        }
         return {
           trial: { status: 'active', ends_at: '2026-12-03T12:00:00.000Z' },
           expired: false,

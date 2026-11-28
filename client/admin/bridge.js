@@ -116,6 +116,22 @@ function renderAccountStatus(status) {
     gateMessage.after(deviceList);
   }
   deviceList.replaceChildren();
+  if (authenticated && entitlement.code === 'DEVICE_REACTIVATION_REQUIRED') {
+    const reactivate = document.createElement('button');
+    reactivate.type = 'button';
+    reactivate.textContent = 'Reativar este computador';
+    reactivate.addEventListener('click', async () => {
+      reactivate.disabled = true;
+      try {
+        const nextStatus = await requestJson('/api/account/devices/activate', { method: 'POST' });
+        renderAccountStatus(nextStatus);
+      } catch (error) {
+        gateMessage.textContent = error.message;
+        reactivate.disabled = false;
+      }
+    });
+    deviceList.appendChild(reactivate);
+  }
   if (authenticated && entitlement.code === 'DEVICE_LIMIT_REACHED') {
     for (const device of entitlement.devices || []) {
       const row = document.createElement('div');
@@ -461,7 +477,11 @@ document.querySelector('#account-login').addEventListener('submit', async (event
     const status = await requestJson(isSignup ? '/api/account/signup' : '/api/account/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: passwordInput.value }),
+      body: JSON.stringify({
+        email,
+        password: passwordInput.value,
+        ...(!isSignup ? { remember: document.querySelector('#account-remember').checked } : {}),
+      }),
     });
     passwordInput.value = '';
     confirmPasswordInput.value = '';

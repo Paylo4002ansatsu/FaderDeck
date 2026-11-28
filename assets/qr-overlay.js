@@ -310,6 +310,26 @@
     message.hidden = !message.textContent;
     accountPanel.appendChild(message);
 
+    if (authenticated && status?.entitlement?.code === 'DEVICE_REACTIVATION_REQUIRED') {
+      const reactivate = document.createElement('button');
+      reactivate.type = 'button';
+      reactivate.className = 'fdqr-act';
+      reactivate.textContent = 'Reativar este computador';
+      reactivate.addEventListener('click', async () => {
+        reactivate.disabled = true;
+        try {
+          const nextStatus = await requestJson('/api/account/devices/activate', { method: 'POST' });
+          setAccountStatus(nextStatus);
+          showAccess(nextStatus);
+        } catch (error) {
+          message.textContent = error.message;
+          message.hidden = false;
+          reactivate.disabled = false;
+        }
+      });
+      accountPanel.appendChild(reactivate);
+    }
+
     if (authenticated && status?.entitlement?.code === 'DEVICE_LIMIT_REACHED') {
       const devices = document.createElement('div');
       for (const device of status.entitlement.devices || []) {
@@ -739,7 +759,11 @@
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: email.value.trim(), password: password.value }),
+              body: JSON.stringify({
+                email: email.value.trim(),
+                password: password.value,
+                ...(!signingUp ? { remember: remember.checked } : {}),
+              }),
             },
           );
           password.value = '';

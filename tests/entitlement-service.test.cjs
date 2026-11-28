@@ -233,10 +233,183 @@ test('denies offline use after the entitlement expires even if grace remains', a
   });
 
   assert.equal((await service.getEntitlement()).allowed, true);
-
   connected = false;
   monotonicTime += 13 * 60 * 60 * 1000;
   assert.equal((await service.getEntitlement()).allowed, false);
+});
+
+test('restores offline access after a restart and revokes it on server denial', async () => {
+  const saved = new Map();
+  const storage = {
+    getItem: async (key) => saved.get(key) ?? null,
+    setItem: async (key, value) => saved.set(key, value),
+    removeItem: async (key) => saved.delete(key),
+  };
+  let wallTime = 1000000;
+  let offline = false;
+  let revoked = false;
+  const options = {
+    storage,
+    wallNow: () => wallTime,
+    monotonicNow: () => 1000,
+    getSession: async () => {
+      if (offline) {
+        const error = new Error('offline');
+        error.name = 'AuthRetryableFetchError';
+        throw error;
+      }
+      return { access_token: 'token', user: { id: 'user', email: 'user@example.com' } };
+    },
+    validateLicense: async () =>
+      validEntitlement(
+        revoked
+          ? { allowed: false, kind: 'license', offline_grace_until: null }
+          : { kind: 'license', expires_at: null },
+      ),
+    getDeviceHash: () => 'a'.repeat(64),
+    getMachineName: () => 'Computer',
+  };
+  const first = createEntitlementService(options);
+  assert.equal((await first.getEntitlement()).allowed, true);
+  offline = true;
+  wallTime += 60 * 60 * 1000;
+  const restarted = createEntitlementService(options);
+  assert.equal((await restarted.getEntitlement()).allowed, true);
+  assert.equal(restarted.getOfflineSession().user.id, 'user');
+  offline = false;
+  revoked = true;
+  assert.equal((await restarted.getEntitlement()).allowed, false);
+  assert.equal(saved.size, 0);
+  offline = true;
+  assert.equal((await createEntitlementService(options).getEntitlement()).allowed, false);
+});
+
+test('offline cache rejects a different computer, clock rollback and expired grace', async () => {
+  const saved = new Map();
+  const storage = {
+    getItem: async (key) => saved.get(key) ?? null,
+    setItem: async (key, value) => saved.set(key, value),
+    removeItem: async (key) => saved.delete(key),
+  };
+  let wallTime = 1000000;
+  let offline = false;
+  let machine = 'a'.repeat(64);
+  const options = {
+    storage,
+    wallNow: () => wallTime,
+    monotonicNow: () => 1000,
+    getSession: async () => {
+      if (offline) {
+        const error = new Error('offline');
+        error.name = 'AuthRetryableFetchError';
+        throw error;
+      }
+      return { access_token: 'token', user: { id: 'user' } };
+    },
+    validateLicense: async () => validEntitlement({ kind: 'license', expires_at: null }),
+    getDeviceHash: () => machine,
+    getMachineName: () => 'Computer',
+  };
+  assert.equal((await createEntitlementService(options).getEntitlement()).allowed, true);
+  offline = true;
+  machine = 'b'.repeat(64);
+  assert.equal((await createEntitlementService(options).getEntitlement()).allowed, false);
+  machine = 'a'.repeat(64);
+  wallTime -= 1;
+  assert.equal((await createEntitlementService(options).getEntitlement()).allowed, false);
+  wallTime += DAY_IN_MILLISECONDS + 1;
+  assert.equal((await createEntitlementService(options).getEntitlement()).allowed, false);
+});
+
+test('a different account cannot inherit an offline entitlement', async () => {
+  const saved = new Map();
+  const storage = {
+    getItem: async (key) => saved.get(key) ?? null,
+    setItem: async (key, value) => saved.set(key, value),
+    removeItem: async (key) => saved.delete(key),
+  };
+  let userId = 'first-user';
+  let offline = false;
+  const service = createEntitlementService({
+    storage,
+    wallNow: () => 1000000,
+    monotonicNow: () => 1000,
+    getSession: async () => ({ access_token: 'token', user: { id: userId } }),
+    validateLicense: async () => {
+      if (offline) {
+        const error = new Error('offline');
+        error.name = 'FunctionsFetchError';
+        throw error;
+      }
+      return validEntitlement();
+    },
+    getDeviceHash: () => 'a'.repeat(64),
+    getMachineName: () => 'Computer',
+  });
+  assert.equal((await service.getEntitlement()).allowed, true);
+  userId = 'second-user';
+  offline = true;
+  assert.equal((await service.getEntitlement()).allowed, false);
+  assert.equal(service.getOfflineSession(), null);
+  assert.equal(saved.size, 0);
+});
+
+test('persisted offline grace expires at 72 hours after restart', async () => {
+  const saved = new Map();
+  const storage = {
+    getItem: async (key) => saved.get(key) ?? null,
+    setItem: async (key, value) => saved.set(key, value),
+    removeItem: async (key) => saved.delete(key),
+  };
+  let wallTime = 1000000;
+  let offline = false;
+  const options = {
+    storage,
+    wallNow: () => wallTime,
+    monotonicNow: () => 1000,
+    getSession: async () => {
+      if (offline) {
+        const error = new Error('offline');
+        error.name = 'AuthRetryableFetchError';
+        throw error;
+      }
+      return { access_token: 'token', user: { id: 'user' } };
+    },
+    validateLicense: async () =>
+      validEntitlement({
+        kind: 'license',
+        expires_at: null,
+        offline_grace_until: '2026-11-29T12:00:00.000Z',
+      }),
+    getDeviceHash: () => 'a'.repeat(64),
+    getMachineName: () => 'Computer',
+  };
+  assert.equal((await createEntitlementService(options).getEntitlement()).allowed, true);
+  offline = true;
+  wallTime += 3 * DAY_IN_MILLISECONDS - 1;
+  assert.equal((await createEntitlementService(options).getEntitlement()).allowed, true);
+  wallTime += 1;
+  assert.equal((await createEntitlementService(options).getEntitlement()).allowed, false);
+});
+
+test('trial and explicit reactivation use the local device identity', async () => {
+  const requests = [];
+  const service = createEntitlementService({
+    getSession: async () => ({ access_token: 'token', user: { id: 'user' } }),
+    startTrial: async (body) => requests.push(body),
+    validateLicense: async (body) => {
+      requests.push(body);
+      return validEntitlement();
+    },
+    getDeviceHash: () => 'a'.repeat(64),
+    getMachineName: () => 'Computer',
+    monotonicNow: () => 1000,
+  });
+  await service.startTrial();
+  await service.reactivateDevice();
+  assert.equal(requests[0].device_hash, 'a'.repeat(64));
+  assert.equal(requests[1].device_hash, 'a'.repeat(64));
+  assert.equal(requests[1].reactivate, true);
 });
 
 test('device hash is stable for the same operating system identifier', () => {

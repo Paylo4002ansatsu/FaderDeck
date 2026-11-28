@@ -88,6 +88,53 @@ test('administration allows removing a device at the plan limit', async ({ page 
   await expect(page.getByText('Plano Individual — R$ 30 (1 dispositivo)')).toBeVisible();
 });
 
+for (const view of ['desktop', 'administration']) {
+  test(`${view} requires explicit device reactivation`, async ({ page }) => {
+    let activated = false;
+    await page.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      if (pathname === '/api/pairing') {
+        return route.fulfill({
+          json: { url: 'https://localhost/#bridgeToken=test', addresses: [] },
+        });
+      }
+      if (pathname === '/api/ports') {
+        return route.fulfill({
+          json: { outputs: [], inputs: [], outputIndex: -1, inputIndex: -1 },
+        });
+      }
+      if (pathname === '/api/account/devices/activate') activated = true;
+      return route.fulfill({
+        json: {
+          session: { authenticated: true, email: 'a***@e***.com' },
+          supabase_configured: true,
+          entitlement: activated
+            ? { allowed: true, kind: 'license', plan_code: 'solo_30' }
+            : {
+                allowed: false,
+                kind: 'license',
+                code: 'DEVICE_REACTIVATION_REQUIRED',
+                message: 'Este computador foi removido.',
+              },
+        },
+      });
+    });
+    await page.goto('/');
+    if (view === 'desktop') {
+      await page.setContent('<!doctype html><html><head></head><body></body></html>');
+      await page.addScriptTag({ path: path.join(root, 'assets/qr-overlay.js') });
+    } else {
+      await page.setContent(
+        require('node:fs').readFileSync(path.join(root, 'client/admin/index.html'), 'utf8'),
+      );
+      await page.addScriptTag({ path: path.join(root, 'client/admin/bridge.js') });
+    }
+    await page.getByRole('button', { name: 'Reativar este computador' }).click();
+    await expect(page.getByText('Sua licença está ativa.')).toBeVisible();
+    expect(activated).toBe(true);
+  });
+}
+
 test('desktop overlay completes recovery and supports retry and changing email', async ({
   page,
 }) => {

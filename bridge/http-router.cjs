@@ -11,6 +11,7 @@ const {
   hasLocalHostHeader,
 } = require('./auth.cjs');
 const defaultSupabaseClient = require('./supabase-client.cjs');
+const { isNetworkFailure } = require('./entitlement-service.cjs');
 
 const MAX_REQUEST_BODY_BYTES = 16 * 1024;
 const TOKEN_ROTATION_HEADER = 'x-faderdeck-admin';
@@ -158,15 +159,25 @@ function createHttpHandler({
 
   async function getAccountStatus() {
     const supabaseConfigured = supabaseClient.isSupabaseConfigured();
-    const session = supabaseConfigured ? await supabaseClient.getCurrentSession() : null;
+    let session;
+    let offlineEntitlement;
+    if (supabaseConfigured) {
+      try {
+        session = await supabaseClient.getCurrentSession();
+      } catch (error) {
+        if (!isNetworkFailure(error)) throw error;
+        offlineEntitlement = await activeEntitlementService.getEntitlement();
+        session = activeEntitlementService.getOfflineSession?.();
+      }
+    }
 
-    if (!session) activeEntitlementService.clearCache?.();
+    if (!session && !offlineEntitlement) await activeEntitlementService.clearCache?.();
     const entitlement = session
-      ? safeEntitlement(await activeEntitlementService.getEntitlement())
+      ? safeEntitlement(offlineEntitlement || (await activeEntitlementService.getEntitlement()))
       : safeEntitlement(null);
     let trialStatus = null;
 
-    if (session) {
+    if (session && !offlineEntitlement) {
       try {
         trialStatus = await supabaseClient.invokeEdgeFunction('trial-status');
       } catch (error) {
@@ -195,9 +206,9 @@ function createHttpHandler({
     if (!status.trial_available) return status;
 
     try {
-      await supabaseClient.invokeEdgeFunction('trial-start');
+      await activeEntitlementService.startTrial();
     } catch (error) {
-      activeEntitlementService.clearCache?.();
+      await activeEntitlementService.clearCache?.();
       console.error('Não foi possível iniciar o trial após autenticar:', error);
       throw error;
     }
@@ -304,6 +315,7 @@ function createHttpHandler({
         pathname === '/api/account/reset-password/verify' ||
         pathname === '/api/account/reset-password/confirm' ||
         pathname === '/api/account/devices/remove' ||
+        pathname === '/api/account/devices/activate' ||
         pathname === '/api/account/trial/start' ||
         pathname === '/api/account/logout'
       ) {
@@ -330,6 +342,7 @@ function createHttpHandler({
               error: 'Entre na sua conta antes de remover um dispositivo.',
             });
           }
+
           const body = await readBody(request);
           if (
             !body ||
@@ -339,7 +352,19 @@ function createHttpHandler({
             return sendJson(response, 400, { error: 'Identificador de dispositivo inválido.' });
           }
           await supabaseClient.invokeEdgeFunction('device-remove', { machineId: body.machineId });
-          activeEntitlementService.clearCache?.();
+          await activeEntitlementService.clearCache?.();
+          return sendJson(response, 200, await getAccountStatus());
+        }
+
+        if (pathname === '/api/account/devices/activate') {
+          const session = await supabaseClient.getCurrentSession();
+          if (!session) {
+            return sendJson(response, 401, {
+              code: 'AUTHENTICATION_REQUIRED',
+              error: 'Entre na sua conta antes de reativar este dispositivo.',
+            });
+          }
+          await activeEntitlementService.reactivateDevice();
           return sendJson(response, 200, await getAccountStatus());
         }
 
@@ -352,7 +377,11 @@ function createHttpHandler({
             return sendJson(response, 400, { error: 'E-mail e senha são obrigatórios.' });
           }
           try {
-            await supabaseClient.signInWithEmailAndPassword(body.email.trim(), body.password);
+            await supabaseClient.signInWithEmailAndPassword(
+              body.email.trim(),
+              body.password,
+              body.remember !== false,
+            );
           } catch (error) {
             return sendJson(response, error.status === 429 ? 429 : 401, {
               code: 'AUTHENTICATION_FAILED',
@@ -405,9 +434,9 @@ function createHttpHandler({
 
           if (signup?.session) {
             try {
-              await supabaseClient.invokeEdgeFunction('trial-start');
+              await activeEntitlementService.startTrial();
             } catch (error) {
-              activeEntitlementService.clearCache?.();
+              await activeEntitlementService.clearCache?.();
               console.error('Conta criada, mas não foi possível iniciar o trial:', error);
               return sendJson(response, 502, {
                 code: 'TRIAL_ACTIVATION_FAILED',
@@ -528,14 +557,14 @@ function createHttpHandler({
               error: 'Entre na sua conta antes de iniciar o teste.',
             });
           }
-          await supabaseClient.invokeEdgeFunction('trial-start');
+          await activeEntitlementService.startTrial();
           return sendJson(response, 200, await getAccountStatus());
         }
 
         try {
           if (supabaseConfigured) await supabaseClient.signOut();
         } finally {
-          activeEntitlementService.clearCache?.();
+          await activeEntitlementService.clearCache?.();
         }
         return sendJson(response, 200, await getAccountStatus());
       }

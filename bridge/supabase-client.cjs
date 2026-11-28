@@ -17,6 +17,9 @@ let clientUrl;
 let clientKey;
 let recoveryClient;
 let recoveryVerified = false;
+let authStorage;
+let rememberAuthSession = true;
+const transientAuthStorage = createMemoryStorage();
 
 function parseEnvValue(rawValue) {
   const value = rawValue.trim();
@@ -107,7 +110,18 @@ function getSupabaseClient() {
         autoRefreshToken: true,
         detectSessionInUrl: false,
         persistSession: true,
-        storage: createMemoryStorage(),
+        storage: authStorage
+          ? {
+              getItem: (key) =>
+                (rememberAuthSession ? authStorage : transientAuthStorage).getItem(key),
+              setItem: (key, value) =>
+                (rememberAuthSession ? authStorage : transientAuthStorage).setItem(key, value),
+              async removeItem(key) {
+                await authStorage.removeItem(key);
+                await transientAuthStorage.removeItem(key);
+              },
+            }
+          : transientAuthStorage,
       },
     });
     clientUrl = url;
@@ -115,6 +129,11 @@ function getSupabaseClient() {
   }
 
   return client;
+}
+
+function configureAuthStorage(storage) {
+  if (client) throw new Error('Configure o armazenamento antes de iniciar o cliente Supabase.');
+  authStorage = storage;
 }
 
 function requireSupabaseClient() {
@@ -125,8 +144,11 @@ function requireSupabaseClient() {
   return configuredClient;
 }
 
-async function signInWithEmailAndPassword(email, password) {
-  const { data, error } = await requireSupabaseClient().auth.signInWithPassword({
+async function signInWithEmailAndPassword(email, password, remember = true) {
+  const configuredClient = requireSupabaseClient();
+  if (authStorage && !remember) await authStorage.removeItem(configuredClient.auth.storageKey);
+  rememberAuthSession = remember;
+  const { data, error } = await configuredClient.auth.signInWithPassword({
     email,
     password,
   });
@@ -135,6 +157,7 @@ async function signInWithEmailAndPassword(email, password) {
 }
 
 async function signUpWithEmailAndPassword(email, password) {
+  rememberAuthSession = true;
   const { data, error } = await requireSupabaseClient().auth.signUp({
     email,
     password,
@@ -212,6 +235,7 @@ async function invokeEdgeFunction(name, body = {}) {
 }
 
 module.exports = {
+  configureAuthStorage,
   getCurrentSession,
   getSupabaseClient,
   invokeEdgeFunction,

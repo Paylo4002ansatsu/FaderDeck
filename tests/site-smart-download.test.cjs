@@ -6,7 +6,6 @@ const path = require('node:path');
 const vm = require('node:vm');
 const test = require('node:test');
 const platformDetection = require('../docs/platform-detection.js');
-const appVersion = require('../package.json').version;
 const rootReadme = fs.readFileSync(path.join(__dirname, '../README.md'), 'utf8');
 
 const appSource = fs.readFileSync(path.join(__dirname, '../docs/app.js'), 'utf8');
@@ -20,9 +19,11 @@ const MACOS_URL = landingHtml.match(
 )?.[0];
 
 test('README links to the current release and Vercel site', () => {
-  assert.ok(rootReadme.includes(`**Versão atual:** ${appVersion}`));
-  assert.ok(rootReadme.includes(`releases/download/${appVersion}/FaderDeck-Windows-Setup.exe`));
-  assert.ok(rootReadme.includes(`releases/download/${appVersion}/FaderDeck-Mac.dmg`));
+  const releaseVersion = WINDOWS_URL?.match(/\/download\/([^/]+)\//)?.[1];
+  assert.ok(releaseVersion);
+  assert.ok(rootReadme.includes(`**Versão atual:** ${releaseVersion}`));
+  assert.ok(rootReadme.includes(WINDOWS_URL));
+  assert.ok(rootReadme.includes(MACOS_URL));
   assert.ok(rootReadme.includes('https://fader-deck.vercel.app/'));
   assert.ok(rootReadme.includes('https://fader-deck.vercel.app/guia-midi-windows.html'));
   assert.equal(rootReadme.includes('paylo4002ansatsu.github.io/FaderDeck'), false);

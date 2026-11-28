@@ -23,12 +23,16 @@ Deno.serve(async (request: Request): Promise<Response> => {
     if (body.device_label !== undefined && (!label || label.length > 255)) {
       throw new HttpError(400, 'device_label must contain between 1 and 255 characters.');
     }
+    if (body.reactivate !== undefined && typeof body.reactivate !== 'boolean') {
+      throw new HttpError(400, 'reactivate must be a boolean.');
+    }
 
     const customer = await ensureCustomer(supabase, user);
     const { data, error } = await supabase.rpc('validate_device_entitlement', {
       p_customer_id: customer.id,
       p_machine_id: machineId,
       p_device_label: label,
+      p_reactivate: body.reactivate === true,
     });
     if (error) throw error;
     if (data?.allowed === true && body.offline_grace_hours !== 72) {

@@ -22,6 +22,7 @@ REQUIRED_FILES = (
     ROOT / "bridge" / "network-addresses.cjs",
     ROOT / "bridge" / "tls-identity.cjs",
     ROOT / "bridge" / "supabase-client.cjs",
+    ROOT / "bridge" / "secure-storage.cjs",
     ROOT / "bridge" / "entitlement-service.cjs",
     ROOT / "bridge" / "machine-id.cjs",
     ROOT / "bridge" / "update-checker.cjs",
@@ -61,6 +62,7 @@ def build_archive() -> None:
                 "midi-manager.cjs", "auth.cjs", "websocket-handler.cjs", "layout-persistence.cjs",
                 "websocket-gateway.cjs", "http-router.cjs", "token-store.cjs", "network-addresses.cjs",
                 "tls-identity.cjs", "supabase-client.cjs", "entitlement-service.cjs",
+                "secure-storage.cjs",
                 "machine-id.cjs", "update-checker.cjs",
             ):
                 add_file(archive, ROOT / "bridge" / module_name, Path("bridge") / module_name)
@@ -97,6 +99,7 @@ def build_archive() -> None:
                 "bridge/http-router.cjs", "bridge/token-store.cjs", "bridge/network-addresses.cjs",
                 "bridge/tls-identity.cjs",
                 "bridge/supabase-client.cjs", "bridge/entitlement-service.cjs", "bridge/machine-id.cjs",
+                "bridge/secure-storage.cjs",
                 "bridge/update-checker.cjs", "client/update-modal.js", "client/update-modal.css",
                 "package.json", "package-lock.json", "README.md",
             }

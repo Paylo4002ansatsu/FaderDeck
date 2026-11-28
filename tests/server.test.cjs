@@ -161,6 +161,27 @@ test('atomic file writer persists the last queued snapshot without temporary fil
   }
 });
 
+test('secure storage encrypts persisted values and removes them in order', async (t) => {
+  const { createSecureStorage } = require('../bridge/secure-storage.cjs');
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'faderdeck-secure-storage-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const storage = createSecureStorage(directory, {
+    isEncryptionAvailable: () => true,
+    encryptString: (value) => Buffer.from(`encrypted:${Buffer.from(value).toString('base64')}`),
+    decryptString: (value) => Buffer.from(value.toString().slice(10), 'base64').toString(),
+  });
+  await storage.setItem('session', 'private-value');
+  assert.equal(await storage.getItem('session'), 'private-value');
+  assert.equal(
+    fs
+      .readFileSync(path.join(directory, fs.readdirSync(directory)[0]), 'utf8')
+      .includes('private-value'),
+    false,
+  );
+  await storage.removeItem('session');
+  assert.equal(await storage.getItem('session'), null);
+});
+
 test('server does not listen on import, retries an occupied port, and survives malformed targets', async (t) => {
   const dataDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'faderdeck-server-test-'));
   const previousDataDir = process.env.FADERDECK_DATA_DIR;

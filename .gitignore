@@ -14,6 +14,7 @@ bridge/runtime-config.generated.cjs
 
 # Local bridge data and secrets
 .faderdeck-token
+.faderdeck-secure-*
 .faderdeck-tls/
 faderdeck-layout.json
 
