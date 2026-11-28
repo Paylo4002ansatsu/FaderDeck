@@ -37,12 +37,17 @@ function createDocsFixture() {
     'Os links atuais permanecem fixos em `1.0.0`\n',
     'utf8',
   );
+  fs.writeFileSync(
+    path.join(directory, 'root-README.md'),
+    `**Versão atual:** 1.0.0\nBaixe a versão atual (1.0.0)\n${WINDOWS_100}\n${MACOS_101}\n`,
+    'utf8',
+  );
   return directory;
 }
 
 function readFixture(directory) {
   return Object.fromEntries(
-    ['index.html', 'app.js', 'README.md'].map((name) => [
+    ['index.html', 'app.js', 'README.md', 'root-README.md'].map((name) => [
       name,
       fs.readFileSync(path.join(directory, name), 'utf8'),
     ]),
@@ -53,11 +58,15 @@ test('updates both platform links and the Windows label to one numeric tag', (t)
   const docsDirectory = createDocsFixture();
   t.after(() => fs.rmSync(docsDirectory, { recursive: true, force: true }));
 
-  const result = updateSiteDownloadVersion(docsDirectory, '1.2.0');
+  const result = updateSiteDownloadVersion(
+    docsDirectory,
+    '1.2.0',
+    path.join(docsDirectory, 'root-README.md'),
+  );
   const files = readFixture(docsDirectory);
   assert.equal(result.windowsUrl, WINDOWS_120);
   assert.equal(result.macosUrl, MACOS_120);
-  assert.deepEqual(result.changed, ['html', 'script', 'readme']);
+  assert.deepEqual(result.changed, ['html', 'script', 'readme', 'rootReadme']);
   assert.equal((files['index.html'].match(new RegExp(WINDOWS_120, 'g')) || []).length, 1);
   assert.equal((files['index.html'].match(new RegExp(MACOS_120, 'g')) || []).length, 1);
   assert.match(files['index.html'], /Windows · 64-bit · 1\.2\.0/);
@@ -67,6 +76,10 @@ test('updates both platform links and the Windows label to one numeric tag', (t)
   assert.ok(files['app.js'].includes(MONTEREY_120));
   assert.match(files['index.html'], /Mac Intel · 1\.2\.0 · DMG/);
   assert.match(files['README.md'], /Os links atuais permanecem fixos em `1\.2\.0`/);
+  assert.match(files['root-README.md'], /\*\*Versão atual:\*\* 1\.2\.0/);
+  assert.match(files['root-README.md'], /Baixe a versão atual \(1\.2\.0\)/);
+  assert.ok(files['root-README.md'].includes(WINDOWS_120));
+  assert.ok(files['root-README.md'].includes(MACOS_120));
   for (const text of Object.values(files)) {
     assert.doesNotMatch(text, /releases\/download\/v1\.2\.0\//);
   }
@@ -77,7 +90,15 @@ test('rejects a tag with v prefix before changing files', (t) => {
   t.after(() => fs.rmSync(docsDirectory, { recursive: true, force: true }));
   const before = readFixture(docsDirectory);
 
-  assert.throws(() => updateSiteDownloadVersion(docsDirectory, 'v1.2.0'), /sem prefixo v/);
+  assert.throws(
+    () =>
+      updateSiteDownloadVersion(
+        docsDirectory,
+        'v1.2.0',
+        path.join(docsDirectory, 'root-README.md'),
+      ),
+    /sem prefixo v/,
+  );
   assert.deepEqual(readFixture(docsDirectory), before);
 });
 
@@ -89,9 +110,24 @@ test('validates all platform links before writing any files', (t) => {
   const invalidBefore = readFixture(docsDirectory);
 
   assert.throws(
-    () => updateSiteDownloadVersion(docsDirectory, '1.2.0'),
+    () =>
+      updateSiteDownloadVersion(docsDirectory, '1.2.0', path.join(docsDirectory, 'root-README.md')),
     /docs\/app\.js: esperados 1 link Windows, encontrados 0/,
   );
   assert.deepEqual(readFixture(docsDirectory), invalidBefore);
   assert.notDeepEqual(invalidBefore, before);
+});
+
+test('validates the root README before writing any files', (t) => {
+  const docsDirectory = createDocsFixture();
+  t.after(() => fs.rmSync(docsDirectory, { recursive: true, force: true }));
+  const rootReadmePath = path.join(docsDirectory, 'root-README.md');
+  fs.writeFileSync(rootReadmePath, `**Versão atual:** 1.0.0\n${WINDOWS_100}\n${MACOS_101}\n`);
+  const before = readFixture(docsDirectory);
+
+  assert.throws(
+    () => updateSiteDownloadVersion(docsDirectory, '1.2.0', rootReadmePath),
+    /README\.md: esperados 1 versão de download, encontrados 0/,
+  );
+  assert.deepEqual(readFixture(docsDirectory), before);
 });

@@ -32,7 +32,11 @@ function replaceExpectedCount(content, pattern, replacement, expectedCount, file
   return content.replace(pattern, replacement);
 }
 
-function updateSiteDownloadVersion(docsDirectory, tag) {
+function updateSiteDownloadVersion(
+  docsDirectory,
+  tag,
+  rootReadmePath = path.join(docsDirectory, '..', 'README.md'),
+) {
   const version = validateReleaseTag(tag);
   const downloads = {
     windowsUrl: `https://github.com/${REPOSITORY}/releases/download/${version}/${WINDOWS_ASSET}`,
@@ -43,12 +47,13 @@ function updateSiteDownloadVersion(docsDirectory, tag) {
     html: path.join(docsDirectory, 'index.html'),
     script: path.join(docsDirectory, 'app.js'),
     readme: path.join(docsDirectory, 'README.md'),
+    rootReadme: rootReadmePath,
   };
   const original = Object.fromEntries(
     Object.entries(files).map(([key, filePath]) => [key, fs.readFileSync(filePath, 'utf8')]),
   );
 
-  const expectedLinks = { html: 1, script: 1, readme: 0 };
+  const expectedLinks = { html: 1, script: 1, readme: 0, rootReadme: 1 };
   const updated = {};
   for (const key of Object.keys(files)) {
     updated[key] = replaceExpectedCount(
@@ -56,7 +61,7 @@ function updateSiteDownloadVersion(docsDirectory, tag) {
       WINDOWS_URL_PATTERN,
       downloads.windowsUrl,
       expectedLinks[key],
-      `docs/${path.basename(files[key])}`,
+      key === 'rootReadme' ? 'README.md' : `docs/${path.basename(files[key])}`,
       'link Windows',
     );
     updated[key] = replaceExpectedCount(
@@ -64,15 +69,15 @@ function updateSiteDownloadVersion(docsDirectory, tag) {
       MACOS_URL_PATTERN,
       downloads.macosUrl,
       expectedLinks[key],
-      `docs/${path.basename(files[key])}`,
+      key === 'rootReadme' ? 'README.md' : `docs/${path.basename(files[key])}`,
       'link(s) macOS',
     );
     updated[key] = replaceExpectedCount(
       updated[key],
       MONTEREY_URL_PATTERN,
       downloads.montereyUrl,
-      expectedLinks[key],
-      `docs/${path.basename(files[key])}`,
+      key === 'rootReadme' ? 0 : expectedLinks[key],
+      key === 'rootReadme' ? 'README.md' : `docs/${path.basename(files[key])}`,
       'link(s) macOS Monterey',
     );
   }
@@ -94,6 +99,22 @@ function updateSiteDownloadVersion(docsDirectory, tag) {
     /Os links atuais permanecem fixos em `\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?`/g,
     `Os links atuais permanecem fixos em \`${version}\``,
   );
+  updated.rootReadme = replaceExpectedCount(
+    updated.rootReadme,
+    /\*\*Versão atual:\*\* \d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/g,
+    `**Versão atual:** ${version}`,
+    1,
+    'README.md',
+    'versão atual',
+  );
+  updated.rootReadme = replaceExpectedCount(
+    updated.rootReadme,
+    /Baixe a versão atual \(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\)/g,
+    `Baixe a versão atual (${version})`,
+    1,
+    'README.md',
+    'versão de download',
+  );
 
   for (const [key, filePath] of Object.entries(files)) {
     if (updated[key] !== original[key]) fs.writeFileSync(filePath, updated[key], 'utf8');
@@ -108,7 +129,12 @@ function updateSiteDownloadVersion(docsDirectory, tag) {
 
 function main() {
   const tag = process.argv[2];
-  const result = updateSiteDownloadVersion(path.resolve(__dirname, '..', 'docs'), tag);
+  const root = path.resolve(__dirname, '..');
+  const result = updateSiteDownloadVersion(
+    path.join(root, 'docs'),
+    tag,
+    path.join(root, 'README.md'),
+  );
   if (result.changed.length === 0) {
     console.log(`Os dois instaladores do site já apontam para ${result.version}.`);
     return;
@@ -117,7 +143,7 @@ function main() {
   console.log(`Windows: ${result.windowsUrl}`);
   console.log(`macOS: ${result.macosUrl}`);
   console.log(
-    `Arquivos atualizados: ${result.changed.map((key) => `docs/${key === 'script' ? 'app.js' : key === 'html' ? 'index.html' : 'README.md'}`).join(', ')}`,
+    `Arquivos atualizados: ${result.changed.map((key) => (key === 'rootReadme' ? 'README.md' : `docs/${key === 'script' ? 'app.js' : key === 'html' ? 'index.html' : 'README.md'}`)).join(', ')}`,
   );
 }
 
