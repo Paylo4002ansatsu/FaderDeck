@@ -1,5 +1,20 @@
 # Histórico de versões
 
+## 1.0.9
+
+### Destaques para você
+
+- Tenha mais espaço para tocar os faders com o celular deitado.
+- Use o celular ou tablet como uma superfície de controle simplificada.
+- Encontre o guia de instalação diretamente no site.
+
+### Correções & Arquitetura
+
+- Ajuste da largura e do espaçamento dos faders no Modo Palco em celulares na horizontal, com rolagem para os demais canais.
+- Interface remota simplificada, com edição e configurações restritas ao computador.
+- Correção da publicação do guia de instalação e dos links internos do site.
+- Atualização do cache do cliente e testes de regressão para navegação e controles.
+
 ## 1.0.8
 
 ### Destaques para você

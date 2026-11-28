@@ -25,6 +25,7 @@ O teste gratuito de sete dias e a versão completa por R$ 30,00 são apresentado
 Os links atuais permanecem fixos em `1.0.8`: Windows 64-bit, macOS Universal e macOS Monterey para Intel. O Universal requer macOS Ventura 13 ou posterior. Monterey 12 tem opção somente para Mac Intel. O instalador Windows depende do loopMIDI instalado e ativo para disponibilizar a porta MIDI virtual. No Mac, o aplicativo cria a porta automaticamente. A ajuda documenta somente ChurchDAW e Kontakt; não há promessa de compatibilidade universal.
 
 A seleção automática identifica Windows 64-bit e encaminha macOS/arquiteturas desconhecidas para a escolha manual, preservando os IDs utilizados pelos testes. Não alterar URLs individualmente: para atualizar a versão após confirmar os arquivos da release, execute `npm run update:site-download-version -- 1.2.0` com a tag numérica correspondente.
+Durante a preparação de uma nova versão do app, os links e o badge permanecem na última release publicada até que os novos instaladores estejam disponíveis.
 
 ## Autenticação e configuração
 

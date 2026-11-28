@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const test = require('node:test');
+const { compareVersions } = require('../bridge/update-checker.cjs');
 const platformDetection = require('../docs/platform-detection.js');
 const rootReadme = fs.readFileSync(path.join(__dirname, '../README.md'), 'utf8');
 
@@ -18,14 +19,19 @@ const MACOS_URL = landingHtml.match(
   /https:\/\/github\.com\/Paylo4002ansatsu\/FaderDeck\/releases\/download\/[^/]+\/FaderDeck-Mac\.dmg/,
 )?.[0];
 
-test('README links to the current release and Vercel site', () => {
+test('README and website links agree on a released version no newer than the app', () => {
   const { version } = require('../package.json');
   const releaseVersion = WINDOWS_URL?.match(/\/download\/([^/]+)\//)?.[1];
-  assert.equal(releaseVersion, version);
-  assert.ok(MACOS_URL.includes(`/download/${version}/`));
+  assert.ok(releaseVersion);
+  assert.ok([-1, 0].includes(compareVersions(releaseVersion, version)));
+  assert.ok(MACOS_URL.includes(`/download/${releaseVersion}/`));
+  assert.ok(landingHtml.includes(`/download/${releaseVersion}/FaderDeck-Mac-Monterey-Intel.dmg`));
+  assert.ok(appSource.includes(WINDOWS_URL));
+  assert.ok(appSource.includes(MACOS_URL));
+  assert.ok(appSource.includes(`/download/${releaseVersion}/FaderDeck-Mac-Monterey-Intel.dmg`));
   assert.ok(
     rootReadme.includes(
-      `![Versão ${version}](https://img.shields.io/badge/vers%C3%A3o-${version.replaceAll('-', '--')}-20b2aa)`,
+      `![Versão ${releaseVersion}](https://img.shields.io/badge/vers%C3%A3o-${releaseVersion.replaceAll('-', '--')}-20b2aa)`,
     ),
   );
   assert.ok(rootReadme.includes('https://github.com/Paylo4002ansatsu/FaderDeck/releases'));
