@@ -4,16 +4,16 @@ Este é o guia principal do aplicativo. No GitHub, o arquivo `README.md` da raiz
 
 **Site oficial:** <https://fader-deck.vercel.app/>
 
-**Versão atual:** 1.0.6
+**Versão atual:** 1.0.7
 
 O aplicativo desktop não exige Node.js, npm nem comandos no Terminal. No Windows, porém, esta implementação precisa do loopMIDI para criar a porta MIDI virtual. No macOS, o próprio FaderDeck cria essa porta.
 
 ## Downloads
 
-Baixe a versão atual (1.0.6) para seu sistema:
+Baixe a versão atual (1.0.7) para seu sistema:
 
-- **Windows 64-bit:** [Baixar FaderDeck para Windows](https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.6/FaderDeck-Windows-Setup.exe). Windows 32-bit não é compatível com o instalador atual.
-- **macOS:** [Baixar FaderDeck para macOS](https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.6/FaderDeck-Mac.dmg). O pacote é universal e atende Macs Intel e Apple Silicon.
+- **Windows 64-bit:** [Baixar FaderDeck para Windows](https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.7/FaderDeck-Windows-Setup.exe). Windows 32-bit não é compatível com o instalador atual.
+- **macOS:** [Baixar FaderDeck para macOS](https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.7/FaderDeck-Mac.dmg). O pacote é universal e atende Macs Intel e Apple Silicon.
 
 Para ver o passo a passo ilustrado, com imagens, destaques e esquemas identificados, abra o [guia visual completo para Windows](https://fader-deck.vercel.app/guia-midi-windows.html).
 
