@@ -4,7 +4,7 @@
 
 # FaderDeck
 
-![Versão 1.0.8](https://img.shields.io/badge/vers%C3%A3o-1.0.8-20b2aa)
+![Versão 1.0.9](https://img.shields.io/badge/vers%C3%A3o-1.0.9-20b2aa)
 ![macOS Universal](https://img.shields.io/badge/macOS-Universal%20%7C%20Apple%20Silicon-555)
 ![Windows x64](https://img.shields.io/badge/Windows-x64-555)
 ![Licença não informada](https://img.shields.io/badge/licen%C3%A7a-n%C3%A3o%20informada-555)
