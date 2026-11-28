@@ -39,7 +39,7 @@ function createDocsFixture() {
   );
   fs.writeFileSync(
     path.join(directory, 'root-README.md'),
-    `**Versão atual:** 1.0.0\nBaixe a versão atual (1.0.0)\n${WINDOWS_100}\n${MACOS_101}\n`,
+    '![Versão 1.0.0](https://img.shields.io/badge/vers%C3%A3o-1.0.0-20b2aa)\n[Releases](https://github.com/Paylo4002ansatsu/FaderDeck/releases)\n',
     'utf8',
   );
   return directory;
@@ -76,10 +76,13 @@ test('updates both platform links and the Windows label to one numeric tag', (t)
   assert.ok(files['app.js'].includes(MONTEREY_120));
   assert.match(files['index.html'], /Mac Intel · 1\.2\.0 · DMG/);
   assert.match(files['README.md'], /Os links atuais permanecem fixos em `1\.2\.0`/);
-  assert.match(files['root-README.md'], /\*\*Versão atual:\*\* 1\.2\.0/);
-  assert.match(files['root-README.md'], /Baixe a versão atual \(1\.2\.0\)/);
-  assert.ok(files['root-README.md'].includes(WINDOWS_120));
-  assert.ok(files['root-README.md'].includes(MACOS_120));
+  assert.match(
+    files['root-README.md'],
+    /!\[Versão 1\.2\.0\]\(https:\/\/img\.shields\.io\/badge\/vers%C3%A3o-1\.2\.0-20b2aa\)/,
+  );
+  assert.ok(
+    files['root-README.md'].includes('https://github.com/Paylo4002ansatsu/FaderDeck/releases'),
+  );
   for (const text of Object.values(files)) {
     assert.doesNotMatch(text, /releases\/download\/v1\.2\.0\//);
   }
@@ -102,6 +105,19 @@ test('rejects a tag with v prefix before changing files', (t) => {
   assert.deepEqual(readFixture(docsDirectory), before);
 });
 
+test('escapes prerelease hyphens in the version badge', (t) => {
+  const docsDirectory = createDocsFixture();
+  t.after(() => fs.rmSync(docsDirectory, { recursive: true, force: true }));
+  const rootReadmePath = path.join(docsDirectory, 'root-README.md');
+
+  updateSiteDownloadVersion(docsDirectory, '1.2.0-beta-1', rootReadmePath);
+  assert.match(
+    fs.readFileSync(rootReadmePath, 'utf8'),
+    /!\[Versão 1\.2\.0-beta-1\]\(https:\/\/img\.shields\.io\/badge\/vers%C3%A3o-1\.2\.0--beta--1-20b2aa\)/,
+  );
+  assert.doesNotThrow(() => updateSiteDownloadVersion(docsDirectory, '1.2.0', rootReadmePath));
+});
+
 test('validates all platform links before writing any files', (t) => {
   const docsDirectory = createDocsFixture();
   t.after(() => fs.rmSync(docsDirectory, { recursive: true, force: true }));
@@ -122,12 +138,15 @@ test('validates the root README before writing any files', (t) => {
   const docsDirectory = createDocsFixture();
   t.after(() => fs.rmSync(docsDirectory, { recursive: true, force: true }));
   const rootReadmePath = path.join(docsDirectory, 'root-README.md');
-  fs.writeFileSync(rootReadmePath, `**Versão atual:** 1.0.0\n${WINDOWS_100}\n${MACOS_101}\n`);
+  fs.writeFileSync(
+    rootReadmePath,
+    '# FaderDeck\n[Releases](https://github.com/Paylo4002ansatsu/FaderDeck/releases)\n',
+  );
   const before = readFixture(docsDirectory);
 
   assert.throws(
     () => updateSiteDownloadVersion(docsDirectory, '1.2.0', rootReadmePath),
-    /README\.md: esperados 1 versão de download, encontrados 0/,
+    /README\.md: esperados 1 badge de versão, encontrados 0/,
   );
   assert.deepEqual(readFixture(docsDirectory), before);
 });

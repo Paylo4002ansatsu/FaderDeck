@@ -3,6 +3,7 @@
   'use strict';
 
   const desktop = /Electron\//i.test(navigator.userAgent);
+  if (document.documentElement.classList.contains('fd-mobile-surface')) return;
   let connected = window.__fdBridgeStatus === 'connected';
   let mobileCount = window.__fdMobileCount || 0;
   let indicator;

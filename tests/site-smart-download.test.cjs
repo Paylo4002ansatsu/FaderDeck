@@ -19,11 +19,16 @@ const MACOS_URL = landingHtml.match(
 )?.[0];
 
 test('README links to the current release and Vercel site', () => {
+  const { version } = require('../package.json');
   const releaseVersion = WINDOWS_URL?.match(/\/download\/([^/]+)\//)?.[1];
-  assert.ok(releaseVersion);
-  assert.ok(rootReadme.includes(`**Versão atual:** ${releaseVersion}`));
-  assert.ok(rootReadme.includes(WINDOWS_URL));
-  assert.ok(rootReadme.includes(MACOS_URL));
+  assert.equal(releaseVersion, version);
+  assert.ok(MACOS_URL.includes(`/download/${version}/`));
+  assert.ok(
+    rootReadme.includes(
+      `![Versão ${version}](https://img.shields.io/badge/vers%C3%A3o-${version.replaceAll('-', '--')}-20b2aa)`,
+    ),
+  );
+  assert.ok(rootReadme.includes('https://github.com/Paylo4002ansatsu/FaderDeck/releases'));
   assert.ok(rootReadme.includes('https://fader-deck.vercel.app/'));
   assert.ok(rootReadme.includes('https://fader-deck.vercel.app/guia-midi-windows.html'));
   assert.equal(rootReadme.includes('paylo4002ansatsu.github.io/FaderDeck'), false);

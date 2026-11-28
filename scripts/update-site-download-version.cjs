@@ -53,7 +53,7 @@ function updateSiteDownloadVersion(
     Object.entries(files).map(([key, filePath]) => [key, fs.readFileSync(filePath, 'utf8')]),
   );
 
-  const expectedLinks = { html: 1, script: 1, readme: 0, rootReadme: 1 };
+  const expectedLinks = { html: 1, script: 1, readme: 0, rootReadme: 0 };
   const updated = {};
   for (const key of Object.keys(files)) {
     updated[key] = replaceExpectedCount(
@@ -101,19 +101,11 @@ function updateSiteDownloadVersion(
   );
   updated.rootReadme = replaceExpectedCount(
     updated.rootReadme,
-    /\*\*Versão atual:\*\* \d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/g,
-    `**Versão atual:** ${version}`,
+    /!\[Versão \d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\]\(https:\/\/img\.shields\.io\/badge\/vers%C3%A3o-\d+\.\d+\.\d+(?:--[0-9A-Za-z.-]+)?-20b2aa\)/g,
+    `![Versão ${version}](https://img.shields.io/badge/vers%C3%A3o-${version.replaceAll('-', '--')}-20b2aa)`,
     1,
     'README.md',
-    'versão atual',
-  );
-  updated.rootReadme = replaceExpectedCount(
-    updated.rootReadme,
-    /Baixe a versão atual \(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\)/g,
-    `Baixe a versão atual (${version})`,
-    1,
-    'README.md',
-    'versão de download',
+    'badge de versão',
   );
 
   for (const [key, filePath] of Object.entries(files)) {

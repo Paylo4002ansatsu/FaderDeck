@@ -110,6 +110,36 @@ test('anonymous visitors can open the landing page and public Windows guide with
   }
 });
 
+test('plan comparison and real screenshots remain usable on desktop and mobile', async ({
+  page,
+}) => {
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+
+    await expect(page.locator('.trial-banner')).toContainText('7 dias');
+    await expect(page.locator('.trial-banner')).toContainText('Sem cartão');
+    const cards = page.locator('.plan-grid .plan-card');
+    await expect(cards).toHaveCount(2);
+    await expect(cards.nth(0)).toContainText('1 computador');
+    await expect(cards.nth(1)).toContainText('2 computadores');
+
+    for (const image of await page.locator('.product-showcase img').all()) {
+      await image.scrollIntoViewIfNeeded();
+      await expect(image).toBeVisible();
+      await expect.poll(() => image.evaluate((element) => element.naturalWidth)).toBeGreaterThan(0);
+      const ratio = await image.evaluate((element) => {
+        const bounds = element.getBoundingClientRect();
+        return (bounds.width / bounds.height) * (element.naturalHeight / element.naturalWidth);
+      });
+      expect(Math.abs(ratio - 1)).toBeLessThan(0.01);
+    }
+    expect(
+      await page.locator('html').evaluate((element) => element.scrollWidth),
+    ).toBeLessThanOrEqual(width);
+  }
+});
+
 test('Windows 64-bit visitor can start the installer download from the smart button', async ({
   browser,
   baseURL,

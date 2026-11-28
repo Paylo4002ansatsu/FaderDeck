@@ -1,6 +1,8 @@
 (() => {
   'use strict';
 
+  if (document.documentElement.classList.contains('fd-mobile-surface')) return;
+
   const STORAGE_KEY = 'faderdeck.stage.showNames';
   const STAGE_SELECTOR = '.app-shell.stage-mode';
   const EXIT_SELECTOR = `${STAGE_SELECTOR} .stage-exit-handle`;

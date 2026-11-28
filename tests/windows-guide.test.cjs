@@ -12,17 +12,17 @@ const docsGuideCssPath = path.join(root, 'docs', 'guia-midi-windows.css');
 const clientGuideCssPath = path.join(root, 'client', 'guia-midi-windows.css');
 const requiredImages = ['loopmidi-window.png'];
 
-test('GitHub root README is the single step-by-step guide with working image paths', () => {
+test('GitHub root README links to the Windows guide and local logo', () => {
   const readmePath = path.join(root, 'README.md');
   const readme = fs.readFileSync(readmePath, 'utf8');
-  assert.match(readme, /^# FaderDeck — instalação e configuração/m);
-  assert.match(readme, /## Windows — instalação e primeiro uso/);
-  assert.match(readme, /New port-name/);
-  assert.match(readme, /Aplicar portas MIDI/);
+  assert.match(readme, /^# FaderDeck$/m);
+  assert.match(readme, /## Instalação e MIDI/);
+  assert.match(readme, /loopMIDI/);
+  assert.match(readme, /https:\/\/fader-deck\.vercel\.app\/guia-midi-windows\.html/);
   assert.equal(fs.existsSync(path.join(root, 'README-ponte.md')), false);
 
-  const imagePaths = [...readme.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)].map((match) => match[1]);
-  assert.equal(imagePaths.length, 1);
+  const imagePaths = [...readme.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map((match) => match[1]);
+  assert.ok(imagePaths.length > 0);
   for (const imagePath of imagePaths) {
     assert.equal(
       fs.existsSync(path.join(root, imagePath)),

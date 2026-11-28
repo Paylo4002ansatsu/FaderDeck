@@ -33,6 +33,18 @@
 @media(max-width:720px){.stage-hero{padding:12px}.stage-hero-board{min-height:210px;gap:5px;padding:5px}.stage-hero-lane{padding-inline:3px}.stage-hero-lane strong{font-size:7px}.stage-hero-toolbar{font-size:7px}.product-detail-figure{padding:10px}.product-detail-figure .figure-label{font-size:8px}}
 .product-showcase{display:grid;grid-template-columns:minmax(0,1fr) 240px;align-items:center;gap:20px;margin-top:30px}.product-showcase .product-detail-figure{min-width:0;margin:0}.product-showcase .capture-mobile{margin:0 auto}
 @media(max-width:720px){.product-showcase{grid-template-columns:1fr;gap:18px}}
+.product-showcase .product-detail-figure{box-shadow:0 12px 35px #0005}
+.product-mobile-figure{width:min(240px,100%);justify-self:center}
+.product-mobile-figure img{border-radius:14px}
+.trial-banner{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:13px;padding:24px 25px;border:1px solid #73eed753;border-radius:10px;background:linear-gradient(140deg,#14211f,#101617)}
+.trial-banner h3{margin:0 0 5px;font-size:21px;letter-spacing:-.045em}
+.trial-banner p{margin:0;color:#a4b0ab;font-size:14px;line-height:1.75}
+.trial-banner .button{flex-shrink:0}
+.plan-features{display:grid;gap:10px;margin:20px 0 0;padding:0;list-style:none;color:#b9c7c1;font-size:14px;line-height:1.55}
+.plan-features li{position:relative;padding-left:19px}
+.plan-features li::before{position:absolute;left:0;color:var(--mint);content:"✓"}
+.plan-features strong{color:var(--text)}
+@media(max-width:720px){.trial-banner{align-items:flex-start;flex-direction:column;padding:21px}.trial-banner .button{width:auto}.product-mobile-figure{width:min(240px,100%)}}
 
 .auth-feedback{position:fixed;top:max(18px,env(safe-area-inset-top));left:50%;z-index:80;display:flex;width:min(760px,calc(100% - 32px));align-items:center;justify-content:space-between;gap:18px;padding:17px 19px;transform:translateX(-50%);border:1px solid #3b9b78;border-radius:10px;background:linear-gradient(130deg,#153b30,#102a24);color:#e1fff3;box-shadow:0 18px 55px #0009,0 0 24px #73eed71c}
 .auth-feedback[hidden],.auth-modal-backdrop[hidden]{display:none}

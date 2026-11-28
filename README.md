@@ -1,116 +1,58 @@
-# FaderDeck — instalação e configuração
+<p align="center">
+  <img src="docs/logo.svg" alt="FaderDeck" width="72">
+</p>
 
-Este é o guia principal do aplicativo. No GitHub, o arquivo `README.md` da raiz é o que aparece automaticamente na página inicial do repositório.
+# FaderDeck
 
-**Site oficial:** <https://fader-deck.vercel.app/>
+![Versão 1.0.8](https://img.shields.io/badge/vers%C3%A3o-1.0.8-20b2aa)
+![macOS Universal](https://img.shields.io/badge/macOS-Universal%20%7C%20Apple%20Silicon-555)
+![Windows x64](https://img.shields.io/badge/Windows-x64-555)
+![Licença não informada](https://img.shields.io/badge/licen%C3%A7a-n%C3%A3o%20informada-555)
 
-**Versão atual:** 1.0.7
+Transforme seu celular ou tablet em um controlador MIDI tátil por Wi-Fi local, com baixa latência. Controle sua música em softwares como Kontakt e ChurchDAW; MainStage e REAPER também podem receber MIDI, mas sua compatibilidade com o FaderDeck ainda não está documentada.
 
-O aplicativo desktop não exige Node.js, npm nem comandos no Terminal. No Windows, porém, esta implementação precisa do loopMIDI para criar a porta MIDI virtual. No macOS, o próprio FaderDeck cria essa porta.
+**[Baixar o FaderDeck](https://github.com/Paylo4002ansatsu/FaderDeck/releases)** · **[Site oficial](https://fader-deck.vercel.app/)** · **[Novidades](CHANGELOG.md)**
 
-## Downloads
+## Recursos
 
-Baixe a versão atual (1.0.7) para seu sistema:
+- **MIDI por Wi-Fi local:** conecte pelo QR Code usando HTTP e WebSocket, sem precisar de internet para a comunicação entre os dispositivos.
+- **Sincronia em tempo real:** mova faders e pads no celular ou no computador; o retorno da DAW depende da configuração de entrada MIDI.
+- **Edição e Palco:** organize os faders em uma grade sem sobreposição, personalize cores e controles MIDI e mantenha a mesma ordem no palco.
+- **Porta MIDI:** criada automaticamente no macOS; no Windows, conecte o FaderDeck a uma porta criada no loopMIDI.
+- **Teste e licença:** 7 dias de avaliação por máquina, acesso com e-mail e senha e recuperação de senha por código enviado por e-mail.
 
-- **Windows 64-bit:** [Baixar FaderDeck para Windows](https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.7/FaderDeck-Windows-Setup.exe). Windows 32-bit não é compatível com o instalador atual.
-- **macOS:** [Baixar FaderDeck para macOS](https://github.com/Paylo4002ansatsu/FaderDeck/releases/download/1.0.7/FaderDeck-Mac.dmg). O pacote é universal e atende Macs Intel e Apple Silicon.
+## Instalação e MIDI
 
-Para ver o passo a passo ilustrado, com imagens, destaques e esquemas identificados, abra o [guia visual completo para Windows](https://fader-deck.vercel.app/guia-midi-windows.html).
+Baixe o instalador na página de [Releases](https://github.com/Paylo4002ansatsu/FaderDeck/releases). O aplicativo instalado não exige Node.js.
 
-## Windows — instalação e primeiro uso
+| Sistema | Requisitos | Configuração MIDI |
+| --- | --- | --- |
+| **macOS** | Universal: macOS 13+ (Intel e Apple Silicon). Monterey 12: instalador separado para Intel. | A porta virtual **FaderDeck** é criada automaticamente. |
+| **Windows** | Windows 64-bit; [loopMIDI](https://www.tobias-erichsen.de/software/loopmidi.html) instalado e em execução. | Crie a porta **FaderDeck** no loopMIDI e selecione-a como saída MIDI no FaderDeck. |
 
-### 1. Instale o FaderDeck
+No macOS, permita o acesso à rede local quando solicitado. O app não é assinado/notarizado e pode exigir autorização em **Privacidade e Segurança**. No Windows, o fornecedor do loopMIDI não confirma compatibilidade com Windows 11; consulte seus requisitos atuais.
 
-1. Baixe o instalador `.exe` pelo link acima.
-2. Execute-o e siga as etapas do instalador.
-3. Abra o FaderDeck pelo menu Iniciar ou pelo atalho criado.
+## Conecte e toque
 
-Não instale Node.js para usar o aplicativo desktop.
+1. Abra o FaderDeck, entre na sua conta e configure a porta MIDI conforme seu sistema.
+2. Conecte computador e celular ou tablet à mesma rede Wi-Fi, sem isolamento entre dispositivos.
+3. Clique em **Conectar celular**, leia o QR Code e abra o endereço no navegador.
+4. Habilite a entrada **FaderDeck** na DAW e associe os controles usando MIDI Learn.
 
-### 2. Instale o loopMIDI e crie a porta virtual
+Para espelhar mudanças da DAW, configure também a entrada MIDI no FaderDeck e o envio de retorno na DAW. Veja o [guia visual para Windows](https://fader-deck.vercel.app/guia-midi-windows.html) para ChurchDAW e Kontakt.
 
-O FaderDeck para Windows não cria a porta MIDI virtual sozinho. Baixe o loopMIDI somente pela [página oficial de Tobias Erichsen](https://www.tobias-erichsen.de/software/loopmidi.html), execute o instalador e abra o programa pelo menu Iniciar.
+No celular ou tablet, use a Grade para tocar faders e pads e o Palco para exibir somente os faders. A edição e as configurações ficam no computador; a opção de tela cheia depende do suporte do navegador.
 
-Na janela do loopMIDI, digite `FaderDeck` no campo **New port-name**, clique em **+** e confirme que a porta aparece na lista. A imagem abaixo é uma captura real de outra instalação: o nome mostrado nela é apenas exemplo, mas o campo e os controles são os mesmos.
-
-![Captura real da janela do loopMIDI com a lista de portas, o campo New port-name e o botão +. O nome na imagem é um exemplo.](client/guia-assets/loopmidi-window.png)
-
-Fonte da captura: [tutorial Silence & Sound sobre loopMIDI](https://www.silenceandsound.com/setup-loopmidi/).
-
-**Mantenha o loopMIDI aberto ou minimizado na bandeja do Windows.** A porta deixa de funcionar se o programa for encerrado. Se houver uma opção de inicialização automática no menu do ícone da bandeja, ative-a para iniciar o loopMIDI a cada logon.
-
-### 3. Selecione a saída MIDI no FaderDeck
-
-1. Com o FaderDeck aberto, vá ao menu superior e clique em FaderDeck
-2. Escolha **Portas MIDI e administração…**.
-3. Em **Saída MIDI para a DAW**, selecione **FaderDeck**.
-4. Clique em **Aplicar portas MIDI** e espere a confirmação.
-
-O endereço local padrão da administração é `http://127.0.0.1:8787/bridge`. Se a porta 8787 estiver ocupada, o app seleciona outra porta livre; abra a administração pelo menu do FaderDeck, que usa o endereço correto.
-
-**Entrada MIDI para MIDI Learn** é opcional e recebe mensagens de controladores ou da DAW. Para refletir movimentos da DAW nos faders e pads, selecione nessa entrada a porta pela qual a DAW envia o retorno MIDI e habilite o envio correspondente na DAW. Evite criar um loop de MIDI entre as portas.
-
-### 4. Conecte o celular
-
-1. Deixe o computador e o celular na mesma rede Wi‑Fi.
-2. Escaneie o QR exibido no FaderDeck; não é necessário instalar certificado.
-3. Use uma rede confiável: o controle remoto usa HTTP/WS sem criptografia. O código de pareamento e as mensagens podem ser interceptados na rede; não compartilhe o QR e não exponha a porta à internet.
-4. No macOS, permita o acesso à rede local quando solicitado. Redes Wi‑Fi de convidados podem bloquear a comunicação entre aparelhos.
-
-Após o pareamento, o indicador no topo mostra o estado da conexão. Faders e pads compartilham seus movimentos entre o computador e os dispositivos conectados; o retorno da DAW depende da entrada MIDI configurada acima.
-
-### 5. Habilite a entrada na sua DAW
-
-Se a DAW já estava aberta quando você criou a porta, feche-a e abra novamente. Alguns programas só atualizam a lista de dispositivos MIDI na inicialização. Em cada programa, selecione e habilite a entrada **FaderDeck**:
-
-- **ChurchDAW:** em `Sistema → Áudio e MIDI`, selecione FaderDeck como entrada. Depois, em `Ferramentas → Mapear MIDI`, clique no controle desejado na tela e mova o fader. O mapeamento é salvo no projeto.
-- **Kontakt:** abra `Options → MIDI`, selecione FaderDeck na lista de portas MIDI de entrada e ative-a. Em seguida, clique no controle ou parâmetro desejado no Kontakt e use o recurso MIDI Learn do plugin, movendo o fader correspondente no FaderDeck.
-
-Por enquanto, o FaderDeck anuncia suporte documentado somente para **ChurchDAW** e **Kontakt**. Consulte o [guia visual Windows](https://fader-deck.vercel.app/guia-midi-windows.html) para os passos de configuração.
-
-## macOS
-
-1. Baixe e abra o arquivo `.dmg`.
-2. Arraste o FaderDeck para **Aplicativos**.
-3. Na primeira abertura, o macOS pode avisar que o app não é de um desenvolvedor identificado por ele não estar assinado/notarizado. Se isso ocorrer, Control-clique no app, escolha **Abrir** e confirme. Se necessário, autorize em **Ajustes do Sistema → Privacidade e Segurança**.
-4. Permita o acesso à rede local e as conexões de entrada no Firewall quando solicitados.
-5. O FaderDeck cria automaticamente a porta MIDI virtual **FaderDeck**. Não é necessário ativar o IAC Driver. Se já existir uma porta IAC com o mesmo nome, use apenas uma das duas.
-6. Para usar o iPhone, mantenha-o na mesma rede Wi‑Fi do Mac e escaneie o QR exibido pelo FaderDeck.
-
-No macOS, layouts, token de pareamento e dados do painel são guardados fora do app em `~/Library/Application Support/FaderDeck` e preservados nas atualizações. A administração usa HTTP em loopback; a porta HTTP da rede começa em `8788` e pode avançar se estiver ocupada. O instalador Windows solicita autorização administrativa para configurar o firewall para redes privadas.
-
-O controlador aberto pelo QR conecta o WebSocket ao mesmo endereço e porta da página. Se o código de pareamento for renovado, escaneie o novo QR.
-
-No modo **Editar**, arraste a alça de um fader sobre outro para mudar sua posição na grade. A ordem é salva no painel e usada também no **Palco**; coordenadas livres de layouts antigos não determinam mais a posição dos controles.
-
-O aviso de rede local depende do macOS e da assinatura do aplicativo. A configuração atual não usa uma identidade de assinatura emitida pela Apple; para comportamento confiável em distribuição, é necessário assinar o app e validar a permissão em um Mac real.
-
-## Solução de problemas
-
-- **A porta não aparece:** confirme que o loopMIDI está aberto, que `FaderDeck` aparece na lista do loopMIDI e que a DAW foi reiniciada depois de criar a porta.
-- **A DAW não responde:** confirme a saída selecionada no FaderDeck, clique **Aplicar portas MIDI**, habilite a entrada correta na DAW e repita o fluxo MIDI Learn.
-- **O celular não conecta:** confira se os aparelhos estão na mesma rede Wi‑Fi e se o Firewall permite conexões locais em rede privada. Redes de convidados podem bloquear dispositivos entre si.
-- **A porta some ao reiniciar o Windows:** reabra o loopMIDI, recrie `FaderDeck` se necessário e procure no menu do ícone da bandeja a opção de inicialização automática.
-- **MIDI Learn não funciona:** confira o canal e o número CC/nota, e confirme que o tipo de mensagem enviado pelo controle é compatível com o que a DAW espera.
-
-## Ponte standalone (opcional)
-
-O instalador desktop é o caminho recomendado e não requer Node.js. Estas etapas são somente para executar o pacote separado `fader-bridge.zip`:
-
-1. Instale Node.js 22 ou superior (LTS) e confirme no PowerShell/Terminal: `node -v` e `npm -v`.
-2. No Windows, instale e abra loopMIDI e crie a porta `FaderDeck`; no macOS, a ponte cria a porta automaticamente.
-3. Extraia o ZIP, abra o PowerShell/Terminal nessa pasta e rode `npm install` na primeira vez; depois rode `npm start`.
-4. Abra `http://127.0.0.1:8787/bridge` no computador. Se 8787 estiver ocupada, use o endereço informado pelo servidor.
-5. Na tela da ponte, selecione a saída MIDI e clique **Aplicar portas MIDI**. Use o QR para conectar o celular na mesma rede local por HTTP.
-
-Se o módulo nativo `@julusian/midi` precisar ser compilado e a instalação falhar, no Windows instale Python 3 e Visual Studio Build Tools com a carga de trabalho C++ Desktop. No macOS, instale as ferramentas de linha de comando do Xcode com `xcode-select --install`. Não exponha a ponte à internet nem encaminhe a porta HTTP LAN no roteador.
+> **Rede e acesso:** use uma rede confiável: HTTP/WS não é criptografado, portanto não compartilhe o QR nem exponha a ponte à internet. A autenticação inicial requer internet; o acesso offline depende de uma licença ou avaliação válida em cache e tem tolerância de até 72 horas.
 
 ## Desenvolvimento
 
-Somente para quem vai executar ou empacotar o código-fonte: o projeto requer Node.js 22 ou mais recente; Python 3 é necessário para reconstruir o ZIP da ponte. Instale dependências com `npm install`, execute o desktop com `npm start`, valide com `npm run check` e gere o ZIP atualizado com `npm run package:bridge`. O desktop usa os arquivos de `client/` e `assets/` diretamente; não é necessário compilar o frontend antes de iniciá-lo. `npm run build:site` compila apenas o site. Os instaladores Electron são gerados pelo workflow de release do GitHub Actions.
+Requer Node.js 22 ou superior:
 
-Para mostrar novidades no aviso de atualização desktop, inclua tópicos curtos e amigáveis sob `### Destaques para você` na seção da versão em [CHANGELOG.md](CHANGELOG.md). Detalhes técnicos ficam em `### Correções & Arquitetura`. O workflow inclui a seção da versão marcada nas notas da release; publicações manuais devem copiar essa seção para o corpo da release. O modal reúne os destaques das releases publicadas posteriores à versão instalada, sem repetições; se nenhuma tiver destaques, não mostra descrição.
+```bash
+npm install
+npm start
+npm run check
+```
 
-O aviso de atualização aguarda a validação da conta: se o acesso estiver bloqueado ou não puder ser verificado, a tela de acesso tem prioridade. Atualizar o aplicativo não reinicia o período de avaliação.
-
-Para a recuperação de senha no desktop funcionar, configure o template de e-mail de recuperação do Supabase para exibir `{{ .Token }}` (código numérico de 6 a 8 dígitos), em vez de depender apenas de `{{ .ConfirmationURL }}`. Essa configuração também deve ser aplicada ao projeto Supabase implantado.
+Para a recuperação de senha, configure o template de e-mail do Supabase para incluir `{{ .Token }}`. As notas amigáveis do modal de atualização ficam em `### Destaques para você` no [CHANGELOG.md](CHANGELOG.md).

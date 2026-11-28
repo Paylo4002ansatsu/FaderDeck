@@ -93,7 +93,12 @@ test('desktop, phone and DAW synchronize controls and QR connection feedback', a
     serviceWorkers: 'block',
   });
   const phone = await browser.newContext({ ...devices['iPhone 13'], serviceWorkers: 'block' });
+  await phone.addInitScript(() => {
+    localStorage.setItem('faderdeck.mobile.showNames', 'false');
+    localStorage.setItem('faderdeck.stage.showNames', 'false');
+  });
   const tablet = await browser.newContext({
+    viewport: { width: 1024, height: 768 },
     userAgent:
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 Version/17.0 Safari/605.1.15',
     serviceWorkers: 'block',
@@ -149,7 +154,16 @@ test('desktop, phone and DAW synchronize controls and QR connection feedback', a
     );
 
     await mobile.goto(`http://127.0.0.1:${bridge.getLanPort()}/#bridgeToken=${bridge.getToken()}`);
-    await expect(mobile.locator('.fd-connection-indicator')).toHaveText('Conectado ao computador');
+    await expect(mobile.locator('.fd-mobile-status')).toHaveText('Conectado');
+    await expect(mobile.getByRole('button', { name: 'Editar', exact: true })).toBeHidden();
+    await expect(mobile.getByRole('button', { name: 'Abrir configurações MIDI' })).toBeHidden();
+    await expect(mobile.locator('.learn-chip').first()).toBeHidden();
+    await expect(mobile.locator('.panel-grid .control-title').first()).toBeVisible();
+    await expect(mobile.getByRole('button', { name: /nomes/i })).toHaveCount(0);
+    await expect(mobile.locator('.fd-mobile-stage-icon svg')).toHaveCount(1);
+    expect(
+      await mobile.locator('.fd-mobile-stage-icon svg').evaluate((icon) => icon.outerHTML),
+    ).toBe(await mobile.locator('.topbar .stage-toggle svg').evaluate((icon) => icon.outerHTML));
     await expect(computer.getByRole('dialog', { name: 'Conectar celular' })).toHaveCount(0);
     await expect(computer.getByText('Dispositivo conectado')).toBeVisible();
     await expect(computer.locator('.fd-connection-indicator')).toHaveText('Celular conectado');
@@ -222,21 +236,156 @@ test('desktop, phone and DAW synchronize controls and QR connection feedback', a
     input.emit('message', 0, [0x80, 36, 0]);
     await expect(mobile.locator('.pad-card')).not.toHaveClass(/pad-active/);
 
-    await mobile.getByRole('button', { name: 'Palco', exact: true }).click();
-    await expect(mobile.locator('.stage-mode > .fd-connection-indicator')).toBeVisible();
+    await mobile.getByRole('button', { name: 'Abrir Modo Palco' }).click();
+    await expect(mobile.locator('.fd-mobile-status')).toBeHidden();
+    await expect(mobile.getByRole('button', { name: 'Sair do modo Palco' })).toHaveText('✕ Sair');
+    await expect(mobile.locator('.mobile-page-tabs')).toBeHidden();
+    await expect(mobile.locator('.stage-page-dots')).toBeHidden();
+    await expect(mobile.locator('.stage-pad-panel')).toBeHidden();
     await expect(mobile.locator('.stage-lane-fader').first()).toBeVisible();
-    const badge = await mobile.locator('.fd-connection-indicator').boundingBox();
+    const badge = await mobile.locator('.fd-mobile-toolbar').boundingBox();
     const fader = await mobile.locator('.stage-lane-fader').first().boundingBox();
     expect(badge.y + badge.height).toBeLessThanOrEqual(fader.y);
+    expect(badge.height).toBe(40);
+    expect(fader.width).toBeGreaterThanOrEqual(84);
+    expect(fader.width).toBeLessThanOrEqual(96);
+    await expect(mobile.locator('.stage-fader-rail')).toHaveCSS('gap', '12px');
+    await expect(mobile.locator('.stage-lane-fader .control-title').first()).toBeVisible();
+    await mobile.getByRole('button', { name: 'Sair do modo Palco' }).click();
+    await expect(mobile.locator('.panel-grid .control-title').first()).toBeVisible();
+    await expect(mobile.getByRole('button', { name: 'Abrir Modo Palco' })).toBeVisible();
+    await mobile.setViewportSize({ width: 844, height: 390 });
+    await mobile.getByRole('button', { name: 'Abrir Modo Palco' }).click();
+    await expect(mobile.locator('.stage-fader-rail')).toHaveCSS('gap', '4px');
+    const landscapeLane = await mobile.locator('.stage-lane-fader').first().boundingBox();
+    expect(landscapeLane.width).toBeGreaterThanOrEqual(76);
+    expect(landscapeLane.width).toBeLessThanOrEqual(110);
+    await mobile.setViewportSize({ width: 390, height: 844 });
+    await expect(mobile.locator('.stage-fader-rail')).toHaveCSS('gap', '12px');
+    const scroll = mobile.locator('.stage-fader-scroll');
+    expect(await scroll.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(
+      true,
+    );
+    await scroll.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth;
+    });
+    await expect.poll(() => scroll.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+    await scroll.evaluate((element) => {
+      element.scrollLeft = 0;
+    });
+    const tracks = mobile.locator('.stage-lane-fader .fader-track');
+    const firstTrack = await tracks.nth(0).boundingBox();
+    const secondTrack = await tracks.nth(1).boundingBox();
+    const touch = await mobile.context().newCDPSession(mobile);
+    const point = (box, id, fraction) => ({
+      x: box.x + box.width / 2,
+      y: box.y + box.height * fraction,
+      id,
+    });
+    await touch.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [point(firstTrack, 1, 0.8), point(secondTrack, 2, 0.8)],
+    });
+    await touch.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [point(firstTrack, 1, 0.2), point(secondTrack, 2, 0.2)],
+    });
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect
+      .poll(async () => Number(await tracks.nth(0).getAttribute('aria-valuenow')))
+      .toBeGreaterThan(90);
+    await expect
+      .poll(async () => Number(await tracks.nth(1).getAttribute('aria-valuenow')))
+      .toBeGreaterThan(90);
+    expect(await scroll.evaluate((element) => element.scrollLeft)).toBe(0);
+    const scrollBox = await scroll.boundingBox();
+    const headerY = scrollBox.y + 12;
+    await touch.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x: scrollBox.x + 300, y: headerY, id: 3 }],
+    });
+    await touch.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: scrollBox.x + 110, y: headerY, id: 3 }],
+    });
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect.poll(() => scroll.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
     const secondMobile = await tablet.newPage();
     await secondMobile.goto(
       `http://127.0.0.1:${bridge.getLanPort()}/#bridgeToken=${bridge.getToken()}`,
     );
     await expect(secondMobile.getByRole('slider', { name: 'Vocal' })).toHaveAttribute(
       'aria-valuenow',
-      '64',
+      await tracks.nth(0).getAttribute('aria-valuenow'),
     );
     expect(await ids(secondMobile)).toEqual(await ids(computer));
+    await expect(secondMobile.getByRole('button', { name: 'Editar', exact: true })).toBeHidden();
+    await secondMobile.getByRole('button', { name: 'Abrir Modo Palco' }).click();
+    const tabletLane = await secondMobile.locator('.stage-lane-fader').first().boundingBox();
+    expect(tabletLane.width).toBeGreaterThanOrEqual(76);
+    expect(tabletLane.width).toBeLessThanOrEqual(110);
+    await expect(secondMobile.locator('.stage-fader-rail')).toHaveCSS('gap', '4px');
+    await secondMobile.setViewportSize({ width: 768, height: 1024 });
+    const portraitTabletLane = await secondMobile
+      .locator('.stage-lane-fader')
+      .first()
+      .boundingBox();
+    expect(portraitTabletLane.width).toBeGreaterThanOrEqual(84);
+    expect(portraitTabletLane.width).toBeLessThanOrEqual(96);
+    await expect(secondMobile.locator('.stage-fader-rail')).toHaveCSS('gap', '12px');
+    await expect(secondMobile.locator('.stage-lane-fader .control-title').first()).toBeVisible();
+    await secondMobile.getByRole('button', { name: 'Sair do modo Palco' }).click();
+    await expect(secondMobile.locator('.panel-grid .control-title').first()).toBeVisible();
+    await secondMobile.getByRole('button', { name: 'Abrir Modo Palco' }).click();
+    await computer.getByRole('button', { name: 'Editar', exact: true }).click();
+    await computer
+      .locator('.panel-grid .fader-card')
+      .first()
+      .getByRole('button', { name: 'Configurar fader' })
+      .click();
+    await computer.getByLabel('Nome', { exact: true }).fill('Voz principal');
+    await computer.getByRole('button', { name: 'Usar cor #f8b84e' }).click();
+    await computer.getByLabel('Canal MIDI').fill('2');
+    await computer.getByRole('button', { name: 'Fader', exact: true }).click();
+    await expect(mobile.locator('.stage-lane-fader')).toHaveCount(9);
+    await expect(secondMobile.locator('.stage-lane-fader')).toHaveCount(9);
+    await expect(mobile.getByRole('slider', { name: 'Voz principal' })).toBeVisible();
+    await expect(secondMobile.getByRole('slider', { name: 'Voz principal' })).toBeVisible();
+    await expect(mobile.locator('.stage-lane-fader .fader-card').first()).toHaveAttribute(
+      'style',
+      /#f8b84e/i,
+    );
+    const desktopCards = computer.locator('.panel-grid > .fader-card');
+    const originalOrder = await desktopCards.evaluateAll((elements) =>
+      elements.map((element) => element.dataset.controlId),
+    );
+    const handle = await desktopCards.nth(0).locator('.drag-handle').boundingBox();
+    const source = await desktopCards.nth(0).boundingBox();
+    const target = await desktopCards.nth(2).boundingBox();
+    await computer.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
+    await computer.mouse.down();
+    await computer.mouse.move(
+      handle.x + handle.width / 2 + target.x + target.width / 2 - (source.x + source.width / 2),
+      handle.y + handle.height / 2 + target.y + target.height / 2 - (source.y + source.height / 2),
+      { steps: 10 },
+    );
+    await computer.mouse.up();
+    const stageIds = (page) =>
+      page
+        .locator('.stage-lane-fader .fader-card')
+        .evaluateAll((elements) => elements.map((element) => element.dataset.controlId));
+    const desktopIds = () =>
+      desktopCards.evaluateAll((elements) => elements.map((element) => element.dataset.controlId));
+    expect(await desktopIds()).not.toEqual(originalOrder);
+    await expect.poll(async () => stageIds(mobile)).toEqual(await desktopIds());
+    await expect.poll(async () => stageIds(secondMobile)).toEqual(await desktopIds());
+    await computer.getByRole('button', { name: 'Tocar', exact: true }).click();
+    const beforeChannelMove = sentMidi.length;
+    await mobile.getByRole('slider', { name: 'Voz principal' }).focus();
+    await mobile.keyboard.press('Home');
+    await expect
+      .poll(() => sentMidi.slice(beforeChannelMove).some((bytes) => bytes[0] === 0xb1))
+      .toBe(true);
     await expect
       .poll(async () =>
         computer.evaluate(
@@ -259,7 +408,7 @@ test('desktop, phone and DAW synchronize controls and QR connection feedback', a
       'Conectado',
     );
     const beforeReconnectMove = sentMidi.length;
-    await computer.getByRole('slider', { name: 'Vocal' }).focus();
+    await computer.getByRole('slider', { name: 'Voz principal' }).focus();
     await computer.keyboard.press('End');
     await expect.poll(() => sentMidi.length).toBeGreaterThan(beforeReconnectMove);
   } finally {

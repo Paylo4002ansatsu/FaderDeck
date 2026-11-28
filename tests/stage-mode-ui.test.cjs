@@ -391,7 +391,7 @@ test('arrastar uma área não interativa rola os canais; arrastar o trilho do fa
   assert.equal(scroller.scrollLeft, startScrollLeft + 40);
 });
 
-test('landing marca a ilustração de palco e reserva capturas nas proporções corretas', () => {
+test('landing identifica a ilustração e inclui as capturas reais', () => {
   const desktopIcon = fs.readFileSync(path.join(root, 'build/icon.png'));
   const siteIcon = fs.readFileSync(path.join(root, 'docs/faderdeck-icon.png'));
   const html = fs.readFileSync(path.join(root, 'docs/index.html'), 'utf8');
@@ -406,12 +406,13 @@ test('landing marca a ilustração de palco e reserva capturas nas proporções 
   assert.equal((html.match(/class="stage-hero-lane"/g) || []).length, 5);
   assert.match(
     html,
-    /class="product-showcase">[\s\S]*class="product-detail-figure"[\s\S]*class="capture-placeholder capture-mobile"/,
+    /class="product-showcase">[\s\S]*class="product-detail-figure"[\s\S]*class="product-detail-figure product-mobile-figure"/,
   );
-  assert.match(html, /class="capture-placeholder capture-mobile"[^>]*aria-label="[^"]*9 por 19/);
-  assert.match(html, /faderdeck-client-real-desktop\.png/);
-  assert.match(html, /aviso SEM PONTE/);
-  assert.doesNotMatch(html, /(?:^|\W)pads?(?:\W|$)/i);
+  for (const image of ['desktop-preview.png', 'mobile-preview.png']) {
+    assert.match(html, new RegExp(`src="images/${image.replace('.', '\\.')}"[^>]*alt="[^"]+"`));
+    assert.equal(fs.existsSync(path.join(root, 'docs/images', image)), true);
+  }
+  assert.doesNotMatch(html, /aviso SEM PONTE|CAPTURA MOBILE PENDENTE/);
   assert.match(
     html,
     /class="back-to-top"[^>]*id="back-to-top"[^>]*href="#inicio"[^>]*aria-label="Voltar ao topo"/,
@@ -420,7 +421,7 @@ test('landing marca a ilustração de palco e reserva capturas nas proporções 
     styles,
     /\.stage-hero-board\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/,
   );
-  assert.match(styles, /\.capture-mobile\{[^}]*aspect-ratio:9\/19/);
+  assert.match(styles, /\.product-detail-figure img\{[^}]*width:100%;height:auto/);
   assert.match(styles, /\.product-showcase\{[^}]*grid-template-columns:minmax\(0,1fr\) 240px/);
   assert.match(styles, /@media\(max-width:720px\)\{\.product-showcase\{grid-template-columns:1fr/);
   assert.match(styles, /IBM Plex Mono/);
@@ -445,9 +446,11 @@ test('o app carrega e armazena em cache os assets auxiliares do palco', () => {
   assert.match(html, /viewport-fit=cover/);
   assert.match(html, /stage-mode-enhancements\.css/);
   assert.match(html, /stage-mode-enhancements\.js/);
-  assert.match(serviceWorker, /faderdeck-shell-v10/);
+  assert.match(serviceWorker, /faderdeck-shell-v12/);
+  assert.match(serviceWorker, /'\/mobile-surface\.js\?v=2'/);
+  assert.match(serviceWorker, /'\/mobile-surface\.css\?v=2'/);
   assert.match(serviceWorker, /'\/stage-mode-enhancements\.css\?v=3'/);
-  assert.match(serviceWorker, /'\/stage-mode-enhancements\.js'/);
+  assert.match(serviceWorker, /'\/stage-mode-enhancements\.js\?v=2'/);
   assert.match(styles, /min-height:\s*48px/);
   assert.match(styles, /safe-area-inset-top/);
   assert.match(

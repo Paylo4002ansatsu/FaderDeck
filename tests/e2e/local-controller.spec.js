@@ -293,10 +293,7 @@ test('mobile HTTP controller initializes, connects via WS and shows disconnect s
   expect(updateChecks).toBe(0);
   await expect.poll(() => sockets.some((socket) => socket.startsWith('ws://'))).toBe(true);
   await expect(page.getByRole('slider', { name: 'Vocal' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Abrir configurações MIDI' })).toContainText(
-    'Conectado',
-  );
-  await expect(page.locator('.fd-connection-indicator')).toHaveText('Conectado ao computador');
+  await expect(page.locator('.fd-mobile-status')).toHaveText('Conectado');
   const firstSocket = new URL(sockets[0]);
   expect(firstSocket.host).toBe(new URL(url).host);
   expect(firstSocket.pathname).toBe('/ws');
@@ -307,9 +304,7 @@ test('mobile HTTP controller initializes, connects via WS and shows disconnect s
   await page.evaluate(() => localStorage.setItem('faderdeck-bridge-url-v1', '127.0.0.1:8787'));
   sockets.length = 0;
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Abrir configurações MIDI' })).toContainText(
-    'Conectado',
-  );
+  await expect(page.locator('.fd-mobile-status')).toHaveText('Conectado');
   expect(new URL(sockets[0]).host).toBe(new URL(url).host);
 
   const oldToken = bridge.getToken();
@@ -318,16 +313,15 @@ test('mobile HTTP controller initializes, connects via WS and shows disconnect s
   newQr.searchParams.set('bridgeToken', oldToken);
   sockets.length = 0;
   await page.goto(newQr.toString());
-  await expect(page.getByRole('button', { name: 'Abrir configurações MIDI' })).toContainText(
-    'Conectado',
-  );
+  await expect(page.locator('.fd-mobile-status')).toHaveText('Conectado');
   expect(new URL(sockets[0]).searchParams.get('token')).toBe(bridge.getToken());
-  await page.getByRole('button', { name: 'Palco', exact: true }).click();
+  await page.getByRole('button', { name: 'Abrir Modo Palco' }).click();
   await bridge.shutdown();
-  await expect(page.locator('.fd-connection-indicator')).toHaveText('Desconectado');
-  const warning = page.getByText('SEM PONTE — abra pelo QR do computador');
-  await expect(warning).toBeVisible();
-  const warningBox = await page.locator('.no-bridge-banner').boundingBox();
+  await expect(page.getByRole('button', { name: 'Sair do modo Palco' })).toBeVisible();
+  await expect(page.locator('.no-bridge-banner')).toBeHidden();
+  const warningBox = await page.locator('.fd-mobile-toolbar').boundingBox();
   const faderBox = await page.locator('.stage-lane-fader').first().boundingBox();
   expect(warningBox.y + warningBox.height).toBeLessThanOrEqual(faderBox.y);
+  await page.getByRole('button', { name: 'Sair do modo Palco' }).click();
+  await expect(page.locator('.fd-mobile-status')).toHaveText('Reconectando...');
 });
